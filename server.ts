@@ -1496,7 +1496,7 @@ async function startServer() {
     });
   }
 
-  const port = 3000;
+  const port = config.port;
   app.listen(port, '0.0.0.0', () => {
     console.log(`BUILDsmore server active on http://0.0.0.0:${port}`);
   });
