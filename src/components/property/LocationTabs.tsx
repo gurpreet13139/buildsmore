@@ -96,19 +96,21 @@ export const LocationTabs: React.FC<LocationTabsProps> = ({
     return () => el.removeEventListener('wheel', handleWheel);
   }, [updateScrollability]);
 
-  // Keep selected tab visible on load and on selection
+  // Keep selected tab visible horizontally within the tab strip only (never scroll the document vertically)
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     const timer = setTimeout(() => {
       const activeBtn = el.querySelector<HTMLElement>('[data-active="true"]');
-      if (activeBtn) {
-        activeBtn.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'nearest',
-        });
+      if (activeBtn && el.scrollWidth > el.clientWidth) {
+        const containerRect = el.getBoundingClientRect();
+        const btnRect = activeBtn.getBoundingClientRect();
+        if (btnRect.left < containerRect.left) {
+          el.scrollBy({ left: btnRect.left - containerRect.left - 12, behavior: 'smooth' });
+        } else if (btnRect.right > containerRect.right) {
+          el.scrollBy({ left: btnRect.right - containerRect.right + 12, behavior: 'smooth' });
+        }
       }
       updateScrollability();
     }, 60);

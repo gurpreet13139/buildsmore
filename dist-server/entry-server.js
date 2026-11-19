@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
-import { Link, MemoryRouter, Navigate, Route, Routes, StaticRouter, useInRouterContext, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, MemoryRouter, Navigate, Route, Routes, StaticRouter, useInRouterContext, useLocation, useNavigate, useNavigationType, useParams, useSearchParams } from "react-router-dom";
 import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
 import { AlertCircle, AlertTriangle, Anchor, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Bath, Bed, BookOpen, Bookmark, Building, Building2, Calculator, Calendar, Car, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Download, Edit, Edit3, ExternalLink, Eye, EyeOff, FileCheck2, FileSpreadsheet, FileText, Globe, Image, KeyRound, Layers, LayoutGrid, List, Lock, LogOut, Mail, MapPin, Maximize2, Menu, MessageCircle, MessageSquare, Phone, PhoneCall, Plane, Play, Plus, Printer, RefreshCw, RotateCcw, Save, Search, Send, Settings, Share2, Shield, ShieldCheck, Sparkles, Star, Tag, Trash2, TrendingUp, Trophy, Upload, User, X, Zap } from "lucide-react";
 // src/data/initialProperties.ts
@@ -4918,11 +4918,18 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 		if (!el) return;
 		const timer = setTimeout(() => {
 			const activeBtn = el.querySelector("[data-active=\"true\"]");
-			if (activeBtn) activeBtn.scrollIntoView({
-				behavior: "smooth",
-				block: "nearest",
-				inline: "nearest"
-			});
+			if (activeBtn && el.scrollWidth > el.clientWidth) {
+				const containerRect = el.getBoundingClientRect();
+				const btnRect = activeBtn.getBoundingClientRect();
+				if (btnRect.left < containerRect.left) el.scrollBy({
+					left: btnRect.left - containerRect.left - 12,
+					behavior: "smooth"
+				});
+				else if (btnRect.right > containerRect.right) el.scrollBy({
+					left: btnRect.right - containerRect.right + 12,
+					behavior: "smooth"
+				});
+			}
 			updateScrollability();
 		}, 60);
 		return () => clearTimeout(timer);
@@ -4986,7 +4993,7 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 				children: [
 					/* @__PURE__ */ jsxDEV(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }, void 0, false, {
 						fileName: _jsxFileName$27,
-						lineNumber: 188,
+						lineNumber: 190,
 						columnNumber: 11
 					}, void 0),
 					/* @__PURE__ */ jsxDEV("span", {
@@ -4994,7 +5001,7 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 						children: "Explore by Location"
 					}, void 0, false, {
 						fileName: _jsxFileName$27,
-						lineNumber: 189,
+						lineNumber: 191,
 						columnNumber: 11
 					}, void 0),
 					categoryTitle && /* @__PURE__ */ jsxDEV("span", {
@@ -5002,13 +5009,13 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 						children: ["· ", categoryTitle]
 					}, void 0, true, {
 						fileName: _jsxFileName$27,
-						lineNumber: 193,
+						lineNumber: 195,
 						columnNumber: 13
 					}, void 0)
 				]
 			}, void 0, true, {
 				fileName: _jsxFileName$27,
-				lineNumber: 187,
+				lineNumber: 189,
 				columnNumber: 9
 			}, void 0), /* @__PURE__ */ jsxDEV("div", {
 				className: "relative min-w-0 flex-1 flex items-center gap-1.5 sm:pl-3",
@@ -5021,12 +5028,12 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 						className: `hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollLeft ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-20 pointer-events-none"}`,
 						children: /* @__PURE__ */ jsxDEV(ChevronLeft, { className: "w-3.5 h-3.5" }, void 0, false, {
 							fileName: _jsxFileName$27,
-							lineNumber: 215,
+							lineNumber: 217,
 							columnNumber: 15
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$27,
-						lineNumber: 204,
+						lineNumber: 206,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV("div", {
@@ -5037,7 +5044,7 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 								className: "pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0c0f12] via-[#0c0f12]/90 to-transparent z-[5]"
 							}, void 0, false, {
 								fileName: _jsxFileName$27,
-								lineNumber: 224,
+								lineNumber: 226,
 								columnNumber: 15
 							}, void 0),
 							/* @__PURE__ */ jsxDEV("div", {
@@ -5060,12 +5067,12 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 									children: [
 										/* @__PURE__ */ jsxDEV(Globe, { className: "w-3 h-3" }, void 0, false, {
 											fileName: _jsxFileName$27,
-											lineNumber: 255,
+											lineNumber: 257,
 											columnNumber: 17
 										}, void 0),
 										/* @__PURE__ */ jsxDEV("span", { children: "All Locations" }, void 0, false, {
 											fileName: _jsxFileName$27,
-											lineNumber: 256,
+											lineNumber: 258,
 											columnNumber: 17
 										}, void 0),
 										totalAllCount !== void 0 && /* @__PURE__ */ jsxDEV("span", {
@@ -5073,13 +5080,13 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 											children: totalAllCount
 										}, void 0, false, {
 											fileName: _jsxFileName$27,
-											lineNumber: 258,
+											lineNumber: 260,
 											columnNumber: 19
 										}, void 0)
 									]
 								}, void 0, true, {
 									fileName: _jsxFileName$27,
-									lineNumber: 245,
+									lineNumber: 247,
 									columnNumber: 15
 								}, void 0), locations.map((loc) => {
 									const isSelected = selectedLocation === loc.id || selectedLocation === loc.slug || selectedLocation.toLowerCase() === loc.name.toLowerCase();
@@ -5091,25 +5098,25 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 										className: `px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${isSelected ? "bg-[#c5a059] text-[#0c0f12] font-bold border-[#c5a059] shadow-sm" : "bg-[#12161d] text-[#8a909a] hover:text-[#f7f5f2] border-[#222a36] hover:border-[#384557]"}`,
 										children: [/* @__PURE__ */ jsxDEV("span", { children: loc.name }, void 0, false, {
 											fileName: _jsxFileName$27,
-											lineNumber: 283,
+											lineNumber: 285,
 											columnNumber: 21
 										}, void 0), count !== void 0 && /* @__PURE__ */ jsxDEV("span", {
 											className: `text-[10px] font-mono px-1 rounded ${isSelected ? "bg-black/20 text-black" : "text-[#64748b]"}`,
 											children: count
 										}, void 0, false, {
 											fileName: _jsxFileName$27,
-											lineNumber: 285,
+											lineNumber: 287,
 											columnNumber: 23
 										}, void 0)]
 									}, loc.id, true, {
 										fileName: _jsxFileName$27,
-										lineNumber: 272,
+										lineNumber: 274,
 										columnNumber: 19
 									}, void 0);
 								})]
 							}, void 0, true, {
 								fileName: _jsxFileName$27,
-								lineNumber: 231,
+								lineNumber: 233,
 								columnNumber: 13
 							}, void 0),
 							canScrollRight && /* @__PURE__ */ jsxDEV("div", {
@@ -5117,13 +5124,13 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 								className: "pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0c0f12] via-[#0c0f12]/90 to-transparent z-[5]"
 							}, void 0, false, {
 								fileName: _jsxFileName$27,
-								lineNumber: 298,
+								lineNumber: 300,
 								columnNumber: 15
 							}, void 0)
 						]
 					}, void 0, true, {
 						fileName: _jsxFileName$27,
-						lineNumber: 220,
+						lineNumber: 222,
 						columnNumber: 11
 					}, void 0),
 					hasOverflow && /* @__PURE__ */ jsxDEV("button", {
@@ -5134,28 +5141,28 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 						className: `hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollRight ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-20 pointer-events-none"}`,
 						children: /* @__PURE__ */ jsxDEV(ChevronRight, { className: "w-3.5 h-3.5" }, void 0, false, {
 							fileName: _jsxFileName$27,
-							lineNumber: 319,
+							lineNumber: 321,
 							columnNumber: 15
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$27,
-						lineNumber: 308,
+						lineNumber: 310,
 						columnNumber: 13
 					}, void 0)
 				]
 			}, void 0, true, {
 				fileName: _jsxFileName$27,
-				lineNumber: 200,
+				lineNumber: 202,
 				columnNumber: 9
 			}, void 0)]
 		}, void 0, true, {
 			fileName: _jsxFileName$27,
-			lineNumber: 184,
+			lineNumber: 186,
 			columnNumber: 7
 		}, void 0)
 	}, void 0, false, {
 		fileName: _jsxFileName$27,
-		lineNumber: 183,
+		lineNumber: 185,
 		columnNumber: 5
 	}, void 0);
 };
@@ -7769,7 +7776,7 @@ var MortgageCalculator = ({ propertyPrice }) => {
 // src/utils/seo.ts
 var PRODUCTION_DOMAIN = "https://buildsmoremohali.com";
 var SITE_NAME = "BUILDsmore";
-var DEFAULT_BRAND_TITLE = "BUILDsmore Luxury Real Estate – Architectural Estates & Holdings";
+var DEFAULT_BRAND_TITLE = "Buildsmore | Residential | Commercial & Investment Plots in Mohali, Zirakpur, Dera Bassi & New Chandigarh";
 var DEFAULT_BRAND_DESCRIPTION = "Exclusive luxury real estate portfolio featuring architectural estates, penthouses, commercial landmarks, and curated investment holdings.";
 var DEFAULT_SOCIAL_IMAGE = `${PRODUCTION_DOMAIN}/assets/aistudio/logo-builds_more_aa2f07ab.jpeg`;
 /**
@@ -25497,7 +25504,7 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 			replace: true
 		}, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 99,
+			lineNumber: 100,
 			columnNumber: 14
 		}, void 0);
 		return /* @__PURE__ */ jsxDEV(PropertyDetailPage, {
@@ -25511,7 +25518,7 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 			allProperties: properties
 		}, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 102,
+			lineNumber: 103,
 			columnNumber: 7
 		}, void 0);
 	}
@@ -25520,7 +25527,7 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 		children: "Loading Property Dossier..."
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 117,
+		lineNumber: 118,
 		columnNumber: 7
 	}, void 0);
 	return /* @__PURE__ */ jsxDEV(NotFoundPage, {
@@ -25528,7 +25535,7 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 		onNavigate
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 123,
+		lineNumber: 124,
 		columnNumber: 10
 	}, void 0);
 };
@@ -25542,7 +25549,7 @@ var CollectionRouteView = ({ collections, properties, catalogSynced, savedProper
 			replace: true
 		}, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 157,
+			lineNumber: 158,
 			columnNumber: 14
 		}, void 0);
 		return /* @__PURE__ */ jsxDEV(CollectionDetailPage, {
@@ -25555,7 +25562,7 @@ var CollectionRouteView = ({ collections, properties, catalogSynced, savedProper
 			onToggleSave
 		}, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 160,
+			lineNumber: 161,
 			columnNumber: 7
 		}, void 0);
 	}
@@ -25564,7 +25571,7 @@ var CollectionRouteView = ({ collections, properties, catalogSynced, savedProper
 		children: "Loading Curated Collection..."
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 174,
+		lineNumber: 175,
 		columnNumber: 7
 	}, void 0);
 	return /* @__PURE__ */ jsxDEV(NotFoundPage, {
@@ -25572,7 +25579,7 @@ var CollectionRouteView = ({ collections, properties, catalogSynced, savedProper
 		onNavigate
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 180,
+		lineNumber: 181,
 		columnNumber: 10
 	}, void 0);
 };
@@ -25586,7 +25593,7 @@ var BlogRouteView = ({ blogs, catalogSynced, onNavigate, currentPath }) => {
 			replace: true
 		}, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 204,
+			lineNumber: 205,
 			columnNumber: 14
 		}, void 0);
 		return /* @__PURE__ */ jsxDEV(BlogDetailPage, {
@@ -25596,7 +25603,7 @@ var BlogRouteView = ({ blogs, catalogSynced, onNavigate, currentPath }) => {
 			onSelectTag: (tag) => onNavigate(`/blog?tag=${encodeURIComponent(tag)}`)
 		}, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 207,
+			lineNumber: 208,
 			columnNumber: 7
 		}, void 0);
 	}
@@ -25605,7 +25612,7 @@ var BlogRouteView = ({ blogs, catalogSynced, onNavigate, currentPath }) => {
 		children: "Loading Editorial Briefing..."
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 218,
+		lineNumber: 219,
 		columnNumber: 7
 	}, void 0);
 	return /* @__PURE__ */ jsxDEV(NotFoundPage, {
@@ -25613,7 +25620,7 @@ var BlogRouteView = ({ blogs, catalogSynced, onNavigate, currentPath }) => {
 		onNavigate
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 224,
+		lineNumber: 225,
 		columnNumber: 10
 	}, void 0);
 };
@@ -25624,7 +25631,7 @@ var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, proper
 		onNavigate
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 255,
+		lineNumber: 256,
 		columnNumber: 12
 	}, void 0);
 	if (!adminUser) return /* @__PURE__ */ jsxDEV("div", {
@@ -25635,7 +25642,7 @@ var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, proper
 				children: "Restricted Administrative Terminal"
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 261,
+				lineNumber: 262,
 				columnNumber: 9
 			}, void 0),
 			/* @__PURE__ */ jsxDEV("p", {
@@ -25643,7 +25650,7 @@ var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, proper
 				children: "Please authenticate with verified administrator credentials to access portfolio operations."
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 264,
+				lineNumber: 265,
 				columnNumber: 9
 			}, void 0),
 			/* @__PURE__ */ jsxDEV("button", {
@@ -25652,13 +25659,13 @@ var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, proper
 				children: "Sign In to Admin Workspace"
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 267,
+				lineNumber: 268,
 				columnNumber: 9
 			}, void 0)
 		]
 	}, void 0, true, {
 		fileName: _jsxFileName$1,
-		lineNumber: 260,
+		lineNumber: 261,
 		columnNumber: 7
 	}, void 0);
 	const activeTab = isValidAdminTab(section) ? section : "properties";
@@ -25674,7 +25681,7 @@ var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, proper
 		onNavigate
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 280,
+		lineNumber: 281,
 		columnNumber: 5
 	}, void 0);
 };
@@ -25682,6 +25689,7 @@ var AppShell = ({ initialData }) => {
 	if (initialData) storage.hydrateRuntimeSnapshot(initialData);
 	const location = useLocation();
 	const routerNavigate = useNavigate();
+	const navigationType = useNavigationType();
 	const [searchParams] = useSearchParams();
 	const currentPath = normalizePathname(location.pathname || "/");
 	const isFirstRenderRef = useRef(true);
@@ -25795,11 +25803,16 @@ var AppShell = ({ initialData }) => {
 			isFirstRenderRef.current = false;
 			return;
 		}
-		if (typeof window !== "undefined") window.scrollTo({
+		if (typeof window !== "undefined" && navigationType !== "POP" && !location.hash) window.scrollTo({
 			top: 0,
-			behavior: "smooth"
+			left: 0,
+			behavior: "instant"
 		});
-	}, [currentPath]);
+	}, [
+		currentPath,
+		navigationType,
+		location.hash
+	]);
 	useEffect(() => {
 		const isDynamicEntityRoute = currentPath.startsWith("/property/") || currentPath.startsWith("/collection/") || currentPath.startsWith("/blog/");
 		const seo = resolveSeoForRoute(currentPath, {
@@ -25884,7 +25897,7 @@ var AppShell = ({ initialData }) => {
 				onOpenInquiry: () => setPrivateInquiryOpen(true)
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 573,
+				lineNumber: 575,
 				columnNumber: 9
 			}, void 0),
 			/* @__PURE__ */ jsxDEV("main", {
@@ -25902,12 +25915,12 @@ var AppShell = ({ initialData }) => {
 							onToggleSave: handleToggleSave
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 588,
+							lineNumber: 590,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 585,
+						lineNumber: 587,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -25920,12 +25933,12 @@ var AppShell = ({ initialData }) => {
 							onToggleSave: handleToggleSave
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 602,
+							lineNumber: 604,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 599,
+						lineNumber: 601,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -25940,12 +25953,12 @@ var AppShell = ({ initialData }) => {
 							currentPath
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 614,
+							lineNumber: 616,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 611,
+						lineNumber: 613,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -25961,12 +25974,12 @@ var AppShell = ({ initialData }) => {
 							currentPath
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 628,
+							lineNumber: 630,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 625,
+						lineNumber: 627,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -25981,12 +25994,12 @@ var AppShell = ({ initialData }) => {
 							onToggleSave: handleToggleSave
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 643,
+							lineNumber: 645,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 640,
+						lineNumber: 642,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26001,12 +26014,12 @@ var AppShell = ({ initialData }) => {
 							onToggleSave: handleToggleSave
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 657,
+							lineNumber: 659,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 654,
+						lineNumber: 656,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26021,12 +26034,12 @@ var AppShell = ({ initialData }) => {
 							onToggleSave: handleToggleSave
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 671,
+							lineNumber: 673,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 668,
+						lineNumber: 670,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26041,12 +26054,12 @@ var AppShell = ({ initialData }) => {
 							onToggleSave: handleToggleSave
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 685,
+							lineNumber: 687,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 682,
+						lineNumber: 684,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26057,12 +26070,12 @@ var AppShell = ({ initialData }) => {
 							initialTag: blogTagFromUrl
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 699,
+							lineNumber: 701,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 696,
+						lineNumber: 698,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26074,24 +26087,24 @@ var AppShell = ({ initialData }) => {
 							currentPath
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 709,
+							lineNumber: 711,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 706,
+						lineNumber: 708,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
 						path: "/contact",
 						element: /* @__PURE__ */ jsxDEV(ContactPage, { onNavigate: navigate }, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 717,
+							lineNumber: 719,
 							columnNumber: 45
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 717,
+						lineNumber: 719,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26101,12 +26114,12 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 718,
+							lineNumber: 720,
 							columnNumber: 45
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 718,
+						lineNumber: 720,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26116,12 +26129,12 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 719,
+							lineNumber: 721,
 							columnNumber: 43
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 719,
+						lineNumber: 721,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26139,12 +26152,12 @@ var AppShell = ({ initialData }) => {
 							currentPath
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 723,
+							lineNumber: 725,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 720,
+						lineNumber: 722,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26162,12 +26175,12 @@ var AppShell = ({ initialData }) => {
 							currentPath
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 740,
+							lineNumber: 742,
 							columnNumber: 17
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 737,
+						lineNumber: 739,
 						columnNumber: 13
 					}, void 0),
 					/* @__PURE__ */ jsxDEV(Route, {
@@ -26177,39 +26190,39 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate
 						}, void 0, false, {
 							fileName: _jsxFileName$1,
-							lineNumber: 756,
+							lineNumber: 758,
 							columnNumber: 24
 						}, void 0)
 					}, void 0, false, {
 						fileName: _jsxFileName$1,
-						lineNumber: 754,
+						lineNumber: 756,
 						columnNumber: 13
 					}, void 0)
 				] }, void 0, true, {
 					fileName: _jsxFileName$1,
-					lineNumber: 584,
+					lineNumber: 586,
 					columnNumber: 11
 				}, void 0)
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 583,
+				lineNumber: 585,
 				columnNumber: 9
 			}, void 0),
 			/* @__PURE__ */ jsxDEV(Footer, { onNavigate: navigate }, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 762,
+				lineNumber: 764,
 				columnNumber: 9
 			}, void 0),
 			!(currentPath === "/admin" || currentPath.startsWith("/admin/")) && /* @__PURE__ */ jsxDEV(FloatingContactButtons, {}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 766,
+				lineNumber: 768,
 				columnNumber: 11
 			}, void 0),
 			apiErrorToast && /* @__PURE__ */ jsxDEV("div", {
 				className: "fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-red-950/95 border border-red-700 text-red-100 px-4 py-3 rounded-sm shadow-2xl text-xs font-mono flex items-start justify-between gap-3",
 				children: [/* @__PURE__ */ jsxDEV("span", { children: apiErrorToast }, void 0, false, {
 					fileName: _jsxFileName$1,
-					lineNumber: 772,
+					lineNumber: 774,
 					columnNumber: 13
 				}, void 0), /* @__PURE__ */ jsxDEV("button", {
 					type: "button",
@@ -26218,12 +26231,12 @@ var AppShell = ({ initialData }) => {
 					children: "Dismiss"
 				}, void 0, false, {
 					fileName: _jsxFileName$1,
-					lineNumber: 773,
+					lineNumber: 775,
 					columnNumber: 13
 				}, void 0)]
 			}, void 0, true, {
 				fileName: _jsxFileName$1,
-				lineNumber: 771,
+				lineNumber: 773,
 				columnNumber: 11
 			}, void 0),
 			/* @__PURE__ */ jsxDEV(AdminLoginModal, {
@@ -26236,7 +26249,7 @@ var AppShell = ({ initialData }) => {
 				authNotice
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 784,
+				lineNumber: 786,
 				columnNumber: 9
 			}, void 0),
 			/* @__PURE__ */ jsxDEV(PrivateInquiryModal, {
@@ -26245,24 +26258,24 @@ var AppShell = ({ initialData }) => {
 				propertyTitle: activeProperty?.title
 			}, void 0, false, {
 				fileName: _jsxFileName$1,
-				lineNumber: 795,
+				lineNumber: 797,
 				columnNumber: 9
 			}, void 0)
 		]
 	}, void 0, true, {
 		fileName: _jsxFileName$1,
-		lineNumber: 571,
+		lineNumber: 573,
 		columnNumber: 7
 	}, void 0) }, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 570,
+		lineNumber: 572,
 		columnNumber: 5
 	}, void 0);
 };
 function App({ initialPath, initialData } = {}) {
 	if (useInRouterContext()) return /* @__PURE__ */ jsxDEV(AppShell, { initialData }, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 808,
+		lineNumber: 810,
 		columnNumber: 12
 	}, this);
 	const startUrl = initialPath ? normalizeRouterTarget(initialPath) : typeof window !== "undefined" ? `${window.location.pathname || "/"}${window.location.search || ""}` : "/";
@@ -26270,12 +26283,12 @@ function App({ initialPath, initialData } = {}) {
 		initialEntries: [startUrl],
 		children: /* @__PURE__ */ jsxDEV(AppShell, { initialData }, void 0, false, {
 			fileName: _jsxFileName$1,
-			lineNumber: 817,
+			lineNumber: 819,
 			columnNumber: 7
 		}, this)
 	}, void 0, false, {
 		fileName: _jsxFileName$1,
-		lineNumber: 816,
+		lineNumber: 818,
 		columnNumber: 5
 	}, this);
 }

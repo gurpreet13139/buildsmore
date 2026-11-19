@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import {
+  DEFAULT_BRAND_TITLE,
   PRODUCTION_DOMAIN,
   generateRobotsTxt,
   generateSitemapXml,
@@ -126,7 +127,14 @@ export async function runPhase1SeoTests(): Promise<{
     if (/localhost|hlppalmgreen\.com/.test(seo.canonicalUrl || '')) {
       throw new Error(`Canonical URL leaked non-Buildsmore domain: ${seo.canonicalUrl}`);
     }
-    if (!seo.title || seo.title === 'BUILDsmore Luxury Real Estate – Architectural Estates & Holdings') {
+    const homeSeo = resolveSeoForRoute('/', { properties: allProps, collections: allCols });
+    if (
+      homeSeo.title !==
+      'Buildsmore | Residential | Commercial & Investment Plots in Mohali, Zirakpur, Dera Bassi & New Chandigarh'
+    ) {
+      throw new Error(`Unexpected homepage title: ${homeSeo.title}`);
+    }
+    if (!seo.title || seo.title === DEFAULT_BRAND_TITLE) {
       throw new Error(`Property SEO title not customized: ${seo.title}`);
     }
     if (!seo.description || seo.description.length < 20) {
@@ -181,7 +189,7 @@ export async function runPhase1SeoTests(): Promise<{
       if (!res.isNotFound) throw new Error(`${label} should have isNotFound: true`);
       if (!res.robots.includes('noindex')) throw new Error(`${label} should be noindex`);
       if (res.canonicalUrl) throw new Error(`${label} must not emit a homepage canonical`);
-      if (res.title.includes('Architectural Estates & Holdings')) {
+      if (res.title === DEFAULT_BRAND_TITLE) {
         throw new Error(`${label} must not reuse homepage title`);
       }
     }

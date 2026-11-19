@@ -3,7 +3,8 @@ import { getPrimaryPropertyImage } from './propertyImages';
 
 export const PRODUCTION_DOMAIN = 'https://buildsmoremohali.com';
 export const SITE_NAME = 'BUILDsmore';
-export const DEFAULT_BRAND_TITLE = 'BUILDsmore Luxury Real Estate – Architectural Estates & Holdings';
+export const DEFAULT_BRAND_TITLE =
+  'Buildsmore | Residential | Commercial & Investment Plots in Mohali, Zirakpur, Dera Bassi & New Chandigarh';
 export const DEFAULT_BRAND_DESCRIPTION =
   'Exclusive luxury real estate portfolio featuring architectural estates, penthouses, commercial landmarks, and curated investment holdings.';
 export const DEFAULT_SOCIAL_IMAGE = `${PRODUCTION_DOMAIN}/assets/aistudio/logo-builds_more_aa2f07ab.jpeg`;

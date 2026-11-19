@@ -12,6 +12,7 @@ import {
   useInRouterContext,
   useLocation,
   useNavigate,
+  useNavigationType,
   useParams,
   useSearchParams,
 } from 'react-router-dom';
@@ -298,6 +299,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
 
   const location = useLocation();
   const routerNavigate = useNavigate();
+  const navigationType = useNavigationType();
   const [searchParams] = useSearchParams();
   const currentPath = normalizePathname(location.pathname || '/');
   const isFirstRenderRef = useRef(true);
@@ -465,16 +467,16 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
     };
   }, []);
 
-  // Smooth scroll to top when navigating to a different pathname (preserving initial SSR mount)
+  // Scroll to top on forward/programmatic route transitions (preserve hash anchors & Back/Forward POP)
   useEffect(() => {
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
       return;
     }
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && navigationType !== 'POP' && !location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
-  }, [currentPath]);
+  }, [currentPath, navigationType, location.hash]);
 
   // Apply dynamic SEO title, meta description, canonical, social tags, and JSON-LD on every route
   useEffect(() => {
