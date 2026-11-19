@@ -11,7 +11,7 @@ import {
   validateAndSanitizeInquiryInput,
   createRateLimiter,
 } from '../src/server/security';
-import { detectSafeImageFormat, uploadPropertyPhoto } from '../src/server/storage-s3';
+import { detectSafeImageFormat, uploadPropertyPhoto } from '../src/server/storage-local';
 import {
   authenticateAdminLogin,
   constantTimePasswordMatch,

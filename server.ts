@@ -1,6 +1,6 @@
 /**
  * BUILDsmore — Full-Stack Node.js / Express Server
- * Serves REST API endpoints, Drizzle ORM PostgreSQL persistence, S3 photo ingestion,
+ * Serves REST API endpoints, Drizzle ORM PostgreSQL persistence, local disk photo uploads,
  * Redis/BullMQ background synchronization, and Vite frontend.
  */
 
@@ -50,9 +50,10 @@ import {
 } from './src/server/inquiryRepository';
 import { 
   ALLOWED_IMAGE_MIME_TYPES,
+  getUploadsDirectory,
   uploadPropertyPhoto, 
-  testS3Connectivity 
-} from './src/server/storage-s3';
+  testLocalStorageHealth,
+} from './src/server/storage-local';
 import { 
   testRedisConnectivity, 
   getImportQueue 
@@ -151,7 +152,7 @@ async function startServer() {
       res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
       next();
     },
-    express.static(path.resolve(process.cwd(), 'public/uploads'), {
+    express.static(getUploadsDirectory(), {
       maxAge: '30d',
       dotfiles: 'ignore',
     })
@@ -175,10 +176,10 @@ async function startServer() {
   }
 
   const emailStatus = getEmailNotificationStatus();
+  console.log(`[Config] Port:     ${config.port}`);
   console.log(`[Config] Database: ${maskSecret(config.databaseUrl)}`);
   console.log(`[Config] Redis:    ${maskSecret(config.redisUrl)}`);
-  console.log(`[Config] S3 Bucket: ${config.s3.bucket} (${config.s3.region})`);
-  console.log(`[Config] S3 Key ID: ${maskSecret(config.s3.accessKeyId)}`);
+  console.log(`[Config] Storage:  Local Disk (public/uploads -> ${config.uploads.publicPath})`);
   console.log(`[Config] Admin:    ${config.admin.initialEmail}`);
   console.log(`[Config] JWT:      ${maskSecret(config.jwtSecret)}`);
   console.log(
@@ -227,7 +228,7 @@ async function startServer() {
   app.get('/api/admin/health', requireAdminAuth, async (_req, res) => {
     const dbStatus = await testDatabaseConnectivity();
     const redisStatus = await testRedisConnectivity();
-    const s3Status = await testS3Connectivity();
+    const localStorageStatus = await testLocalStorageHealth();
     const smtpStatus = getEmailNotificationStatus();
 
     res.json({
@@ -236,13 +237,14 @@ async function startServer() {
       services: {
         database: dbStatus,
         redis: redisStatus,
-        s3: s3Status,
+        localStorage: localStorageStatus,
         smtp: smtpStatus,
       },
       environment: {
         nodeEnv: config.nodeEnv,
-        bucket: config.s3.bucket,
-        s3Endpoint: config.s3.endpoint,
+        port: config.port,
+        uploadsPath: config.uploads.publicPath,
+        uploadsDirectory: config.uploads.directory,
         databaseTarget: maskSecret(config.databaseUrl),
       },
     });

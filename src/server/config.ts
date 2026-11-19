@@ -39,12 +39,9 @@ export interface SmtpConfig {
 export interface ServerConfig {
   databaseUrl: string;
   redisUrl: string;
-  s3: {
-    endpoint: string;
-    bucket: string;
-    region: string;
-    accessKeyId: string;
-    secretAccessKey: string;
+  uploads: {
+    directory: string;
+    publicPath: string;
   };
   admin: {
     initialEmail: string;
@@ -103,11 +100,6 @@ export function validateEnvironment(): ValidationResult {
   const requiredKeys = [
     'DATABASE_URL',
     'REDIS_URL',
-    'S3_ENDPOINT',
-    'S3_BUCKET',
-    'S3_REGION',
-    'S3_ACCESS_KEY_ID',
-    'S3_SECRET_ACCESS_KEY',
     'ADMIN_INITIAL_EMAIL',
     'ADMIN_INITIAL_PASSWORD',
     'JWT_SECRET',
@@ -204,12 +196,9 @@ export function getServerConfig(): ServerConfig {
       process.env.DATABASE_URL ||
       'postgresql://buildsmore_admin:LuxurySecured2026@localhost:5432/buildsmore_db?sslmode=disable',
     redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-    s3: {
-      endpoint: process.env.S3_ENDPOINT || 'https://s3.eu-central-1.amazonaws.com',
-      bucket: process.env.S3_BUCKET || 'buildsmore-properties-media',
-      region: process.env.S3_REGION || 'eu-central-1',
-      accessKeyId: process.env.S3_ACCESS_KEY_ID || 'AKIAEXAMPLEKEY12345',
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'SecretAccessKeyExamplePlaceholder67890',
+    uploads: {
+      directory: path.resolve(process.cwd(), 'public/uploads'),
+      publicPath: '/uploads',
     },
     admin: {
       initialEmail: process.env.ADMIN_INITIAL_EMAIL || 'info@buildsmoremohali.com',

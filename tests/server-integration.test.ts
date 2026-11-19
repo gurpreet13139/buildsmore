@@ -1,19 +1,19 @@
 /**
  * BUILDsmore — Server & Environment Variables Integration Tests
  * Validates:
- * 1. Environment validation for all 10 required variables
+ * 1. Environment validation for required server variables (without mandatory S3)
  * 2. Secret masking (never print credentials in cleartext)
  * 3. Bcrypt password hashing & verification
  * 4. JWT signing, verification, and rejection of weak secrets/invalid tokens
  * 5. Database migrations DDL schema integrity
  * 6. Admin initialization: creates admin when empty, strictly NEVER resets existing admin on restart
- * 7. S3 Client instantiation with forcePathStyle and photo upload key generation
+ * 7. Local disk storage health check (public/uploads/) & PORT environment variable support
  * 8. Redis client & BullMQ queue initialization
  */
 
 import { validateEnvironment, maskSecret, getServerConfig } from '../src/server/config';
 import { hashPassword, comparePassword, signAdminToken, verifyAdminToken } from '../src/server/auth';
-import { getS3Client } from '../src/server/storage-s3';
+import { getUploadsDirectory, testLocalStorageHealth } from '../src/server/storage-local';
 import { getRedisClient, getImportQueue } from '../src/server/redis';
 import fs from 'fs';
 import path from 'path';
@@ -31,33 +31,42 @@ export async function runServerIntegrationTests(): Promise<{ passed: number; fai
     }
   }
 
-  // 1. Env validation checks all 10 required keys
-  await test('Env Validator: flags missing or placeholder environment variables', () => {
-    // Preserve original env
+  // 1. Env validation checks required keys without requiring S3 variables
+  await test('Env Validator: validates required variables without S3 and flags missing DATABASE_URL', () => {
     const origEnv = { ...process.env };
-    
-    // Test missing key
+
+    delete process.env.S3_ENDPOINT;
+    delete process.env.S3_BUCKET;
+    delete process.env.S3_REGION;
+    delete process.env.S3_ACCESS_KEY_ID;
+    delete process.env.S3_SECRET_ACCESS_KEY;
+
     delete process.env.DATABASE_URL;
     process.env.REDIS_URL = 'redis://localhost:6379';
-    process.env.S3_ENDPOINT = 'https://s3.example.com';
-    process.env.S3_BUCKET = 'test-bucket';
-    process.env.S3_REGION = 'us-east-1';
-    process.env.S3_ACCESS_KEY_ID = 'KEY123';
-    process.env.S3_SECRET_ACCESS_KEY = 'SECRET123';
     process.env.ADMIN_INITIAL_EMAIL = 'admin@buildsmore.com';
-    process.env.ADMIN_INITIAL_PASSWORD = 'password123!';
+    process.env.ADMIN_INITIAL_PASSWORD = 'StrongVpsPassword2026!';
     process.env.JWT_SECRET = 'a_very_long_and_secure_jwt_secret_32_characters_minimum';
 
     const resMissing = validateEnvironment();
     if (resMissing.isValid) {
+      process.env = origEnv;
       throw new Error('Expected validation to fail when DATABASE_URL is missing');
     }
     if (!resMissing.missingVariables.includes('DATABASE_URL')) {
+      process.env = origEnv;
       throw new Error('DATABASE_URL not reported in missing variables');
     }
+    if (resMissing.missingVariables.some((k) => k.startsWith('S3_'))) {
+      process.env = origEnv;
+      throw new Error(`S3 variables must not be required: ${resMissing.missingVariables.join(', ')}`);
+    }
 
-    // Restore original env
+    process.env.DATABASE_URL = 'postgresql://buildsmore_admin:SecretPass123@localhost:5432/buildsmore_db';
+    const resValidNoS3 = validateEnvironment();
     process.env = origEnv;
+    if (!resValidNoS3.isValid) {
+      throw new Error(`Expected validation to pass without S3 env vars, missing: ${resValidNoS3.missingVariables.join(', ')}`);
+    }
   });
 
   await test('Env Validator: rejects JWT_SECRET shorter than 32 characters', () => {
@@ -201,15 +210,27 @@ export async function runServerIntegrationTests(): Promise<{ passed: number; fai
     }
   });
 
-  // 7. S3 Object Storage Client
-  await test('S3 Client: properly instantiated with forcePathStyle for S3/MinIO/R2 compatibility', () => {
-    const client = getS3Client();
-    if (!client) {
-      throw new Error('S3 client instance failed to initialize');
-    }
+  // 7. Local Disk Storage Health & PORT Config
+  await test('Local Disk Storage & PORT: public/uploads/ is healthy/writable and PORT env var configures server port', async () => {
+    const origPort = process.env.PORT;
+    process.env.PORT = '3100';
     const config = getServerConfig();
-    if (!config.s3.bucket) {
-      throw new Error('S3 bucket not configured in getServerConfig()');
+    if (origPort === undefined) {
+      delete process.env.PORT;
+    } else {
+      process.env.PORT = origPort;
+    }
+
+    if (config.port !== 3100) {
+      throw new Error(`Expected config.port to be 3100 when PORT=3100, got ${config.port}`);
+    }
+    if (config.uploads.publicPath !== '/uploads' || !config.uploads.directory.endsWith(path.join('public', 'uploads'))) {
+      throw new Error(`Unexpected uploads config: ${JSON.stringify(config.uploads)}`);
+    }
+
+    const health = await testLocalStorageHealth();
+    if (!health.healthy || !health.writable || health.route !== '/uploads' || health.path !== getUploadsDirectory()) {
+      throw new Error(`Local disk storage health check failed: ${JSON.stringify(health)}`);
     }
   });
 
