@@ -1,0 +1,513 @@
+import { CuratedCollection, Property } from '../types/property';
+import { getPrimaryPropertyImage } from './propertyImages';
+
+export const PRODUCTION_DOMAIN = 'https://buildsmoremohali.com';
+export const SITE_NAME = 'BUILDsmore';
+export const DEFAULT_BRAND_TITLE = 'BUILDsmore Luxury Real Estate – Architectural Estates & Holdings';
+export const DEFAULT_BRAND_DESCRIPTION =
+  'Exclusive luxury real estate portfolio featuring architectural estates, penthouses, commercial landmarks, and curated investment holdings.';
+export const DEFAULT_SOCIAL_IMAGE = `${PRODUCTION_DOMAIN}/assets/aistudio/logo-builds_more_aa2f07ab.jpeg`;
+
+export interface SeoMetadata {
+  title: string;
+  description: string;
+  canonicalUrl?: string;
+  robots: string;
+  ogType: 'website' | 'article';
+  ogTitle: string;
+  ogDescription: string;
+  ogUrl: string;
+  ogImage: string;
+  ogImageAlt: string;
+  twitterCard: 'summary_large_image';
+  twitterTitle: string;
+  twitterDescription: string;
+  twitterImage: string;
+  isNotFound?: boolean;
+}
+
+/**
+ * Normalizes a pathname by stripping query/hash and trailing slash (except root '/').
+ */
+export function normalizePathname(rawPath: string): string {
+  const clean = (rawPath || '/').split('?')[0].split('#')[0].replace(/\/{2,}/g, '/');
+  if (clean.length > 1 && clean.endsWith('/')) {
+    return clean.slice(0, -1);
+  }
+  return clean || '/';
+}
+
+/**
+ * Ensures any relative asset path or localhost URL resolves cleanly to an absolute URL
+ * anchored on https://buildsmoremohali.com (never localhost).
+ */
+export function toAbsoluteProductionUrl(urlOrPath?: string | null, fallbackPath = '/'): string {
+  const raw = (urlOrPath || '').trim();
+  if (!raw) {
+    return fallbackPath === '/' ? `${PRODUCTION_DOMAIN}/` : `${PRODUCTION_DOMAIN}${fallbackPath.startsWith('/') ? '' : '/'}${fallbackPath}`;
+  }
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const parsed = new URL(raw);
+      if (
+        parsed.hostname === 'localhost' ||
+        parsed.hostname === '127.0.0.1' ||
+        parsed.hostname === '0.0.0.0'
+      ) {
+        return `${PRODUCTION_DOMAIN}${parsed.pathname}${parsed.search}`;
+      }
+      return raw;
+    } catch {
+      return DEFAULT_SOCIAL_IMAGE;
+    }
+  }
+  if (raw.startsWith('//')) {
+    return `https:${raw}`;
+  }
+  return `${PRODUCTION_DOMAIN}${raw.startsWith('/') ? '' : '/'}${raw}`;
+}
+
+function truncateDescription(text: string, maxLen = 160): string {
+  const clean = (text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return DEFAULT_BRAND_DESCRIPTION;
+  if (clean.length <= maxLen) return clean;
+  const sliced = clean.slice(0, maxLen - 1);
+  const lastSpace = sliced.lastIndexOf(' ');
+  return (lastSpace > 100 ? sliced.slice(0, lastSpace) : sliced).trim() + '…';
+}
+
+const STATIC_ROUTE_META: Record<
+  string,
+  {
+    title: string;
+    description: string;
+    ogImage?: string;
+    ogImageAlt?: string;
+    robots?: string;
+  }
+> = {
+  '/': {
+    title: DEFAULT_BRAND_TITLE,
+    description: DEFAULT_BRAND_DESCRIPTION,
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'BUILDsmore Luxury Real Estate',
+  },
+  '/properties': {
+    title: 'International Property Portfolio – BUILDsmore Luxury Real Estate',
+    description:
+      'Browse verified luxury villas, sky penthouses, commercial landmarks, and prime real estate developments curated by BUILDsmore.',
+    ogImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80',
+    ogImageAlt: 'BUILDsmore International Property Portfolio',
+  },
+  '/category/residential': {
+    title: 'Prime Residential Estates & Penthouses – BUILDsmore',
+    description:
+      'Explore waterfront architectural villas, alpine chalets, luxury residences, and skyline penthouses in premier enclaves.',
+    ogImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80',
+    ogImageAlt: 'BUILDsmore Prime Residential Estates',
+  },
+  '/category/commercial': {
+    title: 'Institutional Commercial Landmarks – BUILDsmore',
+    description:
+      'Discover freehold corporate headquarters, Grade-A office towers, and prime commercial investment properties.',
+    ogImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+    ogImageAlt: 'BUILDsmore Commercial Landmarks',
+  },
+  '/category/land': {
+    title: 'Prime Acreage, Plots & Vineyards – BUILDsmore',
+    description:
+      'Explore prime land parcels, heritage vineyard estates, coastal development plots, and sovereign acreage.',
+    ogImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80',
+    ogImageAlt: 'BUILDsmore Prime Acreage and Land Parcels',
+  },
+  '/category/developments': {
+    title: 'New Developments & Architectural Projects – BUILDsmore',
+    description:
+      'Preview newly launched architectural residences, RERA-verified developments, and off-plan luxury commissions.',
+    ogImage: 'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1600&q=80',
+    ogImageAlt: 'BUILDsmore New Architectural Developments',
+  },
+  '/about': {
+    title: 'About & Private Advisory – BUILDsmore Luxury Real Estate',
+    description:
+      'Learn about BUILDsmore’s sovereign property advisory, architectural due diligence, and multi-registry real estate curation.',
+    ogImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+    ogImageAlt: 'BUILDsmore Advisory Headquarters',
+  },
+  '/contact': {
+    title: 'Contact & Advisory Desk – BUILDsmore Luxury Real Estate',
+    description:
+      'Connect with BUILDsmore senior property advisors in Mohali for private inspections, portfolio acquisitions, and valuations.',
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'Contact BUILDsmore Advisory',
+  },
+  '/privacy': {
+    title: 'Global Privacy & Data Protection Policy – BUILDsmore',
+    description:
+      'Read the BUILDsmore global privacy and sovereign data protection policy governing confidential real estate inquiries.',
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'BUILDsmore Privacy Policy',
+  },
+  '/terms': {
+    title: 'Terms of Platform Advisory & Access – BUILDsmore',
+    description:
+      'Review the BUILDsmore platform terms of advisory, listing verification standards, and non-disclosure covenants.',
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'BUILDsmore Terms of Service',
+  },
+  '/admin': {
+    title: 'Administrative Terminal – BUILDsmore',
+    description: 'Restricted BUILDsmore administrative management console.',
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'BUILDsmore Admin Terminal',
+    robots: 'noindex, nofollow',
+  },
+};
+
+export function resolveSeoForRoute(
+  rawPathname: string,
+  context: {
+    properties: Property[];
+    collections: CuratedCollection[];
+  }
+): SeoMetadata {
+  const pathname = normalizePathname(rawPathname);
+
+  // 1. Static known routes
+  const staticEntry = STATIC_ROUTE_META[pathname];
+  if (staticEntry) {
+    const canonical = pathname === '/' ? `${PRODUCTION_DOMAIN}/` : `${PRODUCTION_DOMAIN}${pathname}`;
+    const ogImage = toAbsoluteProductionUrl(staticEntry.ogImage || DEFAULT_SOCIAL_IMAGE);
+    return {
+      title: staticEntry.title,
+      description: truncateDescription(staticEntry.description),
+      canonicalUrl: canonical,
+      robots: staticEntry.robots || 'index, follow',
+      ogType: 'website',
+      ogTitle: staticEntry.title,
+      ogDescription: truncateDescription(staticEntry.description),
+      ogUrl: canonical,
+      ogImage,
+      ogImageAlt: staticEntry.ogImageAlt || staticEntry.title,
+      twitterCard: 'summary_large_image',
+      twitterTitle: staticEntry.title,
+      twitterDescription: truncateDescription(staticEntry.description),
+      twitterImage: ogImage,
+      isNotFound: false,
+    };
+  }
+
+  // 2. Dynamic Property Route: /property/:slug
+  if (pathname.startsWith('/property/')) {
+    const slugOrId = decodeURIComponent(pathname.slice('/property/'.length));
+    const prop = context.properties.find((p) => p.slug === slugOrId || p.id === slugOrId);
+
+    if (!prop) {
+      return buildNotFoundSeo(pathname, 'Property Not Found (404) – BUILDsmore Luxury Real Estate');
+    }
+
+    const canonical = `${PRODUCTION_DOMAIN}/property/${encodeURIComponent(prop.slug)}`;
+    const primaryImg = getPrimaryPropertyImage(prop);
+    const ogImage = toAbsoluteProductionUrl(primaryImg.url || DEFAULT_SOCIAL_IMAGE);
+
+    const rawTitle = prop.seo?.metaTitle?.trim();
+    const title = rawTitle || `${prop.title} – BUILDsmore Luxury Real Estate`;
+
+    const fallbackDesc = `${prop.title} in ${prop.city}${prop.country ? `, ${prop.country}` : ''}. ${
+      prop.bedrooms > 0 ? `${prop.bedrooms} bedrooms, ` : ''
+    }${prop.category} holding represented by BUILDsmore.`;
+    const description = truncateDescription(prop.seo?.metaDescription?.trim() || prop.description || fallbackDesc);
+
+    return {
+      title,
+      description,
+      canonicalUrl: canonical,
+      robots: prop.status === 'Draft' ? 'noindex, nofollow' : 'index, follow',
+      ogType: 'article',
+      ogTitle: title,
+      ogDescription: description,
+      ogUrl: canonical,
+      ogImage,
+      ogImageAlt: prop.title,
+      twitterCard: 'summary_large_image',
+      twitterTitle: title,
+      twitterDescription: description,
+      twitterImage: ogImage,
+      isNotFound: false,
+    };
+  }
+
+  // 3. Dynamic Curated Collection Route: /collection/:slug
+  if (pathname.startsWith('/collection/')) {
+    const slugOrId = decodeURIComponent(pathname.slice('/collection/'.length));
+    const collection = context.collections.find((c) => c.slug === slugOrId || c.id === slugOrId);
+
+    if (!collection) {
+      return buildNotFoundSeo(pathname, 'Collection Not Found (404) – BUILDsmore Luxury Real Estate');
+    }
+
+    const canonical = `${PRODUCTION_DOMAIN}/collection/${encodeURIComponent(collection.slug)}`;
+    const ogImage = toAbsoluteProductionUrl(collection.coverImageUrl || DEFAULT_SOCIAL_IMAGE);
+    const title = collection.seo?.metaTitle?.trim() || `${collection.title} – BUILDsmore Curated Collection`;
+    const description = truncateDescription(
+      collection.seo?.metaDescription?.trim() || collection.description || collection.subtitle || DEFAULT_BRAND_DESCRIPTION
+    );
+
+    return {
+      title,
+      description,
+      canonicalUrl: canonical,
+      robots: collection.status === 'Draft' ? 'noindex, nofollow' : 'index, follow',
+      ogType: 'website',
+      ogTitle: title,
+      ogDescription: description,
+      ogUrl: canonical,
+      ogImage,
+      ogImageAlt: collection.title,
+      twitterCard: 'summary_large_image',
+      twitterTitle: title,
+      twitterDescription: description,
+      twitterImage: ogImage,
+      isNotFound: false,
+    };
+  }
+
+  // 4. Genuine 404 for unknown paths
+  return buildNotFoundSeo(pathname);
+}
+
+function buildNotFoundSeo(pathname: string, customTitle?: string): SeoMetadata {
+  const title = customTitle || 'Page Not Found (404) – BUILDsmore Luxury Real Estate';
+  const description = 'The requested property, collection, or page could not be found in the BUILDsmore portfolio.';
+  const pageUrl = `${PRODUCTION_DOMAIN}${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+  return {
+    title,
+    description,
+    canonicalUrl: undefined,
+    robots: 'noindex, nofollow',
+    ogType: 'website',
+    ogTitle: title,
+    ogDescription: description,
+    ogUrl: pageUrl,
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'BUILDsmore Luxury Real Estate',
+    twitterCard: 'summary_large_image',
+    twitterTitle: title,
+    twitterDescription: description,
+    twitterImage: DEFAULT_SOCIAL_IMAGE,
+    isNotFound: true,
+  };
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeHtmlText(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function toIsoDate(value?: string): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+export function generateRobotsTxt(): string {
+  return [
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin',
+    'Disallow: /admin/',
+    'Disallow: /api/',
+    '',
+    `Sitemap: ${PRODUCTION_DOMAIN}/sitemap.xml`,
+    '',
+  ].join('\n');
+}
+
+export function generateSitemapXml(
+  properties: Property[],
+  collections: CuratedCollection[]
+): string {
+  interface SitemapUrl {
+    loc: string;
+    lastmod?: string;
+    changefreq: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    priority: string;
+  }
+
+  const urls: SitemapUrl[] = [
+    { loc: `${PRODUCTION_DOMAIN}/`, changefreq: 'daily', priority: '1.0' },
+    { loc: `${PRODUCTION_DOMAIN}/properties`, changefreq: 'daily', priority: '0.9' },
+    { loc: `${PRODUCTION_DOMAIN}/category/residential`, changefreq: 'daily', priority: '0.8' },
+    { loc: `${PRODUCTION_DOMAIN}/category/commercial`, changefreq: 'daily', priority: '0.8' },
+    { loc: `${PRODUCTION_DOMAIN}/category/land`, changefreq: 'daily', priority: '0.8' },
+    { loc: `${PRODUCTION_DOMAIN}/category/developments`, changefreq: 'daily', priority: '0.8' },
+    { loc: `${PRODUCTION_DOMAIN}/about`, changefreq: 'monthly', priority: '0.7' },
+    { loc: `${PRODUCTION_DOMAIN}/contact`, changefreq: 'monthly', priority: '0.7' },
+    { loc: `${PRODUCTION_DOMAIN}/privacy`, changefreq: 'yearly', priority: '0.3' },
+    { loc: `${PRODUCTION_DOMAIN}/terms`, changefreq: 'yearly', priority: '0.3' },
+  ];
+
+  const seenLocs = new Set(urls.map((u) => u.loc));
+
+  for (const col of collections) {
+    if (col.status !== 'Published' || !col.slug) continue;
+    const loc = `${PRODUCTION_DOMAIN}/collection/${encodeURIComponent(col.slug)}`;
+    if (seenLocs.has(loc)) continue;
+    seenLocs.add(loc);
+    urls.push({
+      loc,
+      lastmod: toIsoDate(col.updatedAt || col.createdAt),
+      changefreq: 'weekly',
+      priority: '0.8',
+    });
+  }
+
+  for (const prop of properties) {
+    if (prop.status !== 'Published' || !prop.slug) continue;
+    const loc = `${PRODUCTION_DOMAIN}/property/${encodeURIComponent(prop.slug)}`;
+    if (seenLocs.has(loc)) continue;
+    seenLocs.add(loc);
+    urls.push({
+      loc,
+      lastmod: toIsoDate(prop.updatedAt || prop.createdAt),
+      changefreq: 'weekly',
+      priority: '0.9',
+    });
+  }
+
+  const entries = urls
+    .map((u) => {
+      const lines = [
+        '  <url>',
+        `    <loc>${escapeXml(u.loc)}</loc>`,
+        u.lastmod ? `    <lastmod>${escapeXml(u.lastmod)}</lastmod>` : null,
+        `    <changefreq>${u.changefreq}</changefreq>`,
+        `    <priority>${u.priority}</priority>`,
+        '  </url>',
+      ].filter(Boolean);
+      return lines.join('\n');
+    })
+    .join('\n');
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    entries,
+    '</urlset>',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Injects per-route <head> SEO tags into an HTML shell (used by server.ts for both dev & prod).
+ * Does not perform SSR; keeps <div id="root"></div> untouched.
+ */
+export function injectSeoIntoHtml(html: string, seo: SeoMetadata): string {
+  const canonicalTag = seo.canonicalUrl
+    ? `<link rel="canonical" href="${escapeHtmlAttr(seo.canonicalUrl)}" />`
+    : '';
+
+  const managedHeadBlock = [
+    `<title>${escapeHtmlText(seo.title)}</title>`,
+    `    <meta name="description" content="${escapeHtmlAttr(seo.description)}" />`,
+    `    <meta name="robots" content="${escapeHtmlAttr(seo.robots)}" />`,
+    canonicalTag ? `    ${canonicalTag}` : null,
+    `    <meta property="og:title" content="${escapeHtmlAttr(seo.ogTitle)}" />`,
+    `    <meta property="og:description" content="${escapeHtmlAttr(seo.ogDescription)}" />`,
+    `    <meta property="og:type" content="${escapeHtmlAttr(seo.ogType)}" />`,
+    `    <meta property="og:url" content="${escapeHtmlAttr(seo.ogUrl)}" />`,
+    `    <meta property="og:site_name" content="${escapeHtmlAttr(SITE_NAME)}" />`,
+    `    <meta property="og:image" content="${escapeHtmlAttr(seo.ogImage)}" />`,
+    `    <meta property="og:image:alt" content="${escapeHtmlAttr(seo.ogImageAlt)}" />`,
+    `    <meta name="twitter:card" content="${escapeHtmlAttr(seo.twitterCard)}" />`,
+    `    <meta name="twitter:title" content="${escapeHtmlAttr(seo.twitterTitle)}" />`,
+    `    <meta name="twitter:description" content="${escapeHtmlAttr(seo.twitterDescription)}" />`,
+    `    <meta name="twitter:image" content="${escapeHtmlAttr(seo.twitterImage)}" />`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  let updated = html;
+
+  // Strip existing managed tags to avoid duplicates
+  updated = updated
+    .replace(/<title>[\s\S]*?<\/title>/gi, '')
+    .replace(/<meta\s+[^>]*name=["']description["'][^>]*>/gi, '')
+    .replace(/<meta\s+[^>]*name=["']robots["'][^>]*>/gi, '')
+    .replace(/<link\s+[^>]*rel=["']canonical["'][^>]*>/gi, '')
+    .replace(/<meta\s+[^>]*property=["']og:(?:title|description|type|url|site_name|image|image:alt)["'][^>]*>/gi, '')
+    .replace(/<meta\s+[^>]*name=["']twitter:(?:card|title|description|image)["'][^>]*>/gi, '');
+
+  // Insert right after <meta name="viewport" ...> or <head>
+  if (/<meta\s+[^>]*name=["']viewport["'][^>]*>/i.test(updated)) {
+    updated = updated.replace(
+      /(<meta\s+[^>]*name=["']viewport["'][^>]*>)/i,
+      `$1\n    ${managedHeadBlock}`
+    );
+  } else {
+    updated = updated.replace(/<head[^>]*>/i, (match) => `${match}\n    ${managedHeadBlock}`);
+  }
+
+  return updated;
+}
+
+/**
+ * Updates document.head metadata during client-side SPA navigation.
+ */
+export function applyDocumentSeo(seo: SeoMetadata): void {
+  if (typeof document === 'undefined') return;
+
+  document.title = seo.title;
+
+  const setMeta = (attr: 'name' | 'property', key: string, content: string) => {
+    let el = document.head.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+    if (!el) {
+      el = document.createElement('meta');
+      el.setAttribute(attr, key);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+  };
+
+  setMeta('name', 'description', seo.description);
+  setMeta('name', 'robots', seo.robots);
+  setMeta('property', 'og:title', seo.ogTitle);
+  setMeta('property', 'og:description', seo.ogDescription);
+  setMeta('property', 'og:type', seo.ogType);
+  setMeta('property', 'og:url', seo.ogUrl);
+  setMeta('property', 'og:site_name', SITE_NAME);
+  setMeta('property', 'og:image', seo.ogImage);
+  setMeta('property', 'og:image:alt', seo.ogImageAlt);
+  setMeta('name', 'twitter:card', seo.twitterCard);
+  setMeta('name', 'twitter:title', seo.twitterTitle);
+  setMeta('name', 'twitter:description', seo.twitterDescription);
+  setMeta('name', 'twitter:image', seo.twitterImage);
+
+  let canonicalEl = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  if (seo.canonicalUrl) {
+    if (!canonicalEl) {
+      canonicalEl = document.createElement('link');
+      canonicalEl.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalEl);
+    }
+    canonicalEl.setAttribute('href', seo.canonicalUrl);
+  } else if (canonicalEl) {
+    canonicalEl.remove();
+  }
+}

@@ -1,0 +1,1192 @@
+[
+  {
+    "id": "prop-wp-wp-src-01-1042",
+    "slug": "villa-palais-saint-jean-cap-ferrat-wp-src-01",
+    "title": "Villa Palais Saint-Jean Cap-Ferrat",
+    "subtitle": "7 Bedroom Residential Estate in Saint-Jean-Cap-Ferrat",
+    "description": "Sublime neo-classical Belle Époque residence overlooking the sparkling waters of Cap-Ferrat. Direct private Mediterranean access, 10-car underground garage, private guard pavilion and Olympic infinity pool.",
+    "price": 42000000,
+    "currency": "INR",
+    "category": "Residential",
+    "propertyType": "Villa",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": false,
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "isLatestAdded": true,
+    "displayOrder": 1,
+    "needsLocationReview": true,
+    "address": "Avenue Claude Vignon 24",
+    "locality": "",
+    "city": "Saint-Jean-Cap-Ferrat",
+    "stateRegion": "Exclusive Enclave",
+    "country": "France",
+    "postalCode": "",
+    "coordinates": {
+      "lat": 43.68674106713792,
+      "lng": 7.239430193996311
+    },
+    "bedrooms": 7,
+    "bathrooms": 9,
+    "interiorAreaSqFt": 12500,
+    "areaUnit": "sq ft",
+    "yearBuilt": 2026,
+    "parkingSpaces": 3,
+    "energyRating": "A",
+    "images": [
+      {
+        "id": "img-wp-0",
+        "url": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1600&q=80",
+        "isPrimary": true
+      }
+    ],
+    "hasManualMainImage": false,
+    "highlights": [],
+    "amenities": [
+      "Gated Private Security",
+      "Panoramic Vistas",
+      "Architectural Finishes",
+      "Automated Climate & Security Controls",
+      "Private Landscaped Grounds"
+    ],
+    "specifications": {
+      "Source Network": "Côte d'Azur Prestige Real Estate",
+      "Source Website URL": "https://cotedazur-prestige-villas.wp-network.eu",
+      "External Property ID": "1042",
+      "Verification Status": "Verified via REST API Mapping"
+    },
+    "seo": {
+      "metaTitle": "Villa Palais Saint-Jean Cap-Ferrat – BUILDsmore Luxury Real Estate",
+      "metaDescription": "Villa Palais Saint-Jean Cap-Ferrat in Saint-Jean-Cap-Ferrat. Exclusive luxury property imported via verified partner network. Inquire for private tour.",
+      "keywords": [
+        "Saint-Jean-Cap-Ferrat",
+        "Residential",
+        "luxury property"
+      ]
+    },
+    "source": {
+      "type": "wordpress",
+      "sourceWebsiteId": "wp-src-01",
+      "sourceWebsiteName": "Côte d'Azur Prestige Real Estate",
+      "sourcePropertyId": "1042",
+      "sourceUrl": "https://cotedazur-prestige-villas.wp-network.eu/villa-palais-saint-jean",
+      "lastSyncedAt": "2026-10-25T11:12:58.862Z"
+    },
+    "createdAt": "2026-10-25T11:12:58.863Z",
+    "updatedAt": "2026-11-17T04:10:18.771Z"
+  },
+  {
+    "id": "prop-univ-6d555c98a76b",
+    "slug": "hlp-palmgreens-zirakpur-68747470",
+    "title": "HLP PalmGreens Zirakpur",
+    "subtitle": "By HLP Group • Commercial in Mohali",
+    "description": "Throughout the township, lush green landscaped gardens and parks provide a tranquil backdrop for morning walks and evening strolls, promoting a healthy and active lifestyle for all residents.",
+    "price": 4800000,
+    "currency": "INR",
+    "category": "Commercial",
+    "propertyType": "Retail Landmark",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": true,
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "isLatestAdded": true,
+    "displayOrder": 1,
+    "locationId": "loc-mohali",
+    "needsLocationReview": false,
+    "address": "Zirakpur Patiala Highway, Opposite Bollywood Gali",
+    "locality": "",
+    "city": "Mohali",
+    "stateRegion": "Punjab",
+    "country": "India",
+    "postalCode": "",
+    "coordinates": {
+      "lat": 30.629062074465732,
+      "lng": 76.79630984180658
+    },
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "interiorAreaSqFt": 1350,
+    "areaUnit": "sq ft",
+    "yearBuilt": 2026,
+    "parkingSpaces": 2,
+    "energyRating": "A+",
+    "images": [
+      {
+        "id": "img-0",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-02-at-4.19.14-PM-e1762147031166.jpeg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 1",
+        "isPrimary": true
+      },
+      {
+        "id": "img-1",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/Screenshot_24-e1762148482841.png",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 2",
+        "isPrimary": false
+      },
+      {
+        "id": "img-2",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/10/img-1.jpg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 3",
+        "isPrimary": false
+      },
+      {
+        "id": "img-3",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/10/img-2.jpg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 4",
+        "isPrimary": false
+      },
+      {
+        "id": "img-4",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/10/c46ebcb54e12c38e69ecab6aa5eb0986335215209f546097ffd7c25681aa9338.webp",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 5",
+        "isPrimary": false
+      },
+      {
+        "id": "img-5",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/slider7.jpg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 6",
+        "isPrimary": false
+      },
+      {
+        "id": "img-6",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/slider5.jpg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 7",
+        "isPrimary": false
+      },
+      {
+        "id": "img-7",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/slider6-scaled.jpg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 8",
+        "isPrimary": false
+      },
+      {
+        "id": "img-8",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/hlp-homes.jpg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 9",
+        "isPrimary": false
+      },
+      {
+        "id": "img-9",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-02-at-4.19.14-PM-1.jpeg",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 10",
+        "isPrimary": false
+      },
+      {
+        "id": "img-10",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/10/Screenshot_15.png",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 11",
+        "isPrimary": false
+      },
+      {
+        "id": "img-11",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/10/Screenshot_17.png",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 12",
+        "isPrimary": false
+      },
+      {
+        "id": "img-12",
+        "url": "https://hlppalmgreen.com/wp-content/uploads/2025/10/Screenshot_16.png",
+        "caption": "HLP PalmGreens Zirakpur - Visual Showcase 13",
+        "isPrimary": false
+      }
+    ],
+    "hasManualMainImage": false,
+    "highlights": [],
+    "amenities": [
+      "Club House",
+      "Swimming Pool",
+      "EV Charging Station",
+      "Landscaped Gardens",
+      "Ample Parking"
+    ],
+    "specifications": {
+      "Developer / Group": "HLP Group",
+      "Project Status": "Pre-Launch / Active Booking",
+      "Location Corridor": "Zirakpur Patiala Highway, Opposite Bollywood Gali",
+      "City": "Mohali",
+      "Residential Land Area": "25 Acres",
+      "Commercial Land Area": "5 Acres",
+      "Expected Possession": "2027",
+      "Plot Sizes Available": "100, 125, 150 Sq. Yards",
+      "Commercial Unit Types": "Highway Facing SCO Floors (16x66), Retail Booths",
+      "RERA Verification": "Prelaunch Dossier / Authorized Partner Verification",
+      "Pricing Structure": "Rs. 48,000/- Per Sq.Yard | Starting From 90Lacs"
+    },
+    "reraNumber": "Prelaunch Dossier / Authorized Partner Verification",
+    "developerName": "HLP Group",
+    "possessionYear": "2027",
+    "projectLandArea": "25 Acres",
+    "originalPriceText": "Rs. 48,000/- Per Sq.Yard | Starting From 90Lacs",
+    "contactPhone": "7621470311",
+    "contactEmail": "buildsmore66@gmail.com",
+    "floorPlans": [],
+    "sourceSections": [
+      {
+        "id": "sec-overview",
+        "title": "Project Overview & Vision",
+        "content": "Throughout the township, lush green landscaped gardens and parks provide a tranquil backdrop for morning walks and evening strolls, promoting a healthy and active lifestyle for all residents."
+      },
+      {
+        "id": "sec-pricing",
+        "title": "Configurations & Pricing Matrix",
+        "content": "Available configurations: Residential Plots (100, 125, 150 Sq. Yards), Luxury Villas, and Highway Facing SCO Floors. Current Pricing: Rs. 48,000/- Per Sq.Yard | Starting From 90Lacs."
+      },
+      {
+        "id": "sec-location",
+        "title": "Location & Connectivity Advantages",
+        "content": "Strategically situated on Zirakpur Patiala Highway, Opposite Bollywood Gali, Mohali. Connected directly to Chandigarh, International Airport (15 Mins), Tribune Chowk (20 Mins), Amity University, and national expressways."
+      }
+    ],
+    "seo": {
+      "metaTitle": "HLP PalmGreens Zirakpur – BUILDsmore Official Property Portfolio",
+      "metaDescription": "HLP PalmGreens Zirakpur located at Zirakpur Patiala Highway, Opposite Bollywood Gali, Mohali. Verified developer dossier, layouts, and priority booking inquiries.",
+      "keywords": [
+        "HLP PalmGreens Zirakpur",
+        "Mohali",
+        "Commercial",
+        "HLP Group"
+      ],
+      "canonicalUrl": "https://hlppalmgreen.com/"
+    },
+    "source": {
+      "type": "wordpress",
+      "sourceWebsiteName": "HLP Group Official Site",
+      "sourcePropertyId": "6d555c98a76b",
+      "sourceUrl": "https://hlppalmgreen.com/",
+      "lastSyncedAt": "2026-11-15T10:31:40.472Z",
+      "sourceWebsiteId": "hlppalmgreen.com"
+    },
+    "createdAt": "2026-11-15T10:23:37.286Z",
+    "updatedAt": "2026-11-17T04:10:18.766Z"
+  },
+  {
+    "id": "prop-univ-59a693918a36",
+    "slug": "crownresidencystj-com-59a693918a36",
+    "title": "crownresidencystj.com",
+    "subtitle": "Commercial in Zirakpur",
+    "description": "Blog Hello world! Welcome to WordPress. This is your first post. Edit or delete it, then start writing!",
+    "price": 0,
+    "currency": "INR",
+    "category": "Commercial",
+    "propertyType": "Retail Landmark",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": true,
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "isLatestAdded": true,
+    "displayOrder": 1,
+    "locationId": "loc-zirakpur",
+    "needsLocationReview": false,
+    "address": "Pahar Kalan, Rajpura-Chandigarh Road",
+    "hasManualAddress": true,
+    "locality": "",
+    "city": "Zirakpur",
+    "stateRegion": "Punjab",
+    "country": "India",
+    "postalCode": "",
+    "coordinates": {
+      "lat": 30.665,
+      "lng": 76.83115000000001
+    },
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "interiorAreaSqFt": 1350,
+    "areaUnit": "sq ft",
+    "yearBuilt": 2026,
+    "parkingSpaces": 2,
+    "energyRating": "A+",
+    "images": [
+      {
+        "id": "img-default",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
+        "caption": "crownresidencystj.com",
+        "isPrimary": true
+      }
+    ],
+    "hasManualMainImage": false,
+    "highlights": [],
+    "amenities": [
+      "Gated Community Security",
+      "Landscaped Open Spaces",
+      "Dedicated Parking",
+      "Wide Internal Roads"
+    ],
+    "specifications": {
+      "Developer / Group": "HLP Group",
+      "Project Status": "Pre-Launch / Active Booking",
+      "Location Corridor": "Pahar Kalan, Rajpura-Chandigarh Road",
+      "City": "Zirakpur",
+      "RERA Verification": "Prelaunch Dossier / Authorized Partner Verification",
+      "Pricing Structure": "Price on Request / Contact for Best Quote"
+    },
+    "reraNumber": "Prelaunch Dossier / Authorized Partner Verification",
+    "developerName": "",
+    "possessionYear": "2027",
+    "projectLandArea": "25 Acres",
+    "originalPriceText": "Price on Request / Contact for Best Quote",
+    "contactPhone": "977-987-8303",
+    "contactEmail": "info@buildsmoremohali.com",
+    "floorPlans": [],
+    "sourceSections": [
+      {
+        "id": "sec-overview",
+        "title": "Project Overview & Vision",
+        "content": "Blog Hello world! Welcome to WordPress. This is your first post. Edit or delete it, then start writing!"
+      },
+      {
+        "id": "sec-pricing",
+        "title": "Configurations & Pricing Matrix",
+        "content": "Available configurations: Residential Plots (100, 125, 150 Sq. Yards), Luxury Villas, and Highway Facing SCO Floors. Current Pricing: Price on Request / Contact for Best Quote."
+      },
+      {
+        "id": "sec-location",
+        "title": "Location & Connectivity Advantages",
+        "content": "Strategically situated on Pahar Kalan, Rajpura-Chandigarh Road, Zirakpur. Connected directly to Chandigarh, International Airport (15 Mins), Tribune Chowk (20 Mins), Amity University, and national expressways."
+      }
+    ],
+    "seo": {
+      "metaTitle": "crownresidencystj.com – BUILDsmore Official Property Portfolio",
+      "metaDescription": "crownresidencystj.com located at Pahar Kalan, Rajpura-Chandigarh Road, Zirakpur. Verified developer dossier, layouts, and priority booking inquiries.",
+      "keywords": [
+        "crownresidencystj.com",
+        "Zirakpur",
+        "Commercial",
+        "Real Estate"
+      ],
+      "canonicalUrl": "https://crownresidencystj.com/"
+    },
+    "source": {
+      "type": "wordpress",
+      "sourceWebsiteId": "crownresidencystj.com",
+      "sourceWebsiteName": "crownresidencystj.com",
+      "sourcePropertyId": "59a693918a36",
+      "sourceUrl": "https://crownresidencystj.com/",
+      "lastSyncedAt": "2026-11-15T11:20:43.607Z"
+    },
+    "createdAt": "2026-11-15T11:20:43.607Z",
+    "updatedAt": "2026-11-17T04:10:18.765Z"
+  },
+  {
+    "id": "prop-wp-wp-src-01-1043",
+    "slug": "le-bastion-moderne-cannes-croisette-wp-src-01",
+    "title": "Le Bastion Moderne Penthouse Cannes",
+    "subtitle": "4 Bedroom Residential Estate in Cannes",
+    "description": "Superb duplex penthouse situated right on the Boulevard de la Croisette opposite the Palais des Festivals. 4 suites, teak sky terrace with private heated whirlpool, bespoke Poliform kitchen.",
+    "price": 19500000,
+    "currency": "INR",
+    "category": "Residential",
+    "propertyType": "Villa",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": false,
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "isLatestAdded": true,
+    "displayOrder": 1,
+    "needsLocationReview": true,
+    "address": "45 Boulevard de la Croisette",
+    "locality": "",
+    "city": "Cannes",
+    "stateRegion": "Exclusive Enclave",
+    "country": "France",
+    "postalCode": "",
+    "coordinates": {
+      "lat": 43.67232921365273,
+      "lng": 7.275292074350666
+    },
+    "bedrooms": 4,
+    "bathrooms": 5,
+    "interiorAreaSqFt": 5200,
+    "areaUnit": "sq ft",
+    "yearBuilt": 2026,
+    "parkingSpaces": 3,
+    "energyRating": "A",
+    "images": [
+      {
+        "id": "img-wp-0",
+        "url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=80",
+        "isPrimary": true
+      }
+    ],
+    "hasManualMainImage": false,
+    "highlights": [],
+    "amenities": [
+      "Gated Private Security",
+      "Panoramic Vistas",
+      "Architectural Finishes",
+      "Automated Climate & Security Controls",
+      "Private Landscaped Grounds"
+    ],
+    "specifications": {
+      "Source Network": "Côte d'Azur Prestige Real Estate",
+      "Source Website URL": "https://cotedazur-prestige-villas.wp-network.eu",
+      "External Property ID": "1043",
+      "Verification Status": "Verified via REST API Mapping"
+    },
+    "seo": {
+      "metaTitle": "Le Bastion Moderne Penthouse Cannes – BUILDsmore Luxury Real Estate",
+      "metaDescription": "Le Bastion Moderne Penthouse Cannes in Cannes. Exclusive luxury property imported via verified partner network. Inquire for private tour.",
+      "keywords": [
+        "Cannes",
+        "Residential",
+        "luxury property"
+      ]
+    },
+    "source": {
+      "type": "wordpress",
+      "sourceWebsiteId": "wp-src-01",
+      "sourceWebsiteName": "Côte d'Azur Prestige Real Estate",
+      "sourcePropertyId": "1043",
+      "sourceUrl": "https://cotedazur-prestige-villas.wp-network.eu/le-bastion-moderne",
+      "lastSyncedAt": "2026-10-25T11:12:58.865Z"
+    },
+    "createdAt": "2026-10-25T11:12:58.866Z",
+    "updatedAt": "2026-11-17T04:10:18.763Z"
+  },
+  {
+    "id": "prop-wp-wp-src-01-1044",
+    "slug": "domaine-de-chateauneuf-grasse-olive-parcels-wp-src-01",
+    "title": "Domaine de Châteauneuf Private Olive Estate",
+    "subtitle": "Plots/Land Estate in Grasse",
+    "description": "Historic private estate parcel with 8 hectares of centuries-old olive terraces in Grasse hinterlands. Architectural permit granted for luxury manor house and private tennis pavilion.",
+    "price": 8800000,
+    "currency": "INR",
+    "category": "Plots/Land",
+    "propertyType": "Development Parcel",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": false,
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "isLatestAdded": true,
+    "displayOrder": 1,
+    "needsLocationReview": true,
+    "address": "Route de Châteauneuf 11",
+    "locality": "",
+    "city": "Grasse",
+    "stateRegion": "Exclusive Enclave",
+    "country": "France",
+    "postalCode": "",
+    "coordinates": {
+      "lat": 43.717642258043966,
+      "lng": 7.307994512975983
+    },
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "interiorAreaSqFt": 0,
+    "areaUnit": "sq ft",
+    "yearBuilt": 2026,
+    "parkingSpaces": 3,
+    "energyRating": "A",
+    "images": [
+      {
+        "id": "img-wp-0",
+        "url": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80",
+        "isPrimary": true
+      }
+    ],
+    "hasManualMainImage": false,
+    "highlights": [],
+    "amenities": [
+      "Gated Private Security",
+      "Panoramic Vistas",
+      "Architectural Finishes",
+      "Automated Climate & Security Controls",
+      "Private Landscaped Grounds"
+    ],
+    "specifications": {
+      "Source Network": "Côte d'Azur Prestige Real Estate",
+      "Source Website URL": "https://cotedazur-prestige-villas.wp-network.eu",
+      "External Property ID": "1044",
+      "Verification Status": "Verified via REST API Mapping"
+    },
+    "seo": {
+      "metaTitle": "Domaine de Châteauneuf Private Olive Estate – BUILDsmore Luxury Real Estate",
+      "metaDescription": "Domaine de Châteauneuf Private Olive Estate in Grasse. Exclusive luxury property imported via verified partner network. Inquire for private tour.",
+      "keywords": [
+        "Grasse",
+        "Plots/Land",
+        "luxury property"
+      ]
+    },
+    "source": {
+      "type": "wordpress",
+      "sourceWebsiteId": "wp-src-01",
+      "sourceWebsiteName": "Côte d'Azur Prestige Real Estate",
+      "sourcePropertyId": "1044",
+      "sourceUrl": "https://cotedazur-prestige-villas.wp-network.eu/domaine-de-chateauneuf",
+      "lastSyncedAt": "2026-10-25T11:12:58.867Z"
+    },
+    "createdAt": "2026-10-25T11:12:58.868Z",
+    "updatedAt": "2026-11-17T04:10:18.758Z"
+  },
+  {
+    "id": "prop-001",
+    "slug": "villa-sol-mar-port-d-andratx-mallorca",
+    "title": "Villa Sol de Mar",
+    "subtitle": "Cantilevered Seafront Masterpiece Above Port d'Andratx",
+    "description": "Commanding an unmatched cliffside promontory in Mallorca's most exclusive enclave, Villa Sol de Mar is an architectural tour de force. Engineered with dramatic cantilevered concrete terraces and uninterrupted panoramic vistas of the Mediterranean, this trophy residence harmonizes brutalist precision with serene coastal warmth. Features include a 25-meter infinity pool that visually merges into the sea, private yacht mooring access, a temperature-controlled 800-bottle wine cellar, and integrated Gaggenau chef suites.",
+    "price": 285000000,
+    "currency": "INR",
+    "category": "Residential",
+    "propertyType": "Villa",
+    "status": "Published",
+    "featured": true,
+    "isNewDevelopment": false,
+    "address": "Cala Llamp Promontory, Carrer Olivera 14",
+    "city": "Port d'Andratx",
+    "stateRegion": "Balearic Islands",
+    "country": "Spain",
+    "postalCode": "07157",
+    "coordinates": {
+      "lat": 39.5392,
+      "lng": 2.3845
+    },
+    "bedrooms": 6,
+    "bathrooms": 8,
+    "interiorAreaSqFt": 11450,
+    "lotSizeAcres": 0.85,
+    "yearBuilt": 2024,
+    "parkingSpaces": 4,
+    "energyRating": "A+",
+    "images": [
+      {
+        "id": "img-001-1",
+        "url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Southwest Facade & Heated Horizon Infinity Pool at Dusk",
+        "isPrimary": true
+      },
+      {
+        "id": "img-001-2",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Double-Height Living Gallery with Custom Travertine Fireplace",
+        "isPrimary": false
+      },
+      {
+        "id": "img-001-3",
+        "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Primary Bedroom Suite with Private Solarium",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "25m Heated Infinity Pool",
+      "Private Cliffside Funicular",
+      "800-Bottle Climate-Controlled Cellar",
+      "Gaggenau & Boffi Culinary Suite",
+      "Subterranean 4-Car Showcase Garage",
+      "Full Crestron Home Automation",
+      "Private Wellness Spa & Sauna",
+      "24/7 Monitored Security Concierge"
+    ],
+    "specifications": {
+      "Architect": "Studio SAOTA & Alberto Rubio",
+      "Structural System": "Post-Tensioned Architectural Concrete",
+      "Interior Flooring": "Honed Gris Zarci Natural Stone",
+      "Ceiling Height": "3.8m to 5.2m Dramatic Double-Height",
+      "Glazing": "Sky-Frame Frameless Triple-Glazed Acoustic",
+      "HVAC": "Geothermal Underfloor & Concealed VRV",
+      "Solar Integration": "24kW Integrated Photovoltaic Array"
+    },
+    "seo": {
+      "metaTitle": "Villa Sol de Mar – Exclusive Luxury Seafront Villa Port d'Andratx",
+      "metaDescription": "Discover Villa Sol de Mar in Port d'Andratx, Mallorca. 6 bedrooms, 11,450 sq ft, 25m infinity pool and private marine access. Price: ₹28,50,00,000 (₹28.5 Cr).",
+      "keywords": [
+        "Mallorca luxury villa",
+        "Port d Andratx real estate",
+        "Mediterranean waterfront trophy estate"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-01-12T10:00:00.000Z",
+    "updatedAt": "2025-05-18T14:30:00.000Z",
+    "isTrophyHolding": true,
+    "trophyOrder": 1,
+    "displayOrder": 1,
+    "isLatestAdded": true,
+    "locationId": "loc-mallorca"
+  },
+  {
+    "id": "prop-002",
+    "slug": "the-elysian-duplex-penthouse-manhattan-billionaires-row",
+    "title": "The Elysian Duplex Penthouse",
+    "subtitle": "Crown Jewel of Central Park South with 360° Sky Views",
+    "description": "Suspended 1,100 feet above Manhattan, The Elysian Duplex Penthouse occupies the entire 78th and 79th stories of Billionaires' Row premier limestone and bronze tower. Offering over 9,200 square feet of grand interiors conceived by Jacques Grange, paired with an 850-square-foot open-air loggia overlooking Central Park, this sanctuary redefines metropolitan grandeur. Private high-speed elevator access, soaring 15-foot ceilings, and solid white oak parquet flooring set the stage for an extraordinary global lifestyle.",
+    "price": 495000000,
+    "currency": "INR",
+    "category": "Residential",
+    "propertyType": "Penthouse",
+    "status": "Published",
+    "featured": true,
+    "isNewDevelopment": false,
+    "address": "111 West 57th Street, Penthouse 78",
+    "city": "New York",
+    "stateRegion": "New York",
+    "country": "United States",
+    "postalCode": "10019",
+    "coordinates": {
+      "lat": 40.7648,
+      "lng": -73.9782
+    },
+    "bedrooms": 5,
+    "bathrooms": 6,
+    "interiorAreaSqFt": 9280,
+    "lotSizeAcres": 0,
+    "yearBuilt": 2023,
+    "parkingSpaces": 2,
+    "energyRating": "A",
+    "images": [
+      {
+        "id": "img-002-1",
+        "url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Grand Salon with Unobstructed Central Park Panorama",
+        "isPrimary": true
+      },
+      {
+        "id": "img-002-2",
+        "url": "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Bespoke Smallbone of Devizes Kitchen in French Walnut",
+        "isPrimary": false
+      },
+      {
+        "id": "img-002-3",
+        "url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Primary Onyx Spa Bath with Freestanding Soaking Tub",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "Private High-Speed Direct Elevator Access",
+      "850 sq ft Open-Air Heated Loggia",
+      "White-Glove 24-Hour Doorman & Valet",
+      "82-Foot Indoor Saltwater Swimming Pool",
+      "Private Dining Salon & Catering Kitchen",
+      "Equinox-Standard Private Fitness Pavilion",
+      "Soundproof Screening Cinema",
+      "Automated Biometric Residence Entry"
+    ],
+    "specifications": {
+      "Interior Design": "Jacques Grange Paris",
+      "Ceiling Height": "15 Feet Clear Throughout",
+      "Flooring": "Solid European White Oak Parquet de Versailles",
+      "Bathrooms": "Bookmatched Calacatta Gold & Belgian Black Marble",
+      "Windows": "Acoustically Attenuated Low-E Double Glazed",
+      "Service Charges": "₹1,25,000 / month"
+    },
+    "seo": {
+      "metaTitle": "The Elysian Duplex Penthouse – Central Park South Billionaires' Row",
+      "metaDescription": "Spectacular 5-bedroom duplex penthouse over 9,280 sq ft with 360-degree Central Park views. Price: ₹49,50,00,000 (₹49.5 Cr).",
+      "keywords": [
+        "Manhattan luxury penthouse",
+        "Billionaires Row New York",
+        "Central Park view penthouse"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-02-01T11:00:00.000Z",
+    "updatedAt": "2025-06-10T16:00:00.000Z",
+    "isTrophyHolding": true,
+    "trophyOrder": 2,
+    "displayOrder": 2,
+    "isLatestAdded": false
+  },
+  {
+    "id": "prop-003",
+    "slug": "the-luminary-flagship-commercial-tower-mayfair-london",
+    "title": "The Luminary Mayfair Landmark",
+    "subtitle": "Institutional Grade Trophy Commercial & Private Banking Headquarters",
+    "description": "An irreplaceable freehold institutional asset situated on Mayfair's most prestigious square. The Luminary has undergone an exhaustive multi-million pound restoration and sustainable retrofitting, achieving BREEAM Outstanding status. Comprising 48,500 square feet of Grade-A column-free workspace across seven floors, topped by an executive penthouse boardroom suite and private landscaped roof terrace overlooking Berkeley Square. Fully leased to premier sovereign and family office tenancies with robust index-linked covenants.",
+    "price": 880000000,
+    "currency": "INR",
+    "category": "Commercial",
+    "propertyType": "Office Tower",
+    "status": "Published",
+    "featured": true,
+    "isNewDevelopment": false,
+    "address": "14 Berkeley Square, Mayfair",
+    "city": "London",
+    "stateRegion": "Greater London",
+    "country": "United Kingdom",
+    "postalCode": "W1J 6BQ",
+    "coordinates": {
+      "lat": 51.5091,
+      "lng": -0.1465
+    },
+    "bedrooms": 0,
+    "bathrooms": 16,
+    "interiorAreaSqFt": 48500,
+    "lotSizeAcres": 0.32,
+    "yearBuilt": 2023,
+    "parkingSpaces": 12,
+    "energyRating": "A+",
+    "images": [
+      {
+        "id": "img-003-1",
+        "url": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Mayfair Facade with Portland Stone & Architectural Bronze Glazing",
+        "isPrimary": true
+      },
+      {
+        "id": "img-003-2",
+        "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Triple-Height Reception with Sculptural Bas-Relief & Travertine",
+        "isPrimary": false
+      },
+      {
+        "id": "img-003-3",
+        "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Executive Boardroom Suite & Landscaped Terrace",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "BREEAM Outstanding & WELL Platinum Certified",
+      "Dual Sub-Station High-Capacity Power Resilience",
+      "Landscaped Private 3,200 sq ft Roof Garden",
+      "Executive Secure Subterranean EV Parking",
+      "End-of-Trip Luxury Wellness Showers & Bike Vault",
+      "24/7 Security Reception & Biometric Turnstiles",
+      "Column-Free Flexible Floorplates (6,800 sq ft avg)",
+      "Dedicated High-Speed Fibre Ring Infrastructure"
+    ],
+    "specifications": {
+      "Tenure": "Freehold Title Absolute",
+      "Net Internal Area": "48,500 sq ft (4,505 sq m)",
+      "Current Passing Rent": "₹6,40,00,000 per annum index-linked",
+      "WAULT to Expiry": "9.4 Years (7.8 Years to Break)",
+      "Target Yield": "7.3% Net Initial Yield",
+      "Floor Loading": "4.0 kN/sq m + 1.0 kN/sq m Partitioning"
+    },
+    "seo": {
+      "metaTitle": "The Luminary Mayfair – Freehold Prime Commercial Headquarters London",
+      "metaDescription": "Prime Mayfair commercial investment. 48,500 sq ft BREEAM Outstanding Grade-A office building on Berkeley Square. Price: ₹88,00,00,000 (₹88 Cr).",
+      "keywords": [
+        "Mayfair commercial property",
+        "London trophy office investment",
+        "Berkeley Square commercial"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-01-20T09:00:00.000Z",
+    "updatedAt": "2025-06-01T11:00:00.000Z",
+    "isTrophyHolding": true,
+    "trophyOrder": 3,
+    "displayOrder": 3,
+    "isLatestAdded": false,
+    "locationId": "loc-london"
+  },
+  {
+    "id": "prop-004",
+    "slug": "tenuta-di-montalcino-wine-estate-tuscany",
+    "title": "Tenuta di Montalcino Vineyard Estate",
+    "subtitle": "Century-Old Tuscan Heritage Estate with DOCG Brunello Vineyards",
+    "description": "Set amidst 145 pristine private acres in the heart of the Val d'Orcia UNESCO biosphere, Tenuta di Montalcino stands as one of Italy's most noble viticultural estates. The property features a masterfully restored 16th-century stone villa of 14,800 square feet, a state-of-the-art gravity-fed winemaking facility producing 65,000 bottles annually of internationally acclaimed Brunello di Montalcino DOCG, 28 acres of certified organic olive groves producing DOP extra virgin oil, a private helipad, and guest cottages.",
+    "price": 360000000,
+    "currency": "INR",
+    "category": "Plots/Land",
+    "propertyType": "Historic Estate",
+    "status": "Published",
+    "featured": true,
+    "isNewDevelopment": false,
+    "address": "Strada Provinciale del Brunello 22",
+    "city": "Montalcino",
+    "stateRegion": "Tuscany",
+    "country": "Italy",
+    "postalCode": "53024",
+    "coordinates": {
+      "lat": 43.0583,
+      "lng": 11.4886
+    },
+    "bedrooms": 12,
+    "bathrooms": 14,
+    "interiorAreaSqFt": 18400,
+    "lotSizeAcres": 145,
+    "yearBuilt": 1584,
+    "parkingSpaces": 10,
+    "energyRating": "B",
+    "images": [
+      {
+        "id": "img-004-1",
+        "url": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Cypress-Lined Approach to Main Villa & Rolling Sangiovese Vineyards",
+        "isPrimary": true
+      },
+      {
+        "id": "img-004-2",
+        "url": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Historic Stone Courtyard with Traditional Tuscan Pergola",
+        "isPrimary": false
+      },
+      {
+        "id": "img-004-3",
+        "url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Restored Reception Hall with Original Terracotta & Timber Beams",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "Certified Organic Brunello di Montalcino DOCG Vineyards (42 Acres)",
+      "Gravity-Fed Modern Cantina & Oak Barrel Aging Cellars",
+      "Private Helipad (ICAO Registered Landing Area)",
+      "1,200 Century-Old Olive Trees (DOP Terre di Siena)",
+      "Two Detached Guest Farmhouses (4 Additional Suites)",
+      "20m Saltwater Infinity Pool Overlooking Orcia Valley",
+      "Equestrian Stables & Private Riding Arena",
+      "Private Truffle Reserve & Natural Thermal Spring"
+    ],
+    "specifications": {
+      "Total Land Area": "145 Hectares / 358 Acres",
+      "Vineyard Classification": "Brunello di Montalcino DOCG & Rosso di Montalcino",
+      "Current Production": "65,000 bottles/year with global distribution",
+      "Restoration Period": "2019-2022 supervised by Monuments Heritage Board",
+      "Agricultural Machinery": "Full fleet of Pellenc & Fendt vineyard equipment included"
+    },
+    "seo": {
+      "metaTitle": "Tenuta di Montalcino – Brunello DOCG Vineyard Estate Tuscany",
+      "metaDescription": "145-acre historic Tuscan estate in Montalcino with Brunello DOCG vineyards, 16th-century restored villa, cantina, and helipad. Price: ₹36,00,00,000 (₹36 Cr).",
+      "keywords": [
+        "Tuscany vineyard for sale",
+        "Montalcino wine estate",
+        "Italian luxury historic property"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-02-15T08:00:00.000Z",
+    "updatedAt": "2025-05-20T12:00:00.000Z",
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "displayOrder": 4,
+    "isLatestAdded": false
+  },
+  {
+    "id": "prop-005",
+    "slug": "the-atlantis-royal-mansion-palm-jumeirah-dubai",
+    "title": "The Palm Royal Residence",
+    "subtitle": "Signature Beachfront Palace with Private Lagoon & Marina Berth",
+    "description": "Positioned on the tip of Palm Jumeirah's prime frond, The Palm Royal Residence is an unparalleled ultra-prime estate designed to exceed the highest standards of international sovereignty. With 16,500 square feet of curated bespoke interiors, this palace features 120 feet of private white sand beach frontage, a crystal-tiled 30m swimming pool, indoor cinema, private hamam, and garaging for seven hypercars. Expansive double-height glazing frames striking views of the Dubai Marina skyline and Arabian Gulf.",
+    "price": 1350000000,
+    "currency": "INR",
+    "category": "Residential",
+    "propertyType": "Mansion",
+    "status": "Published",
+    "featured": true,
+    "isNewDevelopment": true,
+    "address": "Frond N, Tip Residence 1",
+    "city": "Dubai",
+    "stateRegion": "Dubai",
+    "country": "United Arab Emirates",
+    "postalCode": "00000",
+    "coordinates": {
+      "lat": 25.1212,
+      "lng": 55.1293
+    },
+    "bedrooms": 7,
+    "bathrooms": 10,
+    "interiorAreaSqFt": 16500,
+    "lotSizeAcres": 0.55,
+    "yearBuilt": 2025,
+    "parkingSpaces": 7,
+    "energyRating": "A",
+    "images": [
+      {
+        "id": "img-005-1",
+        "url": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Waterfront Elevation & Private Arabian Gulf Shoreline",
+        "isPrimary": true
+      },
+      {
+        "id": "img-005-2",
+        "url": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Grand Entrance Foyer with Floating Sculptural Staircase",
+        "isPrimary": false
+      },
+      {
+        "id": "img-005-3",
+        "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Private Wellness Suite, Hammam & Plunge Pool",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "120 Feet Private White Sand Beachfront",
+      "Private 80ft Superyacht Mooring Slip",
+      "Subterranean 7-Car Climate Showroom",
+      "Custom Turkish Marble Hammam & Cryotherapy Chamber",
+      "14-Seat Dolby Atmos Cinema with Starlight Ceiling",
+      "Separate Staff Quarters (Accommodates 6 Staff)",
+      "Solar Reflective Ceramic Thermal Facade",
+      "24/7 Gated Frond Security & Marine Patrol"
+    ],
+    "specifications": {
+      "Interior Finishing": "Minotti Custom Furniture & Lalique Crystal Accents",
+      "Kitchen": "Dual Show Kitchen & Commercial Back Catering Kitchen",
+      "Sanitary Ware": "Antonio Lupi & Dornbracht Champagne Bronze",
+      "Security": "FLIR Thermal Perimeter Imaging & Safe Room Vault"
+    },
+    "seo": {
+      "metaTitle": "The Palm Royal Residence – Ultra Luxury Waterfront Mansion Dubai",
+      "metaDescription": "16,500 sq ft beachfront mansion on Palm Jumeirah with 120ft private beach, superyacht slip, and 7-car showroom. Price: ₹135,00,00,000 (₹135 Cr).",
+      "keywords": [
+        "Palm Jumeirah mansion for sale",
+        "Dubai ultra luxury property",
+        "Dubai waterfront villa"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-03-01T12:00:00.000Z",
+    "updatedAt": "2025-06-12T18:00:00.000Z",
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "displayOrder": 5,
+    "isLatestAdded": false,
+    "locationId": "loc-dubai"
+  },
+  {
+    "id": "prop-006",
+    "slug": "the-alpen-sanctuary-aspen-colorado",
+    "title": "The Alpen Sanctuary Chalet",
+    "subtitle": "Ski-In/Ski-Out Architectural Chalet on Red Mountain",
+    "description": "Perched on Aspen's iconic Red Mountain with direct private ski access to premier slopes, The Alpen Sanctuary seamlessly integrates alpine heritage with modernist steel and cedar architecture. Floor-to-ceiling glass pavilions frame sweeping vistas of Aspen Mountain and the Roaring Fork Valley. Featuring a radiant heated stone motor court, indoor oxygen-enriched athletic pavilion, hot spring-inspired outdoor thermal pool, and custom timber wine grotto.",
+    "price": 387500000,
+    "currency": "INR",
+    "category": "Residential",
+    "propertyType": "Chalet",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": false,
+    "address": "840 Willoughby Way, Red Mountain",
+    "city": "Aspen",
+    "stateRegion": "Colorado",
+    "country": "United States",
+    "postalCode": "81611",
+    "coordinates": {
+      "lat": 39.1994,
+      "lng": -106.8286
+    },
+    "bedrooms": 6,
+    "bathrooms": 8,
+    "interiorAreaSqFt": 10800,
+    "lotSizeAcres": 1.6,
+    "yearBuilt": 2023,
+    "parkingSpaces": 4,
+    "energyRating": "A",
+    "images": [
+      {
+        "id": "img-006-1",
+        "url": "https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Timber & Granite Chalet Facade in Winter Sunset",
+        "isPrimary": true
+      },
+      {
+        "id": "img-006-2",
+        "url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Great Room with 24-Foot Colorado Fieldstone Fireplace",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "Direct Ski-In / Ski-Out Access via Private Trail",
+      "Oxygen-Enriched Primary Suite & Guest Rooms",
+      "Outdoor Thermal Heated Plunge Pool & Cedar Sauna",
+      "Dedicated Ski Equipment Locker Room with Boot Warmers",
+      "Sub-Zero & Wolf Commercial Chef’s Kitchen",
+      "Hydronic Heated Driveway & Patios",
+      "Full Security Perimeter & Concierge Dispatch"
+    ],
+    "specifications": {
+      "Timber": "Reclaimed Hand-Hewn Western Douglas Fir",
+      "Stone": "Locally Quarried Telluride Gold Granite",
+      "Elevation": "8,200 Feet Above Sea Level",
+      "Heating": "Multi-Zone Geothermal Radiant Floor"
+    },
+    "seo": {
+      "metaTitle": "The Alpen Sanctuary – Ultra-Luxury Ski Chalet Red Mountain Aspen",
+      "metaDescription": "10,800 sq ft ski-in/ski-out architectural chalet on Red Mountain with unobstructed Aspen Mountain views. Price: ₹38,75,00,000 (₹38.75 Cr).",
+      "keywords": [
+        "Aspen luxury ski chalet",
+        "Red Mountain Aspen real estate",
+        "Colorado luxury estate"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-01-28T14:00:00.000Z",
+    "updatedAt": "2025-05-15T10:00:00.000Z",
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "displayOrder": 6,
+    "isLatestAdded": false
+  },
+  {
+    "id": "prop-007",
+    "slug": "cape-d-antibes-seaside-promontory-france",
+    "title": "Cap d'Antibes Seafront Peninsula",
+    "subtitle": "Ultra-Prime Development Parcel with Approved Architectural Permits",
+    "description": "One of the final undeveloped seafront peninsulas on the French Riviera. Spanning 4.8 private coastal hectares on the tip of Cap d'Antibes, this extraordinary parcel holds full planning permissions (Permis de Construire purgé de tout recours) for a 2,200 sq m contemporary trophy residence, guest villas, 40m seaside pool, and private tender dock. Unrivaled 270-degree Mediterranean horizon views toward the Lérins Islands and Cannes Bay.",
+    "price": 620000000,
+    "currency": "INR",
+    "category": "Plots/Land",
+    "propertyType": "Development Parcel",
+    "status": "Published",
+    "featured": false,
+    "isNewDevelopment": false,
+    "address": "Chemin des Douaniers, Cap d'Antibes",
+    "city": "Antibes",
+    "stateRegion": "Provence-Alpes-Côte d'Azur",
+    "country": "France",
+    "postalCode": "06160",
+    "coordinates": {
+      "lat": 43.5512,
+      "lng": 7.1264
+    },
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "interiorAreaSqFt": 0,
+    "lotSizeAcres": 11.8,
+    "parkingSpaces": 0,
+    "images": [
+      {
+        "id": "img-007-1",
+        "url": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Aerial View of Private Promontory & Mediterranean Coastline",
+        "isPrimary": true
+      },
+      {
+        "id": "img-007-2",
+        "url": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Centuries-Old Mediterranean Maritime Pines & Limestone Cliffs",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "Approved Building License for 2,200 sq m Villa",
+      "Direct Private Sea Access & Tender Mooring Permit",
+      "Mature Pine Forest & Landscaped Botanical Parkland",
+      "Subterranean Infrastructure & High-Capacity Utility Feeds",
+      "Private Gatehouse & Perimeter Security Cleared"
+    ],
+    "specifications": {
+      "Buildable Footprint": "2,200 sq m (23,680 sq ft) gross external area",
+      "Zoning": "Zone Remarquable du Littoral (ZRL) with Grandfathered Permit",
+      "Seafront Frontage": "340 Linear Meters Private Coastal Line",
+      "Title": "Freehold French SCI Asset Transfer Available"
+    },
+    "seo": {
+      "metaTitle": "Cap d'Antibes Seafront Peninsula – Prime Land Development French Riviera",
+      "metaDescription": "11.8 acres of private seafront land on Cap d'Antibes with approved permits for a 2,200 sq m luxury villa. Price: ₹62,00,00,000 (₹62 Cr).",
+      "keywords": [
+        "Cap d Antibes land for sale",
+        "French Riviera seafront plot",
+        "Cote d Azur development parcel"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-02-10T15:00:00.000Z",
+    "updatedAt": "2025-05-25T11:00:00.000Z",
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "displayOrder": 7,
+    "isLatestAdded": false
+  },
+  {
+    "id": "prop-008",
+    "slug": "the-aurora-residences-zurichberg-switzerland",
+    "title": "The Aurora Residences Zürichberg",
+    "subtitle": "Limited Collection of 8 Low-Carbon Architectural Residences",
+    "description": "An exclusive new development overlooking Lake Zurich and the Swiss Alps, The Aurora Residences set a new global benchmark for low-carbon luxury living. Conceived by Pritzker-laureate collaborators, each residence benefits from expansive floor-to-ceiling triple glazing, private gardens or penthouse rooftop solariums, dedicated geothermal heating with zero operational carbon footprint, and personalized concierge services provided by The Dolder Grand.",
+    "price": 189000000,
+    "currency": "INR",
+    "category": "New Projects",
+    "propertyType": "Penthouse",
+    "status": "Published",
+    "featured": true,
+    "isNewDevelopment": true,
+    "address": "Zürichbergstrasse 118",
+    "city": "Zurich",
+    "stateRegion": "Canton of Zurich",
+    "country": "Switzerland",
+    "postalCode": "8044",
+    "coordinates": {
+      "lat": 47.3769,
+      "lng": 8.5683
+    },
+    "bedrooms": 4,
+    "bathrooms": 5,
+    "interiorAreaSqFt": 4650,
+    "lotSizeAcres": 0.15,
+    "yearBuilt": 2026,
+    "parkingSpaces": 3,
+    "energyRating": "A+",
+    "images": [
+      {
+        "id": "img-008-1",
+        "url": "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Architectural Bronze Facade with Lake Zurich Alpine Backdrop",
+        "isPrimary": true
+      },
+      {
+        "id": "img-008-2",
+        "url": "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1600&q=80",
+        "caption": "Minimalist Swiss Interior with Smoked Oak & Calacatta Oro",
+        "isPrimary": false
+      }
+    ],
+    "amenities": [
+      "Private Dolder Grand VIP Hotel & Spa Concierge Membership",
+      "Geothermal Deep-Borehole Heating & Free-Cooling System",
+      "Lake Zurich Panoramic Rooftop Solarium & Plunge Pool",
+      "Biometric Keyless Access & Dedicated Private Lift",
+      "Underground EV Rapid-Charging Bays (32A)",
+      "Subterranean Private Wine Vault & Degustation Room"
+    ],
+    "specifications": {
+      "Completion Date": "Q4 2026 (Under Active Construction)",
+      "Certification": "Swiss Minergie-P-ECO Platinum Standard",
+      "Acoustic Attenuation": "Class 1 SIA 181 Sound Insulation",
+      "Developer": "Nordic Alpine Development AG & Foster Partners"
+    },
+    "seo": {
+      "metaTitle": "The Aurora Residences – Lake Zurich Luxury New Development Switzerland",
+      "metaDescription": "Exclusive 4-bedroom architectural residence on Zürichberg with Lake Zurich & Alps views, Minergie-P-ECO rating. Price: ₹18,90,00,000 (₹18.9 Cr).",
+      "keywords": [
+        "Zurich luxury apartment",
+        "Zurichberg real estate",
+        "Swiss luxury property"
+      ]
+    },
+    "source": {
+      "type": "manual",
+      "lastSyncedAt": "2026-11-05T13:45:21.077Z"
+    },
+    "createdAt": "2025-03-10T10:00:00.000Z",
+    "updatedAt": "2025-06-15T15:00:00.000Z",
+    "isTrophyHolding": false,
+    "trophyOrder": 99,
+    "displayOrder": 8,
+    "isLatestAdded": false,
+    "locationId": "loc-zurich"
+  }
+]

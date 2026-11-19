@@ -1,0 +1,406 @@
+/**
+ * BUILDsmore Luxury Real Estate Platform
+ * Main Application Root
+ */
+
+import React, { useState, useEffect } from 'react';
+import { storage } from './services/storage';
+import { Property, AdminUser, CuratedCollection } from './types/property';
+import { CurrencyProvider } from './context/CurrencyContext';
+import { Navbar } from './components/layout/Navbar';
+import { Footer } from './components/layout/Footer';
+import { HomePage } from './pages/HomePage';
+import { PropertiesPage } from './pages/PropertiesPage';
+import { PropertyDetailPage } from './pages/PropertyDetailPage';
+import { CategoryPage } from './pages/CategoryPage';
+import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
+import { LegalPage } from './pages/LegalPage';
+import { CollectionDetailPage } from './pages/CollectionDetailPage';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminLoginModal } from './pages/admin/AdminLoginModal';
+import { PrivateInquiryModal } from './components/inquiry/PrivateInquiryModal';
+import { NotFoundPage } from './components/common/NotFoundPage';
+import { applyDocumentSeo, normalizePathname, resolveSeoForRoute } from './utils/seo';
+
+export default function App() {
+  const [properties, setProperties] = useState<Property[]>(() => storage.getProperties());
+  const [collections, setCollections] = useState<CuratedCollection[]>(() => storage.getCollections(true));
+  const [catalogSynced, setCatalogSynced] = useState<boolean>(false);
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return normalizePathname(window.location.pathname || '/');
+    }
+    return '/';
+  });
+
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(() => storage.getCurrentAdmin());
+  const [adminLoginOpen, setAdminLoginOpen] = useState(false);
+  const [privateInquiryOpen, setPrivateInquiryOpen] = useState(false);
+  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(() => {
+    try {
+      const data = localStorage.getItem('buildsmore_saved_properties');
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Synchronize frontend catalog with persistent backend repository on startup
+  useEffect(() => {
+    let active = true;
+    storage
+      .syncWithServer()
+      .then((synced) => {
+        if (!active) return;
+        if (Array.isArray(synced)) {
+          setProperties(synced);
+        }
+        setCollections(storage.getCollections(true));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setCatalogSynced(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Keep state synced with browser history
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = normalizePathname(window.location.pathname || '/');
+      setCurrentPath(path);
+      resolveRoute(path);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    resolveRoute(normalizePathname(window.location.pathname || '/'));
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [properties]);
+
+  // Apply dynamic SEO title, meta description, canonical, and social tags on every route
+  useEffect(() => {
+    const path = normalizePathname(currentPath);
+    const isDynamicEntityRoute = path.startsWith('/property/') || path.startsWith('/collection/');
+    const seo = resolveSeoForRoute(path, { properties, collections });
+    if (isDynamicEntityRoute && seo.isNotFound && !catalogSynced) {
+      return;
+    }
+    applyDocumentSeo(seo);
+  }, [currentPath, properties, collections, catalogSynced]);
+
+  const navigate = (rawPath: string) => {
+    const path = normalizePathname(rawPath);
+    if (normalizePathname(window.location.pathname) !== path) {
+      window.history.pushState({}, '', path);
+    }
+    setCurrentPath(path);
+    resolveRoute(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resolveRoute = (rawPath: string) => {
+    const path = normalizePathname(rawPath);
+    if (path.startsWith('/property/')) {
+      const slug = decodeURIComponent(path.slice('/property/'.length));
+      const found = properties.find(p => p.slug === slug || p.id === slug);
+      setSelectedProperty(found || null);
+    } else {
+      setSelectedProperty(null);
+    }
+  };
+
+  const handleSelectProperty = (property: Property) => {
+    setSelectedProperty(property);
+    navigate(`/property/${property.slug}`);
+  };
+
+  const handleToggleSave = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSavedPropertyIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      localStorage.setItem('buildsmore_saved_properties', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const handleRefreshProperties = () => {
+    const fresh = storage.getProperties();
+    setProperties(fresh);
+    setCollections(storage.getCollections(true));
+    if (selectedProperty) {
+      const updatedSelected = fresh.find(p => p.id === selectedProperty.id);
+      if (updatedSelected) setSelectedProperty(updatedSelected);
+    }
+  };
+
+  const handleOpenAdmin = () => {
+    if (adminUser) {
+      navigate('/admin');
+    } else {
+      setAdminLoginOpen(true);
+    }
+  };
+
+  const handleAdminLoginSuccess = (user: AdminUser) => {
+    setAdminUser(user);
+    navigate('/admin');
+  };
+
+  const handleAdminLogout = () => {
+    storage.logoutAdmin();
+    setAdminUser(null);
+    navigate('/');
+  };
+
+  // Determine active view
+  const renderCurrentView = () => {
+    const path = normalizePathname(currentPath);
+
+    // 1. Admin view
+    if (path === '/admin') {
+      if (!adminUser) {
+        return (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
+            <h2 className="font-serif text-3xl font-normal text-white">
+              Restricted Administrative Terminal
+            </h2>
+            <p className="text-xs text-[#8a909a] max-w-sm">
+              Please authenticate with verified administrator credentials to access portfolio operations.
+            </p>
+            <button
+              onClick={() => setAdminLoginOpen(true)}
+              className="px-6 py-2.5 bg-[#c5a059] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm cursor-pointer"
+            >
+              Sign In to Admin Workspace
+            </button>
+          </div>
+        );
+      }
+      return (
+        <AdminDashboard
+          adminUser={adminUser}
+          onLogout={handleAdminLogout}
+          onViewProperty={handleSelectProperty}
+          properties={properties}
+          onRefreshProperties={handleRefreshProperties}
+        />
+      );
+    }
+
+    // 2. Property Detail view (never fall back to HomePage for invalid slugs)
+    if (path.startsWith('/property/')) {
+      const slugOrId = decodeURIComponent(path.slice('/property/'.length));
+      const matchedProperty =
+        properties.find(p => p.slug === slugOrId || p.id === slugOrId) ||
+        (selectedProperty && (selectedProperty.slug === slugOrId || selectedProperty.id === slugOrId)
+          ? selectedProperty
+          : null);
+
+      if (matchedProperty) {
+        return (
+          <PropertyDetailPage
+            property={matchedProperty}
+            onBack={() => navigate('/properties')}
+            onNavigateCategory={(cat) => {
+              const normalized = cat.toLowerCase().trim();
+              if (normalized === 'plotsland' || normalized === 'plots/land') {
+                navigate('/category/land');
+              } else if (normalized === 'new projects' || normalized === 'newprojects') {
+                navigate('/category/developments');
+              } else {
+                navigate(`/category/${normalized}`);
+              }
+            }}
+            isSaved={savedPropertyIds.includes(matchedProperty.id)}
+            onToggleSave={handleToggleSave}
+            onSelectProperty={handleSelectProperty}
+            allProperties={properties}
+          />
+        );
+      }
+
+      if (!catalogSynced) {
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]">
+            Loading Property Dossier...
+          </div>
+        );
+      }
+
+      return <NotFoundPage requestedPath={path} onNavigate={navigate} />;
+    }
+
+    // 2.5. Curated Collection Detail view (never fall back to HomePage for invalid slugs)
+    if (path.startsWith('/collection/')) {
+      const slug = decodeURIComponent(path.slice('/collection/'.length));
+      const collection =
+        collections.find(c => c.slug === slug || c.id === slug) ||
+        storage.getCollectionBySlug(slug) ||
+        storage.getCollections(true).find(c => c.id === slug || c.slug === slug);
+
+      if (collection) {
+        return (
+          <CollectionDetailPage
+            collection={collection}
+            properties={properties}
+            onSelectProperty={handleSelectProperty}
+            onNavigateHome={() => navigate('/')}
+            savedIds={savedPropertyIds}
+            onToggleSave={handleToggleSave}
+          />
+        );
+      }
+
+      if (!catalogSynced) {
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]">
+            Loading Curated Collection...
+          </div>
+        );
+      }
+
+      return <NotFoundPage requestedPath={path} onNavigate={navigate} />;
+    }
+
+    // 3. Category pages
+    if (path === '/category/residential') {
+      return (
+        <CategoryPage
+          category="Residential"
+          properties={properties}
+          onSelectProperty={handleSelectProperty}
+          onNavigateHome={() => navigate('/')}
+          savedIds={savedPropertyIds}
+          onToggleSave={handleToggleSave}
+        />
+      );
+    }
+    if (path === '/category/commercial') {
+      return (
+        <CategoryPage
+          category="Commercial"
+          properties={properties}
+          onSelectProperty={handleSelectProperty}
+          onNavigateHome={() => navigate('/')}
+          savedIds={savedPropertyIds}
+          onToggleSave={handleToggleSave}
+        />
+      );
+    }
+    if (path === '/category/land') {
+      return (
+        <CategoryPage
+          category="Plots/Land"
+          properties={properties}
+          onSelectProperty={handleSelectProperty}
+          onNavigateHome={() => navigate('/')}
+          savedIds={savedPropertyIds}
+          onToggleSave={handleToggleSave}
+        />
+      );
+    }
+    if (path === '/category/developments') {
+      return (
+        <CategoryPage
+          category="New Projects"
+          properties={properties}
+          onSelectProperty={handleSelectProperty}
+          onNavigateHome={() => navigate('/')}
+          savedIds={savedPropertyIds}
+          onToggleSave={handleToggleSave}
+        />
+      );
+    }
+
+    // 4. Portfolio Listing page
+    if (path === '/properties') {
+      return (
+        <PropertiesPage
+          properties={properties}
+          onSelectProperty={handleSelectProperty}
+          savedIds={savedPropertyIds}
+          onToggleSave={handleToggleSave}
+        />
+      );
+    }
+
+    // 5. About & Advisory
+    if (path === '/about') {
+      return <AboutPage />;
+    }
+
+    // 6. Contact & Offices
+    if (path === '/contact') {
+      return <ContactPage />;
+    }
+
+    // 7. Legal
+    if (path === '/privacy') {
+      return <LegalPage type="privacy" />;
+    }
+    if (path === '/terms') {
+      return <LegalPage type="terms" />;
+    }
+
+    // 8. Luxury Homepage
+    if (path === '/') {
+      return (
+        <HomePage
+          properties={properties}
+          onSelectProperty={handleSelectProperty}
+          onNavigate={navigate}
+          savedIds={savedPropertyIds}
+          onToggleSave={handleToggleSave}
+        />
+      );
+    }
+
+    // 9. Genuine 404 page for any unrecognized route
+    return <NotFoundPage requestedPath={path} onNavigate={navigate} />;
+  };
+
+  return (
+    <CurrencyProvider>
+      <div className="min-h-screen flex flex-col bg-[#0c0f12] text-[#f7f5f2] selection:bg-[#c5a059]/30 selection:text-[#f7f5f2]">
+        
+        {/* Universal Top Bar */}
+        <Navbar
+          currentPath={currentPath}
+          onNavigate={navigate}
+          onOpenAdmin={handleOpenAdmin}
+          isAdminLoggedIn={Boolean(adminUser)}
+          onLogout={handleAdminLogout}
+          onOpenInquiry={() => setPrivateInquiryOpen(true)}
+        />
+
+        {/* Dynamic Route Viewport */}
+        <main className="flex-1">
+          {renderCurrentView()}
+        </main>
+
+        {/* Global Footer */}
+        <Footer onNavigate={navigate} />
+
+        {/* Admin Login Dialog */}
+        <AdminLoginModal
+          isOpen={adminLoginOpen}
+          onClose={() => setAdminLoginOpen(false)}
+          onLoginSuccess={handleAdminLoginSuccess}
+        />
+
+        {/* Private Inquiry Popup Dialog */}
+        <PrivateInquiryModal
+          isOpen={privateInquiryOpen}
+          onClose={() => setPrivateInquiryOpen(false)}
+          propertyTitle={selectedProperty?.title}
+        />
+
+      </div>
+    </CurrencyProvider>
+  );
+}

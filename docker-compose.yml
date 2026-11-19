@@ -1,0 +1,87 @@
+services:
+  # BUILDsmore Next.js / Node.js 22 LTS Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://buildsmore_admin:LuxurySecured2026@postgres:5432/buildsmore_db?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=https://s3.eu-central-1.amazonaws.com
+      - S3_BUCKET=buildsmore-properties-media
+      - S3_REGION=eu-central-1
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - JWT_SECRET=${JWT_SECRET:-luxury_estate_jwt_secret_change_in_prod}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - buildsmore-net
+
+  # PostgreSQL 16 Enterprise Database
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=buildsmore_db
+      - POSTGRES_USER=buildsmore_admin
+      - POSTGRES_PASSWORD=LuxurySecured2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/db/migrations/0001_initial_schema.sql:/docker-entrypoint-initdb.d/01-init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildsmore_admin -d buildsmore_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - buildsmore-net
+
+  # Redis 7 for BullMQ Asynchronous Background Jobs & Caching
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - buildsmore-net
+
+  # Nginx Reverse Proxy with SSL termination & asset caching
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - buildsmore-net
+
+networks:
+  buildsmore-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
