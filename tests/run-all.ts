@@ -13,6 +13,7 @@ import { runPhase2SeoTests } from './seo-phase2.test';
 import { runSecurityProductionTests } from './security-production.test';
 import { runBlogTests } from './blog.test';
 import { runRoutingTests } from './routing.test';
+import { runHeroSliderTests } from './hero-slider.test';
 import './location-management.test';
 
 async function main() {
@@ -90,6 +91,13 @@ async function main() {
     if (r.error) console.error(`    Error: ${r.error}`);
   });
 
+  console.log('\nRunning Dynamic Hero Banner Slider CRUD, Fallback & SSR Tests...');
+  const heroSliderResults = await runHeroSliderTests();
+  heroSliderResults.results.forEach((r) => {
+    console.log(`  ${r.success ? '✓' : '✗'} ${r.name}`);
+    if (r.error) console.error(`    Error: ${r.error}`);
+  });
+
   const totalPassed =
     platformResults.passed +
     scraperResults.passed +
@@ -100,7 +108,8 @@ async function main() {
     seo2Results.passed +
     securityProdResults.passed +
     blogResults.passed +
-    routingResults.passed;
+    routingResults.passed +
+    heroSliderResults.passed;
   const totalFailed =
     platformResults.failed +
     scraperResults.failed +
@@ -111,7 +120,8 @@ async function main() {
     seo2Results.failed +
     securityProdResults.failed +
     blogResults.failed +
-    routingResults.failed;
+    routingResults.failed +
+    heroSliderResults.failed;
 
   console.log('\n========================================================');
   console.log(`Results: ${totalPassed} passed, ${totalFailed} failed out of ${totalPassed + totalFailed} tests.`);

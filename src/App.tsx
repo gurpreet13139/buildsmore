@@ -17,7 +17,7 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { storage, STORAGE_EVENTS } from './services/storage';
-import { BlogPost, Property, AdminUser, CuratedCollection } from './types/property';
+import { BlogPost, HeroSlide, Property, AdminUser, CuratedCollection } from './types/property';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -234,6 +234,8 @@ interface AdminRouteViewProps {
   onRefreshProperties: () => void;
   blogs: BlogPost[];
   onRefreshBlogs: () => void;
+  heroSlides: HeroSlide[];
+  onRefreshHeroSlides: () => void;
   onNavigate: (path: string) => void;
   currentPath: string;
 }
@@ -247,6 +249,8 @@ const AdminRouteView: React.FC<AdminRouteViewProps> = ({
   onRefreshProperties,
   blogs,
   onRefreshBlogs,
+  heroSlides,
+  onRefreshHeroSlides,
   onNavigate,
   currentPath,
 }) => {
@@ -286,6 +290,8 @@ const AdminRouteView: React.FC<AdminRouteViewProps> = ({
       onRefreshProperties={onRefreshProperties}
       blogs={blogs}
       onRefreshBlogs={onRefreshBlogs}
+      heroSlides={heroSlides}
+      onRefreshHeroSlides={onRefreshHeroSlides}
       activeTab={activeTab}
       onNavigate={onNavigate}
     />
@@ -323,6 +329,11 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
     Array.isArray(initialData?.blogs)
       ? initialData.blogs
       : storage.getBlogs(true)
+  );
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() =>
+    Array.isArray(initialData?.heroSlides)
+      ? initialData.heroSlides
+      : storage.getHeroSlides()
   );
   const [catalogSynced, setCatalogSynced] = useState<boolean>(() => Boolean(initialData));
 
@@ -457,6 +468,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
         setCollections(storage.getCollections(true));
         setTrophyHoldings(storage.getTrophyHoldings());
         setBlogs(storage.getBlogs(true));
+        setHeroSlides(storage.getHeroSlides());
       })
       .catch(() => {})
       .finally(() => {
@@ -525,6 +537,10 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
     setBlogs(storage.getBlogs(true));
   };
 
+  const handleRefreshHeroSlides = () => {
+    setHeroSlides(storage.getHeroSlides());
+  };
+
   const handleOpenAdmin = () => {
     if (adminUser) {
       navigate('/admin');
@@ -544,6 +560,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
         setCollections(storage.getCollections(true));
         setTrophyHoldings(storage.getTrophyHoldings());
         setBlogs(storage.getBlogs(true));
+        setHeroSlides(storage.getHeroSlides());
       })
       .catch(() => {});
     if (!(currentPath === '/admin' || currentPath.startsWith('/admin/'))) {
@@ -561,6 +578,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
         setCollections(storage.getCollections(true));
         setTrophyHoldings(storage.getTrophyHoldings());
         setBlogs(storage.getBlogs(true));
+        setHeroSlides(storage.getHeroSlides());
       })
       .catch(() => {});
     navigate('/');
@@ -591,6 +609,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
                   properties={properties}
                   collections={collections}
                   trophyHoldings={trophyHoldings}
+                  heroSlides={heroSlides}
                   onSelectProperty={handleSelectProperty}
                   onNavigate={navigate}
                   savedIds={savedPropertyIds}
@@ -731,6 +750,8 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
                   onRefreshProperties={handleRefreshProperties}
                   blogs={blogs}
                   onRefreshBlogs={handleRefreshBlogs}
+                  heroSlides={heroSlides}
+                  onRefreshHeroSlides={handleRefreshHeroSlides}
                   onNavigate={navigate}
                   currentPath={currentPath}
                 />
@@ -748,6 +769,8 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
                   onRefreshProperties={handleRefreshProperties}
                   blogs={blogs}
                   onRefreshBlogs={handleRefreshBlogs}
+                  heroSlides={heroSlides}
+                  onRefreshHeroSlides={handleRefreshHeroSlides}
                   onNavigate={navigate}
                   currentPath={currentPath}
                 />

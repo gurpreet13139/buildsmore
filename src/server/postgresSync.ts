@@ -8,9 +8,10 @@
  */
 
 import { getDbPool } from './db';
-import { BlogPost, Property, PropertyImage } from '../types/property';
+import { BlogPost, HeroSlide, Property, PropertyImage } from '../types/property';
 import type { PropertyRepository } from './propertyRepository';
 import type { BlogRepository } from './blogRepository';
+import type { HeroSlideRepository } from './heroSlideRepository';
 
 function clip(val: string | undefined | null, maxLen: number): string {
   if (!val) return '';
@@ -664,3 +665,135 @@ export async function reconcileBlogsWithPostgres(
     };
   }
 }
+
+export const HERO_SLIDES_UPSERT_COLUMNS = [
+  'id',
+  'image_url',
+  'heading',
+  'description',
+  'display_order',
+  'created_at',
+  'updated_at',
+] as const;
+
+export async function syncHeroSlideToPostgres(
+  slide: HeroSlide,
+  poolOverride?: DbPoolLike
+): Promise<{ synced: boolean; error?: string }> {
+  const pool = poolOverride || getDbPool();
+  try {
+    const slideId = clip(slide.id, 64);
+    const safeCreatedAt = normalizeIsoTimestamp(slide.createdAt);
+    const safeUpdatedAt = normalizeIsoTimestamp(slide.updatedAt);
+
+    await pool.query(
+      `INSERT INTO hero_slides (
+         id, image_url, heading, description, display_order, created_at, updated_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (id) DO UPDATE SET
+         image_url = EXCLUDED.image_url,
+         heading = EXCLUDED.heading,
+         description = EXCLUDED.description,
+         display_order = EXCLUDED.display_order,
+         updated_at = EXCLUDED.updated_at`,
+      [
+        slideId,
+        String(slide.imageUrl || ''),
+        clip(slide.heading || '', 255),
+        String(slide.description || ''),
+        toSafeInt(slide.displayOrder, 0),
+        safeCreatedAt,
+        safeUpdatedAt,
+      ]
+    );
+    return { synced: true };
+  } catch (err: unknown) {
+    return { synced: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function syncAllHeroSlidesToPostgres(
+  slides: HeroSlide[],
+  poolOverride?: DbPoolLike
+): Promise<{ synced: boolean; count: number; error?: string }> {
+  const pool = poolOverride || getDbPool();
+  let count = 0;
+  try {
+    for (const slide of slides) {
+      const res = await syncHeroSlideToPostgres(slide, pool);
+      if (res.synced) count++;
+    }
+    return { synced: true, count };
+  } catch (err: unknown) {
+    return { synced: false, count, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function deleteHeroSlideFromPostgres(
+  slideId: string,
+  poolOverride?: DbPoolLike
+): Promise<{ deleted: boolean; error?: string }> {
+  const pool = poolOverride || getDbPool();
+  try {
+    await pool.query('DELETE FROM hero_slides WHERE id = $1', [clip(slideId, 64)]);
+    return { deleted: true };
+  } catch (err: unknown) {
+    return { deleted: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function reconcileHeroSlidesWithPostgres(
+  repo: HeroSlideRepository,
+  poolOverride?: DbPoolLike
+): Promise<{
+  connected: boolean;
+  restoredFromPg: number;
+  syncedToPg: number;
+  error?: string;
+}> {
+  const pool = poolOverride || getDbPool();
+  let restoredFromPg = 0;
+  let syncedToPg = 0;
+
+  try {
+    const pgRes = await pool.query('SELECT * FROM hero_slides ORDER BY display_order ASC, created_at ASC');
+    const diskSlides = repo.getAllSlides();
+    const diskById = new Map(diskSlides.map((s) => [s.id, s]));
+
+    for (const row of pgRes.rows || []) {
+      if (!diskById.has(row.id)) {
+        repo.upsertFromDatabaseRow(row);
+        restoredFromPg++;
+      }
+    }
+
+    const pgUpdatedMap = new Map<string, number>();
+    for (const row of pgRes.rows || []) {
+      const ts = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+      pgUpdatedMap.set(row.id, ts);
+    }
+
+    for (const slide of repo.getAllSlides()) {
+      const pgTs = pgUpdatedMap.get(slide.id);
+      const diskTs = slide.updatedAt ? new Date(slide.updatedAt).getTime() : 0;
+      if (pgTs === undefined || diskTs > pgTs + 1000) {
+        const res = await syncHeroSlideToPostgres(slide, pool);
+        if (res.synced) syncedToPg++;
+      }
+    }
+
+    return {
+      connected: true,
+      restoredFromPg,
+      syncedToPg,
+    };
+  } catch (err: unknown) {
+    return {
+      connected: false,
+      restoredFromPg,
+      syncedToPg,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+

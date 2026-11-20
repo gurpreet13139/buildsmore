@@ -226,3 +226,19 @@ export const blogs = pgTable('blogs', {
   index('idx_blogs_category').on(table.category),
 ]);
 
+/**
+ * Homepage Hero Banner Slides
+ */
+export const heroSlides = pgTable('hero_slides', {
+  id: varchar('id', { length: 64 }).primaryKey(),
+  imageUrl: text('image_url').notNull().default(''),
+  heading: varchar('heading', { length: 255 }).notNull().default(''),
+  description: text('description').notNull().default(''),
+  displayOrder: integer('display_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('idx_hero_slides_display_order').on(table.displayOrder),
+]);
+
+

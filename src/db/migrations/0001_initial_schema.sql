@@ -184,3 +184,17 @@ CREATE TABLE IF NOT EXISTS blogs (
 CREATE INDEX IF NOT EXISTS idx_blogs_status_published ON blogs(status, published_at);
 CREATE INDEX IF NOT EXISTS idx_blogs_category ON blogs(category);
 
+-- 9. Homepage Hero Banner Slides
+CREATE TABLE IF NOT EXISTS hero_slides (
+  id VARCHAR(64) PRIMARY KEY,
+  image_url TEXT NOT NULL DEFAULT '',
+  heading VARCHAR(255) NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_hero_slides_display_order ON hero_slides(display_order);
+
+

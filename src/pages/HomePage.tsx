@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { CuratedCollection, Property } from '../types/property';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CuratedCollection, HeroSlide, Property } from '../types/property';
 import { PropertyCard } from '../components/property/PropertyCard';
 import { HeroInquiryForm } from '../components/inquiry/HeroInquiryForm';
 import { LocationTabs } from '../components/property/LocationTabs';
 import { AppLink } from '../components/common/AppLink';
 import { useCurrency } from '../context/CurrencyContext';
 import { storage } from '../services/storage';
+import { DEFAULT_HERO_IMAGE_URL, resolveActiveHeroSlides } from '../utils/heroSlides';
 import { 
   Search, 
   ArrowRight, 
@@ -15,6 +16,7 @@ import {
   Lock, 
   MapPin, 
   KeyRound, 
+  ChevronLeft,
   ChevronRight,
   TrendingUp,
   Layers
@@ -24,6 +26,7 @@ interface HomePageProps {
   properties: Property[];
   collections?: CuratedCollection[];
   trophyHoldings?: Property[];
+  heroSlides?: HeroSlide[];
   onSelectProperty: (property: Property) => void;
   onNavigate: (path: string) => void;
   savedIds: string[];
@@ -34,12 +37,57 @@ export const HomePage: React.FC<HomePageProps> = ({
   properties,
   collections,
   trophyHoldings,
+  heroSlides,
   onSelectProperty,
   onNavigate,
   savedIds,
   onToggleSave,
 }) => {
   const { formatPrice } = useCurrency();
+
+  // Dynamic Hero Banner Slider State (strictly falls back to exact default banner if empty/incomplete)
+  const activeSlides = useMemo(() => resolveActiveHeroSlides(heroSlides), [heroSlides]);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [hasSlideTransitioned, setHasSlideTransitioned] = useState(false);
+  const [isHeroPaused, setIsHeroPaused] = useState(false);
+  const [failedSlideIds, setFailedSlideIds] = useState<Record<string, boolean>>({});
+
+  const safeSlideIndex = activeSlideIndex < activeSlides.length ? activeSlideIndex : 0;
+  const currentHeroSlide = activeSlides[safeSlideIndex] || activeSlides[0];
+  const hasMultipleSlides = activeSlides.length > 1;
+
+  useEffect(() => {
+    if (activeSlideIndex >= activeSlides.length) {
+      setActiveSlideIndex(0);
+    }
+  }, [activeSlides.length, activeSlideIndex]);
+
+  useEffect(() => {
+    if (!hasMultipleSlides || isHeroPaused) return;
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setHasSlideTransitioned(true);
+      setActiveSlideIndex((prev) => (prev + 1) % activeSlides.length);
+    }, 6500);
+
+    return () => window.clearInterval(timer);
+  }, [hasMultipleSlides, isHeroPaused, activeSlides.length]);
+
+  const handleGoToSlide = (nextIdx: number) => {
+    if (!hasMultipleSlides) return;
+    const wrapped = (nextIdx + activeSlides.length) % activeSlides.length;
+    if (wrapped !== safeSlideIndex) {
+      setHasSlideTransitioned(true);
+      setActiveSlideIndex(wrapped);
+    }
+  };
 
   // Location Tab Filter State
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
@@ -94,16 +142,56 @@ export const HomePage: React.FC<HomePageProps> = ({
   return (
     <div className="space-y-24 pb-20">
       
-      {/* 1. Hero Section with Cinematic Background & Search Interface */}
-      <section className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 pt-16 pb-24 overflow-hidden">
+      {/* 1. Hero Section with Cinematic Background Slider & Search Interface */}
+      <section
+        className="relative min-h-[90vh] flex flex-col justify-center items-center px-6 pt-16 pb-24 overflow-hidden"
+        onMouseEnter={() => setIsHeroPaused(true)}
+        onMouseLeave={() => setIsHeroPaused(false)}
+        onFocusCapture={() => setIsHeroPaused(true)}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            setIsHeroPaused(false);
+          }
+        }}
+      >
         
-        {/* Background Image with Deep Luxury Gradient Scrim */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85"
-            alt="BUILDsmore Luxury Architecture"
-            className="w-full h-full object-cover object-center filter brightness-[0.4] scale-105 transform animate-fade-in"
-          />
+        {/* Background Image(s) with Cinematic 20s Breathing Zoom, Living-Sky Clouds/Sunlight & Deep Luxury Gradient Scrim */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="hero-cinematic-stage absolute inset-0">
+            {activeSlides.map((slide, idx) => {
+              const isActive = idx === safeSlideIndex;
+              const resolvedSrc = failedSlideIds[slide.id]
+                ? DEFAULT_HERO_IMAGE_URL
+                : slide.imageUrl;
+
+              return (
+                <img
+                  key={slide.id}
+                  src={resolvedSrc}
+                  alt={slide.heading || 'BUILDsmore Luxury Architecture'}
+                  onError={() => {
+                    if (!failedSlideIds[slide.id]) {
+                      setFailedSlideIds((prev) => ({ ...prev, [slide.id]: true }));
+                    }
+                  }}
+                  className={`absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.4] transition-opacity duration-1000 ease-in-out ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              );
+            })}
+
+            {/* Sky-Masked Atmospheric Layers (strictly confined to sky; architectural building stays completely stable & unchanged) */}
+            <div className="hero-living-sky-mask absolute inset-0 overflow-hidden" aria-hidden="true">
+              <div className="hero-sun-glow" />
+              <div className="hero-light-rays-primary" />
+              <div className="hero-light-rays-secondary" />
+              <div className="hero-cloud-haze" />
+              <div className="hero-cloud-layer-far" />
+              <div className="hero-cloud-layer-near" />
+            </div>
+          </div>
+
           <div className="absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-[#0c0f12]/30" />
           <div className="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-[#0c0f12]/80" />
         </div>
@@ -125,14 +213,18 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
             </div>
 
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-normal text-[#f7f5f2] tracking-tight leading-[1.08] text-balance">
-              Architectural Landmarks & Private Havens
-            </h1>
+            <div
+              key={currentHeroSlide.id}
+              className={`space-y-6 ${hasSlideTransitioned ? 'hero-slide-copy-enter' : ''}`}
+            >
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-normal text-[#f7f5f2] tracking-tight leading-[1.08] text-balance">
+                {currentHeroSlide.heading}
+              </h1>
 
-            <p className="text-sm sm:text-base md:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-              Representing the world’s most significant residential estates, sky penthouses, 
-              and commercial trophy assets with automated multi-registry synchronization.
-            </p>
+              <p className="text-sm sm:text-base md:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                {currentHeroSlide.description}
+              </p>
+            </div>
 
             {/* Integrated Search Console (Preserved unchanged) */}
             <div className="pt-4 w-full max-w-3xl mx-auto lg:mx-0">
@@ -202,6 +294,58 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
               </form>
             </div>
+
+            {/* Subtle Luxury Slider Controls (shown only when 2+ custom slides are active) */}
+            {hasMultipleSlides && (
+              <div
+                className="pt-2 flex items-center justify-center lg:justify-start gap-4"
+                aria-label="Hero banner slide navigation"
+              >
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleGoToSlide(safeSlideIndex - 1)}
+                    aria-label="Previous hero slide"
+                    className="w-8 h-8 rounded-sm bg-[#12161d]/80 hover:bg-[#1a222d] border border-[#2b3543] hover:border-[#c5a059]/70 text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleGoToSlide(safeSlideIndex + 1)}
+                    aria-label="Next hero slide"
+                    className="w-8 h-8 rounded-sm bg-[#12161d]/80 hover:bg-[#1a222d] border border-[#2b3543] hover:border-[#c5a059]/70 text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2" role="tablist" aria-label="Select hero slide">
+                  {activeSlides.map((slide, idx) => {
+                    const isCurrent = idx === safeSlideIndex;
+                    return (
+                      <button
+                        key={slide.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isCurrent}
+                        aria-label={`Go to slide ${idx + 1}: ${slide.heading}`}
+                        onClick={() => handleGoToSlide(idx)}
+                        className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                          isCurrent
+                            ? 'w-8 bg-[#c5a059]'
+                            : 'w-2 bg-white/30 hover:bg-white/60'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+
+                <span className="text-[11px] font-mono text-[#8a909a] tabular-nums">
+                  {String(safeSlideIndex + 1).padStart(2, '0')} / {String(activeSlides.length).padStart(2, '0')}
+                </span>
+              </div>
+            )}
 
           </div>
 

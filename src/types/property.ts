@@ -368,3 +368,14 @@ export interface BlogPost {
   updatedAt: string;
 }
 
+export interface HeroSlide {
+  id: string;
+  imageUrl: string;
+  heading: string;
+  description: string;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+

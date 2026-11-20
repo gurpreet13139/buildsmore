@@ -1,8 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { renderToString } from "react-dom/server";
 import { Link, MemoryRouter, Navigate, Route, Routes, StaticRouter, useInRouterContext, useLocation, useNavigate, useNavigationType, useParams, useSearchParams } from "react-router-dom";
-import { Fragment, jsxDEV } from "react/jsx-dev-runtime";
-import { AlertCircle, AlertTriangle, Anchor, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Bath, Bed, BookOpen, Bookmark, Building, Building2, Calculator, Calendar, Car, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Download, Edit, Edit3, ExternalLink, Eye, EyeOff, FileCheck2, FileSpreadsheet, FileText, Globe, Image, KeyRound, Layers, LayoutGrid, List, Lock, LogOut, Mail, MapPin, Maximize2, Menu, MessageCircle, MessageSquare, Phone, PhoneCall, Plane, Play, Plus, Printer, RefreshCw, RotateCcw, Save, Search, Send, Settings, Share2, Shield, ShieldCheck, Sparkles, Star, Tag, Trash2, TrendingUp, Trophy, Upload, User, X, Zap } from "lucide-react";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { AlertCircle, AlertTriangle, Anchor, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Bath, Bed, BookOpen, Bookmark, Building, Building2, Calculator, Calendar, Car, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Download, Edit, Edit3, ExternalLink, Eye, EyeOff, FileCheck2, FileSpreadsheet, FileText, Globe, GripVertical, Image, Info, KeyRound, Layers, LayoutGrid, List, Lock, LogOut, Mail, MapPin, Maximize2, Menu, MessageCircle, MessageSquare, Phone, PhoneCall, Plane, Play, Plus, Printer, RefreshCw, RotateCcw, Save, Search, Send, Settings, Share2, Shield, ShieldCheck, Sparkles, Star, Tag, Trash2, TrendingUp, Trophy, Upload, User, X, Zap } from "lucide-react";
 // src/data/initialProperties.ts
 var INITIAL_PROPERTIES = [
 	{
@@ -1540,7 +1540,8 @@ var STORAGE_KEYS = {
 	ADMIN_JWT: "buildsmore_admin_jwt",
 	CURRENCY_PREF: "buildsmore_currency_pref_v1",
 	DELETED_IDS: "buildsmore_deleted_ids_v1",
-	BLOGS: "buildsmore_blogs_v1"
+	BLOGS: "buildsmore_blogs_v1",
+	HERO_SLIDES: "buildsmore_hero_slides_v1"
 };
 var INITIAL_INQUIRIES = [
 	{
@@ -1601,6 +1602,7 @@ var StorageService = class {
 		this.memoryLocations = [...INITIAL_LOCATIONS];
 		this.memoryTrophyHoldings = null;
 		this.memoryBlogs = [];
+		this.memoryHeroSlides = [];
 		this.memoryCollections = [...INITIAL_COLLECTIONS];
 		this.memoryAdmin = null;
 		this.memoryAdminToken = null;
@@ -1657,6 +1659,12 @@ var StorageService = class {
 			this.memoryBlogs = snapshot.blogs;
 			if (this.isBrowser()) try {
 				localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(snapshot.blogs));
+			} catch {}
+		}
+		if (Array.isArray(snapshot.heroSlides)) {
+			this.memoryHeroSlides = snapshot.heroSlides;
+			if (this.isBrowser()) try {
+				localStorage.setItem(STORAGE_KEYS.HERO_SLIDES, JSON.stringify(snapshot.heroSlides));
 			} catch {}
 		}
 	}
@@ -1838,11 +1846,12 @@ var StorageService = class {
 		const token = this.getAdminToken();
 		const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 		try {
-			const [propsRes, colsRes, locsRes, blogsRes] = await Promise.all([
+			const [propsRes, colsRes, locsRes, blogsRes, heroSlidesRes] = await Promise.all([
 				fetch(token ? "/api/properties?all=true" : "/api/properties", { headers: authHeaders }).catch(() => null),
 				fetch(token ? "/api/collections?includeDrafts=true" : "/api/collections", { headers: authHeaders }).catch(() => null),
 				fetch("/api/locations").catch(() => null),
-				fetch(token ? "/api/blogs?includeDrafts=true&limit=200" : "/api/blogs?limit=200", { headers: authHeaders }).catch(() => null)
+				fetch(token ? "/api/blogs?includeDrafts=true&limit=200" : "/api/blogs?limit=200", { headers: authHeaders }).catch(() => null),
+				fetch("/api/hero-slides").catch(() => null)
 			]);
 			if (colsRes && colsRes.ok) {
 				const serverCols = await colsRes.json();
@@ -1855,6 +1864,10 @@ var StorageService = class {
 			if (blogsRes && blogsRes.ok) {
 				const blogsPayload = await blogsRes.json().catch(() => null);
 				if (blogsPayload && Array.isArray(blogsPayload.items)) this.saveBlogs(blogsPayload.items);
+			}
+			if (heroSlidesRes && heroSlidesRes.ok) {
+				const heroPayload = await heroSlidesRes.json().catch(() => null);
+				if (heroPayload && Array.isArray(heroPayload.items)) this.saveHeroSlides(heroPayload.items);
 			}
 			if (!propsRes || !propsRes.ok) {
 				if (propsRes && token && propsRes.status === 401) this.handleUnauthorizedResponse(propsRes);
@@ -2684,6 +2697,138 @@ var StorageService = class {
 		this.saveBlogs(current.filter((b) => b.id !== id));
 		return true;
 	}
+	getHeroSlides() {
+		let list;
+		if (!this.isBrowser()) list = [...this.memoryHeroSlides];
+		else try {
+			const raw = localStorage.getItem(STORAGE_KEYS.HERO_SLIDES);
+			list = raw ? JSON.parse(raw) : [...this.memoryHeroSlides];
+			if (!Array.isArray(list)) list = [];
+		} catch {
+			list = [...this.memoryHeroSlides];
+		}
+		return [...list].sort((a, b) => {
+			if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+			return (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0);
+		});
+	}
+	saveHeroSlides(slides) {
+		this.memoryHeroSlides = slides;
+		if (this.isBrowser()) try {
+			localStorage.setItem(STORAGE_KEYS.HERO_SLIDES, JSON.stringify(slides));
+		} catch {}
+	}
+	async saveHeroSlideAsync(slide) {
+		if (!this.isBrowser()) {
+			const now = (/* @__PURE__ */ new Date()).toISOString();
+			const existing = this.getHeroSlides();
+			const record = {
+				id: slide.id || `hero-slide-${Date.now()}`,
+				imageUrl: slide.imageUrl.trim(),
+				heading: slide.heading.trim(),
+				description: slide.description.trim(),
+				displayOrder: existing.length,
+				createdAt: now,
+				updatedAt: now
+			};
+			const idx = existing.findIndex((s) => s.id === record.id);
+			if (idx >= 0) existing[idx] = {
+				...existing[idx],
+				...record,
+				displayOrder: existing[idx].displayOrder
+			};
+			else existing.push(record);
+			this.saveHeroSlides(existing);
+			return record;
+		}
+		if (!this.getAdminToken()) {
+			const msg = "Administrator session is required to manage hero banner slides.";
+			this.emitAuthExpired(msg);
+			throw new Error(msg);
+		}
+		const isUpdate = Boolean(slide.id);
+		const url = isUpdate ? `/api/hero-slides/${encodeURIComponent(slide.id)}` : "/api/hero-slides";
+		const res = await fetch(url, {
+			method: isUpdate ? "PUT" : "POST",
+			headers: this.getAuthHeaders(true),
+			body: JSON.stringify({
+				imageUrl: slide.imageUrl,
+				heading: slide.heading,
+				description: slide.description
+			})
+		});
+		if (!res.ok) {
+			this.handleUnauthorizedResponse(res);
+			const errMsg = await this.readErrorMessage(res, "Failed to save hero banner slide");
+			this.emitApiError(errMsg, res.status);
+			throw new Error(errMsg);
+		}
+		const data = await res.json().catch(() => null);
+		if (Array.isArray(data?.items)) this.saveHeroSlides(data.items);
+		const persisted = data?.slide;
+		if (!persisted) throw new Error("Unexpected response while saving hero banner slide.");
+		return persisted;
+	}
+	async deleteHeroSlideAsync(id) {
+		if (!this.isBrowser()) {
+			const remaining = this.getHeroSlides().filter((s) => s.id !== id).map((s, idx) => ({
+				...s,
+				displayOrder: idx
+			}));
+			this.saveHeroSlides(remaining);
+			return remaining;
+		}
+		if (!this.getAdminToken()) {
+			const msg = "Administrator session is required to delete hero banner slides.";
+			this.emitAuthExpired(msg);
+			throw new Error(msg);
+		}
+		const res = await fetch(`/api/hero-slides/${encodeURIComponent(id)}`, {
+			method: "DELETE",
+			headers: this.getAuthHeaders(false)
+		});
+		if (!res.ok) {
+			this.handleUnauthorizedResponse(res);
+			const errMsg = await this.readErrorMessage(res, "Failed to delete hero banner slide");
+			this.emitApiError(errMsg, res.status);
+			throw new Error(errMsg);
+		}
+		const data = await res.json().catch(() => null);
+		const remaining = Array.isArray(data?.items) ? data.items : this.getHeroSlides().filter((s) => s.id !== id);
+		this.saveHeroSlides(remaining);
+		return remaining;
+	}
+	async reorderHeroSlidesAsync(orderedIds) {
+		if (!this.isBrowser()) {
+			const map = new Map(this.getHeroSlides().map((s) => [s.id, s]));
+			const reordered = orderedIds.map((id) => map.get(id)).filter((s) => Boolean(s)).map((s, idx) => ({
+				...s,
+				displayOrder: idx
+			}));
+			this.saveHeroSlides(reordered);
+			return reordered;
+		}
+		if (!this.getAdminToken()) {
+			const msg = "Administrator session is required to reorder hero banner slides.";
+			this.emitAuthExpired(msg);
+			throw new Error(msg);
+		}
+		const res = await fetch("/api/hero-slides/reorder", {
+			method: "PUT",
+			headers: this.getAuthHeaders(true),
+			body: JSON.stringify({ orderedIds })
+		});
+		if (!res.ok) {
+			this.handleUnauthorizedResponse(res);
+			const errMsg = await this.readErrorMessage(res, "Failed to reorder hero banner slides");
+			this.emitApiError(errMsg, res.status);
+			throw new Error(errMsg);
+		}
+		const data = await res.json().catch(() => null);
+		const reordered = Array.isArray(data?.items) ? data.items : this.getHeroSlides();
+		this.saveHeroSlides(reordered);
+		return reordered;
+	}
 	async uploadPhoto(file) {
 		const formData = new FormData();
 		formData.append("photo", file);
@@ -3080,7 +3225,6 @@ var StorageService = class {
 };
 var storage = new StorageService();
 // src/context/CurrencyContext.tsx
-var _jsxFileName$33 = "/app/applet/src/context/CurrencyContext.tsx";
 var RATES_TO_INR = {
 	INR: 1,
 	USD: 86.5,
@@ -3108,22 +3252,17 @@ var CurrencyProvider = ({ children }) => {
 		const rateToInr = RATES_TO_INR[sourceCurrency] || 1;
 		return `₹ ${(sourceCurrency === "INR" ? amount : Math.round(amount * rateToInr)).toLocaleString("en-IN")}`;
 	};
-	return /* @__PURE__ */ jsxDEV(CurrencyContext.Provider, {
+	return /* @__PURE__ */ jsx(CurrencyContext.Provider, {
 		value: {
 			currency,
 			setCurrency,
 			formatPrice
 		},
 		children
-	}, void 0, false, {
-		fileName: _jsxFileName$33,
-		lineNumber: 50,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 var useCurrency = () => useContext(CurrencyContext);
 // src/components/common/AppLink.tsx
-var _jsxFileName$32 = "/app/applet/src/components/common/AppLink.tsx";
 /**
 * Semantic crawlable <a href> navigation link powered by React Router <Link>.
 * Executes native browser-history SPA routing on normal left-clicks while
@@ -3133,16 +3272,12 @@ var _jsxFileName$32 = "/app/applet/src/components/common/AppLink.tsx";
 var AppLink = ({ href, onNavigate, onClick, children, ...rest }) => {
 	const inRouter = useInRouterContext();
 	const isExternal = /^(https?:|mailto:|tel:|#)/i.test(href) || Boolean(rest.target && rest.target !== "_self");
-	if (inRouter && !isExternal) return /* @__PURE__ */ jsxDEV(Link, {
+	if (inRouter && !isExternal) return /* @__PURE__ */ jsx(Link, {
 		to: href,
 		onClick,
 		...rest,
 		children
-	}, void 0, false, {
-		fileName: _jsxFileName$32,
-		lineNumber: 30,
-		columnNumber: 7
-	}, void 0);
+	});
 	const handleFallbackClick = (e) => {
 		if (onClick) onClick(e);
 		if (e.defaultPrevented) return;
@@ -3151,19 +3286,14 @@ var AppLink = ({ href, onNavigate, onClick, children, ...rest }) => {
 		e.preventDefault();
 		onNavigate(href);
 	};
-	return /* @__PURE__ */ jsxDEV("a", {
+	return /* @__PURE__ */ jsx("a", {
 		href,
 		onClick: handleFallbackClick,
 		...rest,
 		children
-	}, void 0, false, {
-		fileName: _jsxFileName$32,
-		lineNumber: 50,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/components/layout/Navbar.tsx
-var _jsxFileName$31 = "/app/applet/src/components/layout/Navbar.tsx";
 var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout, onOpenInquiry }) => {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const navLinks = [
@@ -3197,366 +3327,174 @@ var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout,
 		onNavigate(path);
 		setMobileMenuOpen(false);
 	};
-	return /* @__PURE__ */ jsxDEV("header", {
+	return /* @__PURE__ */ jsxs("header", {
 		className: "sticky top-0 z-50 bg-[#0c0f12]/95 backdrop-blur-md border-b border-[#242b35]/80 transition-colors w-full overflow-x-clip",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "w-full max-w-[1440px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-2 sm:gap-3 xl:gap-4",
 				children: [
-					/* @__PURE__ */ jsxDEV(AppLink, {
+					/* @__PURE__ */ jsxs(AppLink, {
 						href: "/",
 						onNavigate: handleNavClick,
 						onClick: () => setMobileMenuOpen(false),
 						className: "flex items-center gap-2 sm:gap-2.5 text-left group cursor-pointer focus:outline-none shrink-0",
-						children: [/* @__PURE__ */ jsxDEV("img", {
+						children: [/* @__PURE__ */ jsx("img", {
 							src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 							alt: "BUILDsmore Logo",
 							className: "h-9 w-9 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm group-hover:border-[#c5a059] transition-all shrink-0"
-						}, void 0, false, {
-							fileName: _jsxFileName$31,
-							lineNumber: 51,
-							columnNumber: 11
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "flex flex-col",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "font-serif text-sm sm:text-base tracking-[0.11em] sm:tracking-[0.12em] font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors uppercase leading-none whitespace-nowrap",
 								children: "BUILDsmore"
-							}, void 0, false, {
-								fileName: _jsxFileName$31,
-								lineNumber: 57,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[8px] font-mono tracking-[0.15em] text-[#c5a059] uppercase mt-1 hidden sm:block whitespace-nowrap",
 								children: "Let's Grow Together"
-							}, void 0, false, {
-								fileName: _jsxFileName$31,
-								lineNumber: 60,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$31,
-							lineNumber: 56,
-							columnNumber: 11
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$31,
-						lineNumber: 45,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("nav", {
+							})]
+						})]
+					}),
+					/* @__PURE__ */ jsx("nav", {
 						"aria-label": "Primary Navigation",
 						className: "hidden xl:flex flex-1 min-w-0 items-center justify-center gap-3 2xl:gap-4 text-[11px] uppercase tracking-[0.05em] 2xl:tracking-[0.07em] font-medium text-[#a0a5ad]",
 						children: navLinks.map((link) => {
 							const isActive = isLinkActive(link.path);
-							return /* @__PURE__ */ jsxDEV(AppLink, {
+							return /* @__PURE__ */ jsxs(AppLink, {
 								href: link.path,
 								onNavigate: handleNavClick,
 								onClick: () => setMobileMenuOpen(false),
 								"aria-current": isActive ? "page" : void 0,
 								className: `transition-colors whitespace-nowrap cursor-pointer hover:text-[#f7f5f2] relative py-1 shrink-0 ${isActive ? "text-[#c5a059] font-semibold" : ""}`,
-								children: [link.label, isActive && /* @__PURE__ */ jsxDEV("span", { className: "absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 86,
-									columnNumber: 19
-								}, void 0)]
-							}, link.path, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 74,
-								columnNumber: 15
-							}, void 0);
+								children: [link.label, isActive && /* @__PURE__ */ jsx("span", { className: "absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#c5a059]" })]
+							}, link.path);
 						})
-					}, void 0, false, {
-						fileName: _jsxFileName$31,
-						lineNumber: 67,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-1.5 shrink-0",
 						children: [
-							isAdminLoggedIn ? /* @__PURE__ */ jsxDEV("div", {
+							isAdminLoggedIn ? /* @__PURE__ */ jsxs("div", {
 								className: "hidden sm:flex items-center gap-1.5 shrink-0",
-								children: [/* @__PURE__ */ jsxDEV(AppLink, {
+								children: [/* @__PURE__ */ jsxs(AppLink, {
 									href: "/admin",
 									onNavigate: handleNavClick,
 									onClick: () => setMobileMenuOpen(false),
 									className: "flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm transition-all cursor-pointer whitespace-nowrap border bg-[#c5a059]/15 text-[#c5a059] border-[#c5a059]/40 hover:bg-[#c5a059]/25 shrink-0",
 									title: "Administrative Console",
-									children: [/* @__PURE__ */ jsxDEV(Shield, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 105,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Admin Panel" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 106,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$31,
-									lineNumber: 98,
-									columnNumber: 15
-								}, void 0), onLogout && /* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Admin Panel" })]
+								}), onLogout && /* @__PURE__ */ jsxs("button", {
 									onClick: onLogout,
 									className: "flex items-center gap-1 px-2 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm transition-all cursor-pointer whitespace-nowrap border bg-[#14181d] text-[#9ca3af] border-[#242b35] hover:border-red-500/50 hover:text-red-400 shrink-0",
 									title: "Sign Out of Admin Session",
 									"aria-label": "Sign Out of Admin Session",
-									children: [/* @__PURE__ */ jsxDEV(LogOut, { className: "w-3.5 h-3.5 shrink-0" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 116,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5 shrink-0" }), /* @__PURE__ */ jsx("span", {
 										className: "hidden md:inline xl:hidden 2xl:inline text-[10px]",
 										children: "Exit"
-									}, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 117,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$31,
-									lineNumber: 110,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 97,
-								columnNumber: 13
-							}, void 0) : /* @__PURE__ */ jsxDEV("button", {
+									})]
+								})]
+							}) : /* @__PURE__ */ jsxs("button", {
 								onClick: onOpenAdmin,
 								className: "hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm transition-all cursor-pointer whitespace-nowrap border bg-[#14181d] text-[#f7f5f2] border-[#242b35] hover:border-[#c5a059] hover:text-[#c5a059] shrink-0 shadow-sm",
 								title: "Administrator Login",
-								children: [/* @__PURE__ */ jsxDEV(Lock, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 127,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Login" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 128,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 122,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("a", {
+								children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Login" })]
+							}),
+							/* @__PURE__ */ jsxs("a", {
 								href: "tel:9779878303",
 								className: "hidden md:flex items-center gap-1.5 px-2 py-1.5 text-[11px] text-[#f7f5f2] bg-[#14181d] border border-[#242b35] hover:border-[#c5a059] rounded-sm font-mono transition-colors whitespace-nowrap shrink-0",
 								title: "Direct Concierge Hotline: 9779878303",
 								"aria-label": "Direct Concierge Hotline: 977-987-8303",
-								children: [/* @__PURE__ */ jsxDEV(Phone, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 139,
-									columnNumber: 13
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx(Phone, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", {
 									className: "tabular-nums hidden 2xl:inline",
 									children: "977-987-8303"
-								}, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 140,
-									columnNumber: 13
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 133,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("button", {
+								})]
+							}),
+							/* @__PURE__ */ jsx("button", {
 								onClick: () => {
 									if (onOpenInquiry) onOpenInquiry();
 									else handleNavClick("/contact");
 								},
 								className: "inline-flex items-center px-2.5 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] tracking-[0.05em] uppercase font-semibold bg-[#c5a059] text-[#0c0f12] rounded-sm hover:bg-[#d4af5f] transition-all cursor-pointer whitespace-nowrap shadow-sm shrink-0",
 								children: "Private Inquiry"
-							}, void 0, false, {
-								fileName: _jsxFileName$31,
-								lineNumber: 144,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("button", {
+							}),
+							/* @__PURE__ */ jsx("button", {
 								onClick: () => setMobileMenuOpen(!mobileMenuOpen),
 								className: "xl:hidden p-2 text-[#d1d5db] hover:text-[#c5a059] bg-[#14181d] border border-[#242b35] hover:border-[#c5a059]/50 rounded-sm transition-colors cursor-pointer shrink-0",
 								"aria-label": "Toggle navigation menu",
-								children: mobileMenuOpen ? /* @__PURE__ */ jsxDEV(X, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 163,
-									columnNumber: 31
-								}, void 0) : /* @__PURE__ */ jsxDEV(Menu, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 163,
-									columnNumber: 74
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$31,
-								lineNumber: 158,
-								columnNumber: 11
-							}, void 0)
+								children: mobileMenuOpen ? /* @__PURE__ */ jsx(X, { className: "w-4 h-4 text-[#c5a059]" }) : /* @__PURE__ */ jsx(Menu, { className: "w-4 h-4" })
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$31,
-						lineNumber: 94,
-						columnNumber: 9
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$31,
-				lineNumber: 42,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("nav", {
+			}),
+			/* @__PURE__ */ jsx("nav", {
 				"aria-label": "Mobile Category Navigation",
 				className: "xl:hidden flex items-center px-4 sm:px-6 py-2 bg-[#101419] border-t border-[#242b35]/60 overflow-x-auto text-[11px] uppercase tracking-wider text-[#9ca3af] gap-5 no-scrollbar",
 				children: navLinks.map((link) => {
 					const isActive = isLinkActive(link.path);
-					return /* @__PURE__ */ jsxDEV(AppLink, {
+					return /* @__PURE__ */ jsx(AppLink, {
 						href: link.path,
 						onNavigate: handleNavClick,
 						onClick: () => setMobileMenuOpen(false),
 						"aria-current": isActive ? "page" : void 0,
 						className: `whitespace-nowrap cursor-pointer transition-colors py-0.5 ${isActive ? "text-[#c5a059] font-semibold border-b border-[#c5a059]" : "hover:text-[#f7f5f2]"}`,
 						children: link.label
-					}, link.path, false, {
-						fileName: _jsxFileName$31,
-						lineNumber: 174,
-						columnNumber: 13
-					}, void 0);
+					}, link.path);
 				})
-			}, void 0, false, {
-				fileName: _jsxFileName$31,
-				lineNumber: 170,
-				columnNumber: 7
-			}, void 0),
-			mobileMenuOpen && /* @__PURE__ */ jsxDEV("div", {
+			}),
+			mobileMenuOpen && /* @__PURE__ */ jsx("div", {
 				className: "xl:hidden bg-[#0e1217] border-b border-[#242b35] px-6 py-6 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "space-y-4",
 					children: [
-						/* @__PURE__ */ jsxDEV("p", {
+						/* @__PURE__ */ jsx("p", {
 							className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059]",
 							children: "Portfolio Directories"
-						}, void 0, false, {
-							fileName: _jsxFileName$31,
-							lineNumber: 194,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "grid grid-cols-2 gap-2 text-xs uppercase tracking-wider",
 							children: navLinks.map((link) => {
 								const isActive = isLinkActive(link.path);
-								return /* @__PURE__ */ jsxDEV(AppLink, {
+								return /* @__PURE__ */ jsxs(AppLink, {
 									href: link.path,
 									onNavigate: handleNavClick,
 									onClick: () => setMobileMenuOpen(false),
 									className: `flex items-center justify-between p-3 rounded-sm border text-left cursor-pointer transition-colors ${isActive ? "bg-[#181f2a] border-[#c5a059] text-[#c5a059] font-medium" : "bg-[#14181d] border-[#202732] text-[#d1d5db] hover:border-[#c5a059]/40 hover:text-white"}`,
-									children: [/* @__PURE__ */ jsxDEV("span", { children: link.label }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 212,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3 h-3 opacity-60" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 213,
-										columnNumber: 21
-									}, void 0)]
-								}, link.path, true, {
-									fileName: _jsxFileName$31,
-									lineNumber: 201,
-									columnNumber: 19
-								}, void 0);
+									children: [/* @__PURE__ */ jsx("span", { children: link.label }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3 h-3 opacity-60" })]
+								}, link.path);
 							})
-						}, void 0, false, {
-							fileName: _jsxFileName$31,
-							lineNumber: 197,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "sm:hidden pt-2 border-t border-[#1f2631]",
-							children: isAdminLoggedIn ? /* @__PURE__ */ jsxDEV("div", {
+							children: isAdminLoggedIn ? /* @__PURE__ */ jsxs("div", {
 								className: "flex gap-2",
-								children: [/* @__PURE__ */ jsxDEV(AppLink, {
+								children: [/* @__PURE__ */ jsxs(AppLink, {
 									href: "/admin",
 									onNavigate: handleNavClick,
 									onClick: () => setMobileMenuOpen(false),
 									className: "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#c5a059]/15 border border-[#c5a059]/40 text-[#c5a059] rounded-sm text-xs uppercase tracking-wider",
-									children: [/* @__PURE__ */ jsxDEV(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 229,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Admin Panel" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 230,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$31,
-									lineNumber: 223,
-									columnNumber: 19
-								}, void 0), onLogout && /* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Admin Panel" })]
+								}), onLogout && /* @__PURE__ */ jsxs("button", {
 									onClick: () => {
 										onLogout();
 										setMobileMenuOpen(false);
 									},
 									className: "px-3 py-2.5 bg-[#14181d] border border-red-900/50 text-red-400 rounded-sm text-xs uppercase tracking-wider flex items-center justify-center gap-1",
-									children: [/* @__PURE__ */ jsxDEV(LogOut, { className: "w-3.5 h-3.5" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 240,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Exit" }, void 0, false, {
-										fileName: _jsxFileName$31,
-										lineNumber: 241,
-										columnNumber: 23
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$31,
-									lineNumber: 233,
-									columnNumber: 21
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 222,
-								columnNumber: 17
-							}, void 0) : /* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Exit" })]
+								})]
+							}) : /* @__PURE__ */ jsxs("button", {
 								onClick: () => {
 									onOpenAdmin();
 									setMobileMenuOpen(false);
 								},
 								className: "flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-[#14181d] border border-[#202732] text-[#f7f5f2] rounded-sm hover:border-[#c5a059] text-xs uppercase tracking-wider",
-								children: [/* @__PURE__ */ jsxDEV(Lock, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 253,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Admin Login" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 254,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 246,
-								columnNumber: 17
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$31,
-							lineNumber: 220,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Admin Login" })]
+							})
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "pt-2 border-t border-[#1f2631] flex flex-col gap-2.5",
-							children: [/* @__PURE__ */ jsxDEV("a", {
+							children: [/* @__PURE__ */ jsxs("a", {
 								href: "tel:9779878303",
 								className: "flex items-center justify-center gap-2 w-full py-2.5 bg-[#14181d] border border-[#242b35] text-[#f7f5f2] rounded-sm text-xs font-mono",
-								children: [/* @__PURE__ */ jsxDEV(Phone, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 264,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Direct Hotline: 977-987-8303" }, void 0, false, {
-									fileName: _jsxFileName$31,
-									lineNumber: 265,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$31,
-								lineNumber: 260,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsx(Phone, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Direct Hotline: 977-987-8303" })]
+							}), /* @__PURE__ */ jsx("button", {
 								onClick: () => {
 									setMobileMenuOpen(false);
 									if (onOpenInquiry) onOpenInquiry();
@@ -3564,442 +3502,196 @@ var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout,
 								},
 								className: "w-full py-2.5 bg-[#c5a059] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm text-center cursor-pointer hover:bg-[#d4af5f] transition-colors",
 								children: "Schedule Private Consultation"
-							}, void 0, false, {
-								fileName: _jsxFileName$31,
-								lineNumber: 268,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$31,
-							lineNumber: 259,
-							columnNumber: 13
-						}, void 0)
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$31,
-					lineNumber: 193,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$31,
-				lineNumber: 192,
-				columnNumber: 9
-			}, void 0)
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$31,
-		lineNumber: 41,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/components/layout/Footer.tsx
-var _jsxFileName$30 = "/app/applet/src/components/layout/Footer.tsx";
 var Footer = ({ onNavigate }) => {
-	return /* @__PURE__ */ jsxDEV("footer", {
+	return /* @__PURE__ */ jsx("footer", {
 		className: "bg-[#080a0c] text-[#a0a5ad] border-t border-[#1a2027] pt-16 pb-24 md:pb-12",
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "max-w-7xl mx-auto px-6",
-			children: [/* @__PURE__ */ jsxDEV("div", {
+			children: [/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "lg:col-span-2 space-y-4",
 						children: [
-							/* @__PURE__ */ jsxDEV(AppLink, {
+							/* @__PURE__ */ jsxs(AppLink, {
 								href: "/",
 								onNavigate,
 								className: "inline-flex items-center gap-3 group",
-								children: [/* @__PURE__ */ jsxDEV("img", {
+								children: [/* @__PURE__ */ jsx("img", {
 									src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 									alt: "BUILDsmore Logo",
 									className: "w-12 h-12 rounded-sm object-cover border border-[#c5a059]/40"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 19,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 									className: "font-serif text-2xl tracking-[0.18em] font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors uppercase block leading-none",
 									children: "BUILDsmore"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 25,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-[9px] font-mono tracking-[0.25em] text-[#c5a059] uppercase block mt-1",
 									children: "Let's Grow Together"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 28,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$30,
-									lineNumber: 24,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$30,
-								lineNumber: 18,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+								})] })]
+							}),
+							/* @__PURE__ */ jsx("p", {
 								className: "text-sm text-[#8a909a] leading-relaxed max-w-sm",
 								children: "International luxury property advisory specializing in architectural trophy residences, private islands, historic vineyard estates, and prime commercial headquarters."
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 33,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "pt-1 text-xs text-[#c5a059] flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV("span", { className: "w-1.5 h-1.5 rounded-full bg-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 38,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: ["Direct Concierge Hotline: ", /* @__PURE__ */ jsxDEV("a", {
+								children: [/* @__PURE__ */ jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: ["Direct Concierge Hotline: ", /* @__PURE__ */ jsx("a", {
 									href: "tel:9779878303",
 									className: "underline font-mono",
 									children: "9779878303"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 39,
-									columnNumber: 47
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$30,
-									lineNumber: 39,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$30,
-								lineNumber: 37,
-								columnNumber: 13
-							}, void 0)
+								})] })]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 17,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h4", {
+					}),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
 						className: "text-xs uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] mb-4",
 						children: "Portfolio"
-					}, void 0, false, {
-						fileName: _jsxFileName$30,
-						lineNumber: 45,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("ul", {
+					}), /* @__PURE__ */ jsxs("ul", {
 						className: "space-y-2.5 text-xs",
 						children: [
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/properties",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "All Properties"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 50,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 49,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/category/residential",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "Prime Residential"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 55,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 54,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/category/commercial",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "Commercial Landmarks"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 60,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 59,
-								columnNumber: 15
-							}, void 0)
+							}) })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 48,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 44,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h4", {
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
 						className: "text-xs uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] mb-4",
 						children: "Private Services"
-					}, void 0, false, {
-						fileName: _jsxFileName$30,
-						lineNumber: 69,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("ul", {
+					}), /* @__PURE__ */ jsxs("ul", {
 						className: "space-y-2.5 text-xs",
 						children: [
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/contact",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "Private Valuations"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 74,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 73,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/contact",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "Schedule Inspection"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 79,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 78,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/contact",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "Contact Us"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 84,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 83,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("li", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/blog",
 								onNavigate,
 								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
 								children: "Blog"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 89,
-								columnNumber: 17
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 88,
-								columnNumber: 15
-							}, void 0)
+							}) })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 72,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 68,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h4", {
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
 						className: "text-xs uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] mb-4",
 						children: "Corporate Office"
-					}, void 0, false, {
-						fileName: _jsxFileName$30,
-						lineNumber: 98,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "space-y-3 text-xs",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-start gap-2.5",
-								children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0 mt-0.5" }, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 103,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
 									className: "leading-relaxed",
 									children: "Buildsmore, SCO 24, Sector 82 A, IT City Rd, JLPL Industrial Area, Sahibzada Ajit Singh Nagar, Punjab 140306"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 104,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$30,
-								lineNumber: 102,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2.5",
-								children: [/* @__PURE__ */ jsxDEV(Phone, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 109,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("a", {
+								children: [/* @__PURE__ */ jsx(Phone, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("a", {
 									href: "tel:9779878303",
 									className: "hover:text-[#c5a059] transition-colors font-mono",
 									children: "977-987-8303"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 110,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$30,
-								lineNumber: 108,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2.5",
-								children: [/* @__PURE__ */ jsxDEV(Mail, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 115,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("a", {
+								children: [/* @__PURE__ */ jsx(Mail, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("a", {
 									href: "mailto:info@buildsmoremohali.com",
 									className: "hover:text-[#c5a059] transition-colors",
 									children: "info@buildsmoremohali.com"
-								}, void 0, false, {
-									fileName: _jsxFileName$30,
-									lineNumber: 116,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$30,
-								lineNumber: 114,
-								columnNumber: 15
-							}, void 0)
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 101,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$30,
-						lineNumber: 97,
-						columnNumber: 11
-					}, void 0)
+					})] })
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$30,
-				lineNumber: 14,
-				columnNumber: 9
-			}, void 0), /* @__PURE__ */ jsxDEV("div", {
+			}), /* @__PURE__ */ jsxs("div", {
 				className: "pt-8 border-t border-[#1a2027] flex flex-col lg:flex-row items-center justify-between gap-4 text-xs text-[#6b7280]",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left",
 					children: [
-						/* @__PURE__ */ jsxDEV("p", { children: [
+						/* @__PURE__ */ jsxs("p", { children: [
 							"© ",
 							(/* @__PURE__ */ new Date()).getUTCFullYear(),
 							" BUILDsmore International Real Estate S.A. All rights reserved."
-						] }, void 0, true, {
-							fileName: _jsxFileName$30,
-							lineNumber: 128,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", {
+						] }),
+						/* @__PURE__ */ jsx("span", {
 							className: "hidden sm:inline text-[#2e3742]",
 							children: "•"
-						}, void 0, false, {
-							fileName: _jsxFileName$30,
-							lineNumber: 129,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsxs("p", {
 							className: "text-[#9ca3af]",
-							children: ["Developed by ", /* @__PURE__ */ jsxDEV("span", {
+							children: ["Developed by ", /* @__PURE__ */ jsx("span", {
 								className: "text-[#c5a059] font-medium tracking-wide",
 								children: "Browsera Infotech"
-							}, void 0, false, {
-								fileName: _jsxFileName$30,
-								lineNumber: 131,
-								columnNumber: 28
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$30,
-							lineNumber: 130,
-							columnNumber: 13
-						}, void 0)
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$30,
-					lineNumber: 127,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "flex flex-wrap justify-center items-center gap-6",
 					children: [
-						/* @__PURE__ */ jsxDEV(AppLink, {
+						/* @__PURE__ */ jsx(AppLink, {
 							href: "/privacy",
 							onNavigate,
 							className: "hover:text-[#a0a5ad] transition-colors cursor-pointer",
 							children: "Privacy Policy"
-						}, void 0, false, {
-							fileName: _jsxFileName$30,
-							lineNumber: 135,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV(AppLink, {
+						}),
+						/* @__PURE__ */ jsx(AppLink, {
 							href: "/terms",
 							onNavigate,
 							className: "hover:text-[#a0a5ad] transition-colors cursor-pointer",
 							children: "Terms of Service"
-						}, void 0, false, {
-							fileName: _jsxFileName$30,
-							lineNumber: 138,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV(AppLink, {
+						}),
+						/* @__PURE__ */ jsx(AppLink, {
 							href: "/contact",
 							onNavigate,
 							className: "hover:text-[#a0a5ad] transition-colors cursor-pointer",
 							children: "Global Compliance"
-						}, void 0, false, {
-							fileName: _jsxFileName$30,
-							lineNumber: 141,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$30,
-					lineNumber: 134,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$30,
-				lineNumber: 126,
-				columnNumber: 9
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$30,
-			lineNumber: 12,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$30,
-		lineNumber: 11,
-		columnNumber: 5
-	}, void 0);
+				})]
+			})]
+		})
+	});
 };
 // src/components/property/PropertyCard.tsx
-var _jsxFileName$29 = "/app/applet/src/components/property/PropertyCard.tsx";
 var PropertyCard = ({ property, onSelect, isSaved = false, onToggleSave }) => {
 	const { formatPrice } = useCurrency();
 	const [imgError, setImgError] = useState(false);
@@ -4009,11 +3701,11 @@ var PropertyCard = ({ property, onSelect, isSaved = false, onToggleSave }) => {
 	const displayUrl = canTrySourceLogoFallback ? property.sourceLogoUrl : !imgError ? primary.url : void 0;
 	const isDisplayingLogo = canTrySourceLogoFallback || !imgError && primary.isLogo;
 	const propertyHref = `/property/${encodeURIComponent(property.slug)}`;
-	return /* @__PURE__ */ jsxDEV("article", {
+	return /* @__PURE__ */ jsxs("article", {
 		className: "group relative bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-all duration-300 flex flex-col overflow-hidden rounded-sm",
-		children: [/* @__PURE__ */ jsxDEV("div", {
+		children: [/* @__PURE__ */ jsx("div", {
 			className: "absolute top-3.5 right-3.5 z-20",
-			children: /* @__PURE__ */ jsxDEV("button", {
+			children: /* @__PURE__ */ jsx("button", {
 				type: "button",
 				onClick: (e) => {
 					e.stopPropagation();
@@ -4021,31 +3713,19 @@ var PropertyCard = ({ property, onSelect, isSaved = false, onToggleSave }) => {
 				},
 				"aria-label": "Save property",
 				className: `w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer ${isSaved ? "bg-[#c5a059] text-[#0c0f12]" : "bg-[#0c0f12]/60 text-[#f7f5f2] hover:bg-[#c5a059] hover:text-[#0c0f12]"}`,
-				children: /* @__PURE__ */ jsxDEV(Bookmark, {
+				children: /* @__PURE__ */ jsx(Bookmark, {
 					className: "w-3.5 h-3.5",
 					fill: isSaved ? "currentColor" : "none"
-				}, void 0, false, {
-					fileName: _jsxFileName$29,
-					lineNumber: 53,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$29,
-				lineNumber: 40,
-				columnNumber: 9
-			}, void 0)
-		}, void 0, false, {
-			fileName: _jsxFileName$29,
-			lineNumber: 39,
-			columnNumber: 7
-		}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+				})
+			})
+		}), /* @__PURE__ */ jsxs(AppLink, {
 			href: propertyHref,
 			onNavigate: () => onSelect(property),
 			className: "flex flex-col flex-1 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#c5a059]",
-			children: [/* @__PURE__ */ jsxDEV("div", {
+			children: [/* @__PURE__ */ jsxs("div", {
 				className: `relative aspect-[4/3] w-full overflow-hidden ${isDisplayingLogo ? "bg-[#0f141b]" : "bg-[#14181d]"}`,
 				children: [
-					displayUrl ? /* @__PURE__ */ jsxDEV("img", {
+					displayUrl ? /* @__PURE__ */ jsx("img", {
 						src: displayUrl,
 						alt: property.title,
 						onError: () => {
@@ -4055,223 +3735,87 @@ var PropertyCard = ({ property, onSelect, isSaved = false, onToggleSave }) => {
 						referrerPolicy: "no-referrer",
 						loading: "lazy",
 						className: isDisplayingLogo ? "w-full h-full object-contain p-8 transition-transform duration-700 ease-out group-hover:scale-105" : "w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-					}, void 0, false, {
-						fileName: _jsxFileName$29,
-						lineNumber: 65,
-						columnNumber: 13
-					}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+					}) : /* @__PURE__ */ jsxs("div", {
 						className: "w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#1a212b] to-[#0c0f12] text-center",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsx("div", {
 								className: "w-12 h-12 rounded-full border border-[#c5a059]/40 flex items-center justify-center text-[#c5a059] mb-3",
-								children: /* @__PURE__ */ jsxDEV("span", {
+								children: /* @__PURE__ */ jsx("span", {
 									className: "font-serif text-lg font-bold",
 									children: "B"
-								}, void 0, false, {
-									fileName: _jsxFileName$29,
-									lineNumber: 87,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$29,
-								lineNumber: 86,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+								})
+							}),
+							/* @__PURE__ */ jsx("p", {
 								className: "font-serif text-sm text-[#f7f5f2] font-medium tracking-wide",
 								children: property.title
-							}, void 0, false, {
-								fileName: _jsxFileName$29,
-								lineNumber: 89,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+							}),
+							/* @__PURE__ */ jsxs("p", {
 								className: "text-[11px] text-[#8a909a] mt-1",
 								children: [
 									property.city,
 									", ",
 									property.country
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 92,
-								columnNumber: 15
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$29,
-						lineNumber: 85,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-[#101419] via-transparent to-black/20 pointer-events-none" }, void 0, false, {
-						fileName: _jsxFileName$29,
-						lineNumber: 97,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#101419] via-transparent to-black/20 pointer-events-none" }),
+					/* @__PURE__ */ jsx("div", {
 						className: "absolute top-3.5 left-3.5 z-10",
-						children: /* @__PURE__ */ jsxDEV("span", {
+						children: /* @__PURE__ */ jsx("span", {
 							className: "text-[11px] uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] bg-[#0c0f12]/70 backdrop-blur-sm px-2.5 py-1 rounded-sm border border-white/10",
 							children: property.category
-						}, void 0, false, {
-							fileName: _jsxFileName$29,
-							lineNumber: 101,
-							columnNumber: 13
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$29,
-						lineNumber: 100,
-						columnNumber: 11
-					}, void 0)
+						})
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$29,
-				lineNumber: 63,
-				columnNumber: 9
-			}, void 0), /* @__PURE__ */ jsxDEV("div", {
+			}), /* @__PURE__ */ jsxs("div", {
 				className: "p-5 flex flex-col flex-1 justify-between",
-				children: [/* @__PURE__ */ jsxDEV("div", { children: [
-					/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", { children: [
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-2 text-xs text-[#8a909a] mb-2 font-mono",
 						children: [
-							property.bedrooms > 0 && /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV("span", { children: [property.bedrooms, " Beds"] }, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 114,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							property.bedrooms > 0 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs("span", { children: [property.bedrooms, " Beds"] }), /* @__PURE__ */ jsx("span", {
 								"aria-hidden": "true",
 								className: "text-[#3b4452]",
 								children: "·"
-							}, void 0, false, {
-								fileName: _jsxFileName$29,
-								lineNumber: 115,
-								columnNumber: 19
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 113,
-								columnNumber: 17
-							}, void 0),
-							property.bathrooms > 0 && /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV("span", { children: [property.bathrooms, " Baths"] }, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 120,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							})] }),
+							property.bathrooms > 0 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs("span", { children: [property.bathrooms, " Baths"] }), /* @__PURE__ */ jsx("span", {
 								"aria-hidden": "true",
 								className: "text-[#3b4452]",
 								children: "·"
-							}, void 0, false, {
-								fileName: _jsxFileName$29,
-								lineNumber: 121,
-								columnNumber: 19
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 119,
-								columnNumber: 17
-							}, void 0),
-							property.interiorAreaSqFt > 0 ? /* @__PURE__ */ jsxDEV("span", { children: [property.interiorAreaSqFt.toLocaleString(), " sq ft"] }, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 125,
-								columnNumber: 17
-							}, void 0) : property.lotSizeAcres ? /* @__PURE__ */ jsxDEV("span", { children: [property.lotSizeAcres, " Acres"] }, void 0, true, {
-								fileName: _jsxFileName$29,
-								lineNumber: 127,
-								columnNumber: 17
-							}, void 0) : /* @__PURE__ */ jsxDEV("span", { children: "Prime Footprint" }, void 0, false, {
-								fileName: _jsxFileName$29,
-								lineNumber: 129,
-								columnNumber: 17
-							}, void 0)
+							})] }),
+							property.interiorAreaSqFt > 0 ? /* @__PURE__ */ jsxs("span", { children: [property.interiorAreaSqFt.toLocaleString(), " sq ft"] }) : property.lotSizeAcres ? /* @__PURE__ */ jsxs("span", { children: [property.lotSizeAcres, " Acres"] }) : /* @__PURE__ */ jsx("span", { children: "Prime Footprint" })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$29,
-						lineNumber: 111,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("h3", {
+					}),
+					/* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-lg font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors leading-snug line-clamp-1",
 						children: property.title
-					}, void 0, false, {
-						fileName: _jsxFileName$29,
-						lineNumber: 134,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+					}),
+					/* @__PURE__ */ jsxs("p", {
 						className: "text-xs text-[#9ba1ab] flex items-center gap-1.5 mt-1.5 line-clamp-1",
-						children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3 h-3 text-[#c5a059] shrink-0" }, void 0, false, {
-							fileName: _jsxFileName$29,
-							lineNumber: 140,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+						children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3 h-3 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsxs("span", { children: [
 							property.address ? `${property.address}, ` : "",
 							property.city,
 							", ",
 							property.country
-						] }, void 0, true, {
-							fileName: _jsxFileName$29,
-							lineNumber: 141,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$29,
-						lineNumber: 139,
-						columnNumber: 13
-					}, void 0)
-				] }, void 0, true, {
-					fileName: _jsxFileName$29,
-					lineNumber: 109,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						] })]
+					})
+				] }), /* @__PURE__ */ jsxs("div", {
 					className: "mt-5 pt-4 border-t border-[#1c232d] flex items-baseline justify-between",
-					children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase tracking-wider text-[#737a85] block font-mono",
 						children: "Asking Price"
-					}, void 0, false, {
-						fileName: _jsxFileName$29,
-						lineNumber: 148,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					}), /* @__PURE__ */ jsx("span", {
 						className: "text-base font-semibold text-[#f7f5f2] font-mono tabular-nums tracking-tight",
 						children: formatPrice(property.price, property.currency)
-					}, void 0, false, {
-						fileName: _jsxFileName$29,
-						lineNumber: 151,
-						columnNumber: 15
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$29,
-						lineNumber: 147,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					})] }), /* @__PURE__ */ jsxs("span", {
 						className: "text-xs text-[#c5a059] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-medium",
-						children: ["Details", /* @__PURE__ */ jsxDEV(ArrowUpRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$29,
-							lineNumber: 158,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$29,
-						lineNumber: 156,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$29,
-					lineNumber: 146,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$29,
-				lineNumber: 108,
-				columnNumber: 9
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$29,
-			lineNumber: 57,
-			columnNumber: 7
-		}, void 0)]
-	}, void 0, true, {
-		fileName: _jsxFileName$29,
-		lineNumber: 37,
-		columnNumber: 5
-	}, void 0);
+						children: ["Details", /* @__PURE__ */ jsx(ArrowUpRight, { className: "w-3.5 h-3.5" })]
+					})]
+				})]
+			})]
+		})]
+	});
 };
 // src/utils/inquiryValidation.ts
 var EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -4301,7 +3845,6 @@ async function submitPublicInquiry(payload) {
 	return data;
 }
 // src/components/inquiry/HeroInquiryForm.tsx
-var _jsxFileName$28 = "/app/applet/src/components/inquiry/HeroInquiryForm.tsx";
 var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 	const [fullName, setFullName] = useState("");
 	const [phone, setPhone] = useState("");
@@ -4380,90 +3923,54 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 		setError(null);
 		formStartedAt.current = Date.now();
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx("div", {
 		className: `bg-[#12161d]/95 backdrop-blur-xl border border-[#c5a059]/30 rounded-xl p-4 sm:p-5 shadow-2xl text-[#f7f5f2] ${className}`,
-		children: submitted ? /* @__PURE__ */ jsxDEV("div", {
+		children: submitted ? /* @__PURE__ */ jsxs("div", {
 			className: "py-6 px-3 text-center space-y-3 animate-fade-in",
 			children: [
-				/* @__PURE__ */ jsxDEV("div", {
+				/* @__PURE__ */ jsx("div", {
 					className: "w-12 h-12 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/40 flex items-center justify-center mx-auto text-[#c5a059]",
-					children: /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-6 h-6" }, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 115,
-						columnNumber: 13
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 114,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("h3", {
+					children: /* @__PURE__ */ jsx(CheckCircle2, { className: "w-6 h-6" })
+				}),
+				/* @__PURE__ */ jsx("h3", {
 					className: "font-serif text-xl sm:text-2xl font-normal text-[#f7f5f2] tracking-wide",
 					children: "Inquiry Registered"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 118,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("p", {
+				}),
+				/* @__PURE__ */ jsxs("p", {
 					className: "text-xs text-[#cbd5e1] leading-relaxed max-w-xs mx-auto",
 					children: [
 						"Thank you, ",
-						/* @__PURE__ */ jsxDEV("strong", {
+						/* @__PURE__ */ jsx("strong", {
 							className: "text-[#f7f5f2] font-semibold",
 							children: fullName
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 123,
-							columnNumber: 24
-						}, void 0),
+						}),
 						".",
 						" ",
 						successNote || `Your property consultation request has been submitted to our senior advisory team. We will contact you at ${phone} shortly.`
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 122,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "pt-2",
-					children: /* @__PURE__ */ jsxDEV("button", {
+					children: /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: handleReset,
 						className: "px-5 py-2 bg-[#181f2a] hover:bg-[#202836] border border-[#2a3442] hover:border-[#c5a059] text-xs font-mono uppercase tracking-wider text-[#c5a059] rounded-sm transition-colors cursor-pointer",
 						children: "Submit Another Inquiry"
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 129,
-						columnNumber: 13
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 128,
-					columnNumber: 11
-				}, void 0)
+					})
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$28,
-			lineNumber: 113,
-			columnNumber: 9
-		}, void 0) : /* @__PURE__ */ jsxDEV("form", {
+		}) : /* @__PURE__ */ jsxs("form", {
 			onSubmit: handleSubmit,
 			className: "space-y-3",
 			noValidate: true,
 			children: [
-				/* @__PURE__ */ jsxDEV("div", {
+				/* @__PURE__ */ jsxs("div", {
 					className: "sr-only",
 					"aria-hidden": "true",
-					children: [/* @__PURE__ */ jsxDEV("label", {
+					children: [/* @__PURE__ */ jsx("label", {
 						htmlFor: "hero-website-field",
 						children: "Website"
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 142,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					}), /* @__PURE__ */ jsx("input", {
 						id: "hero-website-field",
 						type: "text",
 						name: "website",
@@ -4471,92 +3978,40 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 						autoComplete: "off",
 						value: honeypot,
 						onChange: (e) => setHoneypot(e.target.value)
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 143,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 141,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", {
 					className: "border-b border-[#252f3e] pb-2.5",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "inline-flex items-center gap-1.5 text-[9px] font-mono tracking-[0.2em] text-[#c5a059] uppercase font-semibold",
-							children: [/* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-								fileName: _jsxFileName$28,
-								lineNumber: 157,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Priority Consultation" }, void 0, false, {
-								fileName: _jsxFileName$28,
-								lineNumber: 158,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$28,
-							lineNumber: 156,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Priority Consultation" })]
+						}),
+						/* @__PURE__ */ jsx("h3", {
 							className: "font-serif text-lg sm:text-xl font-normal text-[#f7f5f2] tracking-wide mt-0.5",
 							children: "Property Inquiry"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 160,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-[11px] text-[#8a909a] mt-0.5 leading-snug",
 							children: "Connect with our advisory desk for private allocations."
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 163,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 155,
-					columnNumber: 11
-				}, void 0),
-				error && /* @__PURE__ */ jsxDEV("div", {
+				}),
+				error && /* @__PURE__ */ jsxs("div", {
 					role: "alert",
 					className: "p-2.5 bg-red-950/70 border border-red-500/50 rounded-sm text-red-200 text-xs flex items-start gap-2",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 171,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
 						className: "leading-tight",
 						children: error
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 172,
-						columnNumber: 15
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 170,
-					columnNumber: 13
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
 					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Full Name ", /* @__PURE__ */ jsxDEV("span", {
+					children: ["Full Name ", /* @__PURE__ */ jsx("span", {
 						className: "text-[#c5a059]",
 						children: "*"
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 179,
-						columnNumber: 25
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 178,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					})]
+				}), /* @__PURE__ */ jsx("input", {
 					type: "text",
 					required: true,
 					value: fullName,
@@ -4564,30 +4019,14 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 					placeholder: "e.g. Vikramjit Singh",
 					disabled: loading,
 					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 181,
-					columnNumber: 13
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 177,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+				})] }),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
 					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Phone Number ", /* @__PURE__ */ jsxDEV("span", {
+					children: ["Phone Number ", /* @__PURE__ */ jsx("span", {
 						className: "text-[#c5a059]",
 						children: "*"
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 195,
-						columnNumber: 28
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 194,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					})]
+				}), /* @__PURE__ */ jsx("input", {
 					type: "tel",
 					required: true,
 					value: phone,
@@ -4595,264 +4034,123 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 					placeholder: "+91 977-987-8303",
 					disabled: loading,
 					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 197,
-					columnNumber: 13
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 193,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+				})] }),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
 					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Email Address ", /* @__PURE__ */ jsxDEV("span", {
+					children: ["Email Address ", /* @__PURE__ */ jsx("span", {
 						className: "text-[#64748b] lowercase text-[9px]",
 						children: "(optional)"
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 211,
-						columnNumber: 29
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 210,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					})]
+				}), /* @__PURE__ */ jsx("input", {
 					type: "email",
 					value: email,
 					onChange: (e) => setEmail(e.target.value),
 					placeholder: "client@familyoffice.com",
 					disabled: loading,
 					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 213,
-					columnNumber: 13
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 209,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+				})] }),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
 					children: "Property Type"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 225,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("select", {
+				}), /* @__PURE__ */ jsxs("select", {
 					value: propertyType,
 					onChange: (e) => setPropertyType(e.target.value),
 					disabled: loading,
 					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-2.5 py-1.5 text-xs text-[#f7f5f2] focus:outline-none transition-all cursor-pointer disabled:opacity-50",
 					children: [
-						/* @__PURE__ */ jsxDEV("option", {
+						/* @__PURE__ */ jsx("option", {
 							value: "Any Asset Class",
 							children: "Any Asset Class"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 234,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "Residential Villa / Estate",
 							children: "Residential Villa / Estate"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 235,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "Sky Penthouse / Duplex",
 							children: "Sky Penthouse / Duplex"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 236,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "Commercial Landmark",
 							children: "Commercial Landmark"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 237,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "Plots & Land Holdings",
 							children: "Plots & Land Holdings"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 238,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "New Development Project",
 							children: "New Development Project"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 239,
-							columnNumber: 15
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 228,
-					columnNumber: 13
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 224,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+				})] }),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
 					children: "Budget Range"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 245,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("select", {
+				}), /* @__PURE__ */ jsxs("select", {
 					value: budgetRange,
 					onChange: (e) => setBudgetRange(e.target.value),
 					disabled: loading,
 					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-2.5 py-1.5 text-xs text-[#f7f5f2] focus:outline-none transition-all cursor-pointer disabled:opacity-50",
 					children: [
-						/* @__PURE__ */ jsxDEV("option", {
+						/* @__PURE__ */ jsx("option", {
 							value: "Flexible / Consultation",
 							children: "Flexible / Consultation"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 254,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "Under ₹1 Cr",
 							children: "Under ₹1 Cr"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 255,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "₹1 Cr – ₹5 Cr",
 							children: "₹1 Cr – ₹5 Cr"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 256,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "₹5 Cr – ₹20 Cr",
 							children: "₹5 Cr – ₹20 Cr"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 257,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "₹20 Cr – ₹50 Cr",
 							children: "₹20 Cr – ₹50 Cr"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 258,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("option", {
+						}),
+						/* @__PURE__ */ jsx("option", {
 							value: "₹50 Cr+",
 							children: "₹50 Cr+ (Trophy Asset)"
-						}, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 259,
-							columnNumber: 15
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 248,
-					columnNumber: 13
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 244,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+				})] }),
+				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
 					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Preferred Location ", /* @__PURE__ */ jsxDEV("span", {
+					children: ["Preferred Location ", /* @__PURE__ */ jsx("span", {
 						className: "text-[#64748b] lowercase text-[9px]",
 						children: "(optional)"
-					}, void 0, false, {
-						fileName: _jsxFileName$28,
-						lineNumber: 266,
-						columnNumber: 34
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 265,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					})]
+				}), /* @__PURE__ */ jsx("input", {
 					type: "text",
 					value: preferredLocation,
 					onChange: (e) => setPreferredLocation(e.target.value),
 					placeholder: "e.g. IT City Mohali, Sector 82 A",
 					disabled: loading,
 					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 268,
-					columnNumber: 13
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$28,
-					lineNumber: 264,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				})] }),
+				/* @__PURE__ */ jsx("div", {
 					className: "pt-1",
-					children: /* @__PURE__ */ jsxDEV("button", {
+					children: /* @__PURE__ */ jsxs("button", {
 						type: "submit",
 						disabled: loading,
 						className: "w-full py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] active:bg-[#b38e47] text-[#0c0f12] font-semibold text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-[#c5a059]/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50",
-						children: [/* @__PURE__ */ jsxDEV("span", { children: loading ? "Submitting Inquiry..." : "Submit Inquiry" }, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 285,
-							columnNumber: 15
-						}, void 0), !loading && /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$28,
-							lineNumber: 286,
-							columnNumber: 28
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$28,
-						lineNumber: 280,
-						columnNumber: 13
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 279,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsx("span", { children: loading ? "Submitting Inquiry..." : "Submit Inquiry" }), !loading && /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+					})
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "text-[10px] text-[#6b7280] text-center pt-0.5 font-mono",
 					children: "100% Confidential · Direct Line: 977-987-8303"
-				}, void 0, false, {
-					fileName: _jsxFileName$28,
-					lineNumber: 291,
-					columnNumber: 11
-				}, void 0)
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$28,
-			lineNumber: 139,
-			columnNumber: 9
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$28,
-		lineNumber: 109,
-		columnNumber: 5
-	}, void 0);
+		})
+	});
 };
 // src/components/property/LocationTabs.tsx
-var _jsxFileName$27 = "/app/applet/src/components/property/LocationTabs.tsx";
 var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className = "", categoryTitle }) => {
 	const [locations, setLocations] = useState(() => storage.getLocations(true));
 	const scrollRef = useRef(null);
@@ -4984,70 +4282,42 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 		}).length;
 	};
 	const totalAllCount = properties ? properties.length : void 0;
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx("div", {
 		className: `w-full ${className}`,
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#202732]",
-			children: [/* @__PURE__ */ jsxDEV("div", {
+			children: [/* @__PURE__ */ jsxs("div", {
 				className: "flex items-center gap-2 shrink-0",
 				children: [
-					/* @__PURE__ */ jsxDEV(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }, void 0, false, {
-						fileName: _jsxFileName$27,
-						lineNumber: 190,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("span", {
+					/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }),
+					/* @__PURE__ */ jsx("span", {
 						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] font-medium whitespace-nowrap",
 						children: "Explore by Location"
-					}, void 0, false, {
-						fileName: _jsxFileName$27,
-						lineNumber: 191,
-						columnNumber: 11
-					}, void 0),
-					categoryTitle && /* @__PURE__ */ jsxDEV("span", {
+					}),
+					categoryTitle && /* @__PURE__ */ jsxs("span", {
 						className: "text-[11px] font-mono text-[#8a909a] hidden md:inline whitespace-nowrap",
 						children: ["· ", categoryTitle]
-					}, void 0, true, {
-						fileName: _jsxFileName$27,
-						lineNumber: 195,
-						columnNumber: 13
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$27,
-				lineNumber: 189,
-				columnNumber: 9
-			}, void 0), /* @__PURE__ */ jsxDEV("div", {
+			}), /* @__PURE__ */ jsxs("div", {
 				className: "relative min-w-0 flex-1 flex items-center gap-1.5 sm:pl-3",
 				children: [
-					hasOverflow && /* @__PURE__ */ jsxDEV("button", {
+					hasOverflow && /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: () => scrollByOffset(-220),
 						"aria-label": "Scroll locations left",
 						disabled: !canScrollLeft,
 						className: `hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollLeft ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-20 pointer-events-none"}`,
-						children: /* @__PURE__ */ jsxDEV(ChevronLeft, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$27,
-							lineNumber: 217,
-							columnNumber: 15
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$27,
-						lineNumber: 206,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+						children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-3.5 h-3.5" })
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "relative min-w-0 flex-1 overflow-hidden py-1",
 						children: [
-							canScrollLeft && /* @__PURE__ */ jsxDEV("div", {
+							canScrollLeft && /* @__PURE__ */ jsx("div", {
 								"aria-hidden": "true",
 								className: "pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0c0f12] via-[#0c0f12]/90 to-transparent z-[5]"
-							}, void 0, false, {
-								fileName: _jsxFileName$27,
-								lineNumber: 226,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								ref: scrollRef,
 								onScroll: updateScrollability,
 								onMouseDown: handleMouseDown,
@@ -5059,117 +4329,136 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 									scrollbarWidth: "none",
 									msOverflowStyle: "none"
 								},
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsxs("button", {
 									type: "button",
 									"data-active": selectedLocation === "all" || !selectedLocation ? "true" : "false",
 									onClick: () => handleTabClick("all"),
 									className: `px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${selectedLocation === "all" || !selectedLocation ? "bg-[#c5a059] text-[#0c0f12] font-bold border-[#c5a059] shadow-sm" : "bg-[#12161d] text-[#8a909a] hover:text-[#f7f5f2] border-[#222a36] hover:border-[#384557]"}`,
 									children: [
-										/* @__PURE__ */ jsxDEV(Globe, { className: "w-3 h-3" }, void 0, false, {
-											fileName: _jsxFileName$27,
-											lineNumber: 257,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", { children: "All Locations" }, void 0, false, {
-											fileName: _jsxFileName$27,
-											lineNumber: 258,
-											columnNumber: 17
-										}, void 0),
-										totalAllCount !== void 0 && /* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsx(Globe, { className: "w-3 h-3" }),
+										/* @__PURE__ */ jsx("span", { children: "All Locations" }),
+										totalAllCount !== void 0 && /* @__PURE__ */ jsx("span", {
 											className: `text-[10px] font-mono px-1 rounded ${selectedLocation === "all" || !selectedLocation ? "bg-black/20 text-black" : "text-[#64748b]"}`,
 											children: totalAllCount
-										}, void 0, false, {
-											fileName: _jsxFileName$27,
-											lineNumber: 260,
-											columnNumber: 19
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$27,
-									lineNumber: 247,
-									columnNumber: 15
-								}, void 0), locations.map((loc) => {
+								}), locations.map((loc) => {
 									const isSelected = selectedLocation === loc.id || selectedLocation === loc.slug || selectedLocation.toLowerCase() === loc.name.toLowerCase();
 									const count = getCountForLocation(loc);
-									return /* @__PURE__ */ jsxDEV("button", {
+									return /* @__PURE__ */ jsxs("button", {
 										type: "button",
 										"data-active": isSelected ? "true" : "false",
 										onClick: () => handleTabClick(loc.slug || loc.id),
 										className: `px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${isSelected ? "bg-[#c5a059] text-[#0c0f12] font-bold border-[#c5a059] shadow-sm" : "bg-[#12161d] text-[#8a909a] hover:text-[#f7f5f2] border-[#222a36] hover:border-[#384557]"}`,
-										children: [/* @__PURE__ */ jsxDEV("span", { children: loc.name }, void 0, false, {
-											fileName: _jsxFileName$27,
-											lineNumber: 285,
-											columnNumber: 21
-										}, void 0), count !== void 0 && /* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", { children: loc.name }), count !== void 0 && /* @__PURE__ */ jsx("span", {
 											className: `text-[10px] font-mono px-1 rounded ${isSelected ? "bg-black/20 text-black" : "text-[#64748b]"}`,
 											children: count
-										}, void 0, false, {
-											fileName: _jsxFileName$27,
-											lineNumber: 287,
-											columnNumber: 23
-										}, void 0)]
-									}, loc.id, true, {
-										fileName: _jsxFileName$27,
-										lineNumber: 274,
-										columnNumber: 19
-									}, void 0);
+										})]
+									}, loc.id);
 								})]
-							}, void 0, true, {
-								fileName: _jsxFileName$27,
-								lineNumber: 233,
-								columnNumber: 13
-							}, void 0),
-							canScrollRight && /* @__PURE__ */ jsxDEV("div", {
+							}),
+							canScrollRight && /* @__PURE__ */ jsx("div", {
 								"aria-hidden": "true",
 								className: "pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0c0f12] via-[#0c0f12]/90 to-transparent z-[5]"
-							}, void 0, false, {
-								fileName: _jsxFileName$27,
-								lineNumber: 300,
-								columnNumber: 15
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$27,
-						lineNumber: 222,
-						columnNumber: 11
-					}, void 0),
-					hasOverflow && /* @__PURE__ */ jsxDEV("button", {
+					}),
+					hasOverflow && /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: () => scrollByOffset(220),
 						"aria-label": "Scroll locations right",
 						disabled: !canScrollRight,
 						className: `hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollRight ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-20 pointer-events-none"}`,
-						children: /* @__PURE__ */ jsxDEV(ChevronRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$27,
-							lineNumber: 321,
-							columnNumber: 15
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$27,
-						lineNumber: 310,
-						columnNumber: 13
-					}, void 0)
+						children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-3.5 h-3.5" })
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$27,
-				lineNumber: 202,
-				columnNumber: 9
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$27,
-			lineNumber: 186,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$27,
-		lineNumber: 185,
-		columnNumber: 5
-	}, void 0);
+			})]
+		})
+	});
 };
+// src/utils/heroSlides.ts
+var DEFAULT_HERO_IMAGE_URL = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85";
+var DEFAULT_HERO_HEADING = "Architectural Landmarks & Private Havens";
+var DEFAULT_HERO_DESCRIPTION = "Representing the world’s most significant residential estates, sky penthouses, and commercial trophy assets with automated multi-registry synchronization.";
+var DEFAULT_HERO_SLIDE = {
+	id: "default-hero-slide",
+	imageUrl: DEFAULT_HERO_IMAGE_URL,
+	heading: DEFAULT_HERO_HEADING,
+	description: DEFAULT_HERO_DESCRIPTION,
+	displayOrder: 0,
+	isDefault: true
+};
+function isValidHeroImageUrl(url) {
+	const clean = (url || "").trim();
+	if (!clean) return false;
+	return clean.startsWith("/") || /^https?:\/\//i.test(clean);
+}
+/**
+* A slide is considered complete when all 3 editable fields (Banner Image, Heading, Description)
+* are present and non-empty.
+*/
+function isHeroSlideComplete(slide) {
+	if (!slide) return false;
+	return isValidHeroImageUrl(slide.imageUrl) && typeof slide.heading === "string" && slide.heading.trim().length > 0 && typeof slide.description === "string" && slide.description.trim().length > 0;
+}
+/**
+* Resolves the active ordered slides for the homepage hero slider.
+* Fallback rule: if no slides exist or no complete slides are configured,
+* returns [DEFAULT_HERO_SLIDE] so the exact default banner always displays and never goes blank.
+*/
+function resolveActiveHeroSlides(slides) {
+	if (!Array.isArray(slides) || slides.length === 0) return [DEFAULT_HERO_SLIDE];
+	const completeSlides = [...slides].sort((a, b) => {
+		const orderA = Number.isFinite(Number(a.displayOrder)) ? Number(a.displayOrder) : 0;
+		const orderB = Number.isFinite(Number(b.displayOrder)) ? Number(b.displayOrder) : 0;
+		if (orderA !== orderB) return orderA - orderB;
+		return (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0);
+	}).filter((s) => isHeroSlideComplete(s)).map((s, idx) => ({
+		id: s.id,
+		imageUrl: s.imageUrl.trim(),
+		heading: s.heading.trim(),
+		description: s.description.trim(),
+		displayOrder: idx,
+		isDefault: false
+	}));
+	if (completeSlides.length === 0) return [DEFAULT_HERO_SLIDE];
+	return completeSlides;
+}
 // src/pages/HomePage.tsx
-var _jsxFileName$26 = "/app/applet/src/pages/HomePage.tsx";
-var HomePage = ({ properties, collections, trophyHoldings, onSelectProperty, onNavigate, savedIds, onToggleSave }) => {
+var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectProperty, onNavigate, savedIds, onToggleSave }) => {
 	const { formatPrice } = useCurrency();
+	const activeSlides = useMemo(() => resolveActiveHeroSlides(heroSlides), [heroSlides]);
+	const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+	const [hasSlideTransitioned, setHasSlideTransitioned] = useState(false);
+	const [isHeroPaused, setIsHeroPaused] = useState(false);
+	const [failedSlideIds, setFailedSlideIds] = useState({});
+	const safeSlideIndex = activeSlideIndex < activeSlides.length ? activeSlideIndex : 0;
+	const currentHeroSlide = activeSlides[safeSlideIndex] || activeSlides[0];
+	const hasMultipleSlides = activeSlides.length > 1;
+	useEffect(() => {
+		if (activeSlideIndex >= activeSlides.length) setActiveSlideIndex(0);
+	}, [activeSlides.length, activeSlideIndex]);
+	useEffect(() => {
+		if (!hasMultipleSlides || isHeroPaused) return;
+		if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+		const timer = window.setInterval(() => {
+			setHasSlideTransitioned(true);
+			setActiveSlideIndex((prev) => (prev + 1) % activeSlides.length);
+		}, 6500);
+		return () => window.clearInterval(timer);
+	}, [
+		hasMultipleSlides,
+		isHeroPaused,
+		activeSlides.length
+	]);
+	const handleGoToSlide = (nextIdx) => {
+		if (!hasMultipleSlides) return;
+		const wrapped = (nextIdx + activeSlides.length) % activeSlides.length;
+		if (wrapped !== safeSlideIndex) {
+			setHasSlideTransitioned(true);
+			setActiveSlideIndex(wrapped);
+		}
+	};
 	const [selectedLocation, setSelectedLocation] = useState("all");
 	const [heroLocation, setHeroLocation] = useState("");
 	const [heroCategory, setHeroCategory] = useState("All");
@@ -5191,1031 +4480,560 @@ var HomePage = ({ properties, collections, trophyHoldings, onSelectProperty, onN
 		e.preventDefault();
 		onNavigate("/properties");
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-24 pb-20",
 		children: [
-			/* @__PURE__ */ jsxDEV("section", {
+			/* @__PURE__ */ jsxs("section", {
 				className: "relative min-h-[90vh] flex flex-col justify-center items-center px-6 pt-16 pb-24 overflow-hidden",
+				onMouseEnter: () => setIsHeroPaused(true),
+				onMouseLeave: () => setIsHeroPaused(false),
+				onFocusCapture: () => setIsHeroPaused(true),
+				onBlurCapture: (e) => {
+					if (!e.currentTarget.contains(e.relatedTarget)) setIsHeroPaused(false);
+				},
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
-						className: "absolute inset-0 z-0",
+					/* @__PURE__ */ jsxs("div", {
+						className: "absolute inset-0 z-0 overflow-hidden pointer-events-none",
 						children: [
-							/* @__PURE__ */ jsxDEV("img", {
-								src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85",
-								alt: "BUILDsmore Luxury Architecture",
-								className: "w-full h-full object-cover object-center filter brightness-[0.4] scale-105 transform animate-fade-in"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 102,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-[#0c0f12]/30" }, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 107,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-radial-gradient from-transparent via-transparent to-[#0c0f12]/80" }, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 108,
-								columnNumber: 11
-							}, void 0)
+							/* @__PURE__ */ jsxs("div", {
+								className: "hero-cinematic-stage absolute inset-0",
+								children: [activeSlides.map((slide, idx) => {
+									const isActive = idx === safeSlideIndex;
+									const resolvedSrc = failedSlideIds[slide.id] ? DEFAULT_HERO_IMAGE_URL : slide.imageUrl;
+									return /* @__PURE__ */ jsx("img", {
+										src: resolvedSrc,
+										alt: slide.heading || "BUILDsmore Luxury Architecture",
+										onError: () => {
+											if (!failedSlideIds[slide.id]) setFailedSlideIds((prev) => ({
+												...prev,
+												[slide.id]: true
+											}));
+										},
+										className: `absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.4] transition-opacity duration-1000 ease-in-out ${isActive ? "opacity-100" : "opacity-0"}`
+									}, slide.id);
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "hero-living-sky-mask absolute inset-0 overflow-hidden",
+									"aria-hidden": "true",
+									children: [
+										/* @__PURE__ */ jsx("div", { className: "hero-sun-glow" }),
+										/* @__PURE__ */ jsx("div", { className: "hero-light-rays-primary" }),
+										/* @__PURE__ */ jsx("div", { className: "hero-light-rays-secondary" }),
+										/* @__PURE__ */ jsx("div", { className: "hero-cloud-haze" }),
+										/* @__PURE__ */ jsx("div", { className: "hero-cloud-layer-far" }),
+										/* @__PURE__ */ jsx("div", { className: "hero-cloud-layer-near" })
+									]
+								})]
+							}),
+							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-[#0c0f12]/30" }),
+							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-radial-gradient from-transparent via-transparent to-[#0c0f12]/80" })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$26,
-						lineNumber: 101,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-10 items-center",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "lg:col-span-8 xl:col-span-9 space-y-6 text-center lg:text-left",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex flex-col items-center lg:items-start justify-center gap-3",
-									children: [/* @__PURE__ */ jsxDEV("img", {
+									children: [/* @__PURE__ */ jsx("img", {
 										src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 										alt: "BUILDsmore Logo",
 										className: "w-16 h-16 sm:w-20 sm:h-20 rounded-sm object-cover border border-[#c5a059]/50 shadow-2xl"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 118,
-										columnNumber: 15
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									}), /* @__PURE__ */ jsx("div", {
 										className: "inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-[#c5a059] font-medium border-b border-[#c5a059]/40 pb-1.5",
-										children: /* @__PURE__ */ jsxDEV("span", { children: "BUILDsmore · Let's Grow Together" }, void 0, false, {
-											fileName: _jsxFileName$26,
-											lineNumber: 124,
-											columnNumber: 17
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 123,
-										columnNumber: 15
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$26,
-									lineNumber: 117,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h1", {
-									className: "font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-normal text-[#f7f5f2] tracking-tight leading-[1.08] text-balance",
-									children: "Architectural Landmarks & Private Havens"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 128,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
-									className: "text-sm sm:text-base md:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto lg:mx-0 leading-relaxed",
-									children: "Representing the world’s most significant residential estates, sky penthouses, and commercial trophy assets with automated multi-registry synchronization."
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 132,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+										children: /* @__PURE__ */ jsx("span", { children: "BUILDsmore · Let's Grow Together" })
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: `space-y-6 ${hasSlideTransitioned ? "hero-slide-copy-enter" : ""}`,
+									children: [/* @__PURE__ */ jsx("h1", {
+										className: "font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-normal text-[#f7f5f2] tracking-tight leading-[1.08] text-balance",
+										children: currentHeroSlide.heading
+									}), /* @__PURE__ */ jsx("p", {
+										className: "text-sm sm:text-base md:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto lg:mx-0 leading-relaxed",
+										children: currentHeroSlide.description
+									})]
+								}, currentHeroSlide.id),
+								/* @__PURE__ */ jsx("div", {
 									className: "pt-4 w-full max-w-3xl mx-auto lg:mx-0",
-									children: /* @__PURE__ */ jsxDEV("form", {
+									children: /* @__PURE__ */ jsxs("form", {
 										onSubmit: handleHeroSearch,
 										className: "bg-[#12161d]/90 backdrop-blur-xl border border-[#2b3543] p-3 sm:p-4 rounded-sm shadow-2xl grid grid-cols-1 sm:grid-cols-12 gap-3 text-left",
 										children: [
-											/* @__PURE__ */ jsxDEV("div", {
+											/* @__PURE__ */ jsxs("div", {
 												className: "sm:col-span-5 relative",
-												children: [/* @__PURE__ */ jsxDEV("label", {
+												children: [/* @__PURE__ */ jsx("label", {
 													className: "text-[10px] uppercase tracking-wider text-[#8a909a] font-mono block mb-1",
 													children: "Global Enclave or City"
-												}, void 0, false, {
-													fileName: _jsxFileName$26,
-													lineNumber: 145,
-													columnNumber: 19
-												}, void 0), /* @__PURE__ */ jsxDEV("div", {
+												}), /* @__PURE__ */ jsxs("div", {
 													className: "relative",
-													children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] absolute left-3 top-1/2 -translate-y-1/2" }, void 0, false, {
-														fileName: _jsxFileName$26,
-														lineNumber: 149,
-														columnNumber: 21
-													}, void 0), /* @__PURE__ */ jsxDEV("input", {
+													children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] absolute left-3 top-1/2 -translate-y-1/2" }), /* @__PURE__ */ jsx("input", {
 														type: "text",
 														value: heroLocation,
 														onChange: (e) => setHeroLocation(e.target.value),
 														placeholder: "e.g. Mallorca, Mayfair, Aspen, Zurich...",
 														className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-9 pr-3 py-2 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none"
-													}, void 0, false, {
-														fileName: _jsxFileName$26,
-														lineNumber: 150,
-														columnNumber: 21
-													}, void 0)]
-												}, void 0, true, {
-													fileName: _jsxFileName$26,
-													lineNumber: 148,
-													columnNumber: 19
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$26,
-												lineNumber: 144,
-												columnNumber: 17
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("div", {
+													})]
+												})]
+											}),
+											/* @__PURE__ */ jsxs("div", {
 												className: "sm:col-span-3",
-												children: [/* @__PURE__ */ jsxDEV("label", {
+												children: [/* @__PURE__ */ jsx("label", {
 													className: "text-[10px] uppercase tracking-wider text-[#8a909a] font-mono block mb-1",
 													children: "Asset Class"
-												}, void 0, false, {
-													fileName: _jsxFileName$26,
-													lineNumber: 162,
-													columnNumber: 19
-												}, void 0), /* @__PURE__ */ jsxDEV("select", {
+												}), /* @__PURE__ */ jsxs("select", {
 													value: heroCategory,
 													onChange: (e) => setHeroCategory(e.target.value),
 													className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
 													children: [
-														/* @__PURE__ */ jsxDEV("option", {
+														/* @__PURE__ */ jsx("option", {
 															value: "All",
 															children: "All Categories"
-														}, void 0, false, {
-															fileName: _jsxFileName$26,
-															lineNumber: 170,
-															columnNumber: 21
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("option", {
+														}),
+														/* @__PURE__ */ jsx("option", {
 															value: "Residential",
 															children: "Residential"
-														}, void 0, false, {
-															fileName: _jsxFileName$26,
-															lineNumber: 171,
-															columnNumber: 21
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("option", {
+														}),
+														/* @__PURE__ */ jsx("option", {
 															value: "Commercial",
 															children: "Commercial"
-														}, void 0, false, {
-															fileName: _jsxFileName$26,
-															lineNumber: 172,
-															columnNumber: 21
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("option", {
+														}),
+														/* @__PURE__ */ jsx("option", {
 															value: "Plots/Land",
 															children: "Plots & Vineyards"
-														}, void 0, false, {
-															fileName: _jsxFileName$26,
-															lineNumber: 173,
-															columnNumber: 21
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("option", {
+														}),
+														/* @__PURE__ */ jsx("option", {
 															value: "New Projects",
 															children: "New Developments"
-														}, void 0, false, {
-															fileName: _jsxFileName$26,
-															lineNumber: 174,
-															columnNumber: 21
-														}, void 0)
+														})
 													]
-												}, void 0, true, {
-													fileName: _jsxFileName$26,
-													lineNumber: 165,
-													columnNumber: 19
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$26,
-												lineNumber: 161,
-												columnNumber: 17
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("div", {
+												})]
+											}),
+											/* @__PURE__ */ jsxs("div", {
 												className: "sm:col-span-4 flex items-end gap-2",
-												children: [/* @__PURE__ */ jsxDEV("div", {
+												children: [/* @__PURE__ */ jsxs("div", {
 													className: "flex-1",
-													children: [/* @__PURE__ */ jsxDEV("label", {
+													children: [/* @__PURE__ */ jsx("label", {
 														className: "text-[10px] uppercase tracking-wider text-[#8a909a] font-mono block mb-1",
 														children: "Price Range"
-													}, void 0, false, {
-														fileName: _jsxFileName$26,
-														lineNumber: 181,
-														columnNumber: 21
-													}, void 0), /* @__PURE__ */ jsxDEV("select", {
+													}), /* @__PURE__ */ jsxs("select", {
 														value: heroMaxPrice,
 														onChange: (e) => setHeroMaxPrice(e.target.value),
 														className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
 														children: [
-															/* @__PURE__ */ jsxDEV("option", {
+															/* @__PURE__ */ jsx("option", {
 																value: "all",
 																children: "Any Valuation"
-															}, void 0, false, {
-																fileName: _jsxFileName$26,
-																lineNumber: 189,
-																columnNumber: 23
-															}, void 0),
-															/* @__PURE__ */ jsxDEV("option", {
+															}),
+															/* @__PURE__ */ jsx("option", {
 																value: "under_5cr",
 																children: "Up to ₹5 Cr"
-															}, void 0, false, {
-																fileName: _jsxFileName$26,
-																lineNumber: 190,
-																columnNumber: 23
-															}, void 0),
-															/* @__PURE__ */ jsxDEV("option", {
+															}),
+															/* @__PURE__ */ jsx("option", {
 																value: "5cr_20cr",
 																children: "₹5 Cr – ₹20 Cr"
-															}, void 0, false, {
-																fileName: _jsxFileName$26,
-																lineNumber: 191,
-																columnNumber: 23
-															}, void 0),
-															/* @__PURE__ */ jsxDEV("option", {
+															}),
+															/* @__PURE__ */ jsx("option", {
 																value: "over_20cr",
 																children: "₹20 Cr+"
-															}, void 0, false, {
-																fileName: _jsxFileName$26,
-																lineNumber: 192,
-																columnNumber: 23
-															}, void 0)
+															})
 														]
-													}, void 0, true, {
-														fileName: _jsxFileName$26,
-														lineNumber: 184,
-														columnNumber: 21
-													}, void 0)]
-												}, void 0, true, {
-													fileName: _jsxFileName$26,
-													lineNumber: 180,
-													columnNumber: 19
-												}, void 0), /* @__PURE__ */ jsxDEV("button", {
+													})]
+												}), /* @__PURE__ */ jsx("button", {
 													type: "submit",
 													className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm transition-all flex items-center justify-center shrink-0 h-[34px] cursor-pointer",
-													children: /* @__PURE__ */ jsxDEV(Search, { className: "w-4 h-4" }, void 0, false, {
-														fileName: _jsxFileName$26,
-														lineNumber: 200,
-														columnNumber: 21
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$26,
-													lineNumber: 196,
-													columnNumber: 19
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$26,
-												lineNumber: 179,
-												columnNumber: 17
-											}, void 0)
+													children: /* @__PURE__ */ jsx(Search, { className: "w-4 h-4" })
+												})]
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$26,
-										lineNumber: 139,
-										columnNumber: 15
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 138,
-									columnNumber: 13
-								}, void 0)
+									})
+								}),
+								hasMultipleSlides && /* @__PURE__ */ jsxs("div", {
+									className: "pt-2 flex items-center justify-center lg:justify-start gap-4",
+									"aria-label": "Hero banner slide navigation",
+									children: [
+										/* @__PURE__ */ jsxs("div", {
+											className: "flex items-center gap-1.5",
+											children: [/* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => handleGoToSlide(safeSlideIndex - 1),
+												"aria-label": "Previous hero slide",
+												className: "w-8 h-8 rounded-sm bg-[#12161d]/80 hover:bg-[#1a222d] border border-[#2b3543] hover:border-[#c5a059]/70 text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer",
+												children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
+											}), /* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => handleGoToSlide(safeSlideIndex + 1),
+												"aria-label": "Next hero slide",
+												className: "w-8 h-8 rounded-sm bg-[#12161d]/80 hover:bg-[#1a222d] border border-[#2b3543] hover:border-[#c5a059]/70 text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer",
+												children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
+											})]
+										}),
+										/* @__PURE__ */ jsx("div", {
+											className: "flex items-center gap-2",
+											role: "tablist",
+											"aria-label": "Select hero slide",
+											children: activeSlides.map((slide, idx) => {
+												const isCurrent = idx === safeSlideIndex;
+												return /* @__PURE__ */ jsx("button", {
+													type: "button",
+													role: "tab",
+													"aria-selected": isCurrent,
+													"aria-label": `Go to slide ${idx + 1}: ${slide.heading}`,
+													onClick: () => handleGoToSlide(idx),
+													className: `h-1.5 rounded-full transition-all duration-300 cursor-pointer ${isCurrent ? "w-8 bg-[#c5a059]" : "w-2 bg-white/30 hover:bg-white/60"}`
+												}, slide.id);
+											})
+										}),
+										/* @__PURE__ */ jsxs("span", {
+											className: "text-[11px] font-mono text-[#8a909a] tabular-nums",
+											children: [
+												String(safeSlideIndex + 1).padStart(2, "0"),
+												" / ",
+												String(activeSlides.length).padStart(2, "0")
+											]
+										})
+									]
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 115,
-							columnNumber: 11
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsx("div", {
 							className: "lg:col-span-4 xl:col-span-3 w-full max-w-md mx-auto lg:max-w-none",
-							children: /* @__PURE__ */ jsxDEV(HeroInquiryForm, {}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 210,
-								columnNumber: 13
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 209,
-							columnNumber: 11
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$26,
-						lineNumber: 112,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+							children: /* @__PURE__ */ jsx(HeroInquiryForm, {})
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "relative z-10 w-full max-w-5xl mx-auto mt-16 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "font-serif text-2xl sm:text-3xl font-bold text-white block tracking-tight font-mono tabular-nums",
 								children: "₹32,000+ Cr"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 218,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-xs text-[#8a909a] tracking-wider uppercase font-mono mt-1 block",
 								children: "Active Portfolio Assets"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 221,
-								columnNumber: 13
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$26,
-								lineNumber: 217,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "font-serif text-2xl sm:text-3xl font-bold text-white block tracking-tight font-mono tabular-nums",
 								children: "60+"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 227,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-xs text-[#8a909a] tracking-wider uppercase font-mono mt-1 block",
 								children: "Synchronized Portals"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 230,
-								columnNumber: 13
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$26,
-								lineNumber: 226,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "font-serif text-2xl sm:text-3xl font-bold text-white block tracking-tight font-mono tabular-nums",
 								children: "100%"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 236,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-xs text-[#8a909a] tracking-wider uppercase font-mono mt-1 block",
 								children: "Verified Legal Title"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 239,
-								columnNumber: 13
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$26,
-								lineNumber: 235,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: /* @__PURE__ */ jsxDEV("a", {
+							})] }),
+							/* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("a", {
 								href: "tel:9779878303",
 								className: "block group cursor-pointer",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "font-serif text-2xl sm:text-3xl font-bold text-white group-hover:text-[#c5a059] transition-colors block tracking-tight font-mono tabular-nums",
 									children: "9779878303"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 246,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-xs text-[#c5a059] tracking-wider uppercase font-mono mt-1 block",
 									children: "Direct Advisory Hotline"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 249,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$26,
-								lineNumber: 245,
-								columnNumber: 13
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 244,
-								columnNumber: 11
-							}, void 0)
+								})]
+							}) })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$26,
-						lineNumber: 216,
-						columnNumber: 9
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$26,
-				lineNumber: 98,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+			}),
+			/* @__PURE__ */ jsx("section", {
 				className: "max-w-7xl mx-auto px-6 -mt-8",
-				children: /* @__PURE__ */ jsxDEV(LocationTabs, {
+				children: /* @__PURE__ */ jsx(LocationTabs, {
 					selectedLocation,
 					onSelectLocation: setSelectedLocation,
 					properties: publishedProperties,
 					categoryTitle: "All Holdings"
-				}, void 0, false, {
-					fileName: _jsxFileName$26,
-					lineNumber: 260,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$26,
-				lineNumber: 259,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+				})
+			}),
+			/* @__PURE__ */ jsxs("section", {
 				className: "max-w-7xl mx-auto px-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4",
-					children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-2",
 						children: selectedLocation === "all" ? "Curated Highlights" : `Location Focus · ${selectedLocationName}`
-					}, void 0, false, {
-						fileName: _jsxFileName$26,
-						lineNumber: 273,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("h2", {
+					}), /* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
 						children: selectedLocation === "all" ? "Trophy Holdings of the Season" : `Trophy Holdings in ${selectedLocationName}`
-					}, void 0, false, {
-						fileName: _jsxFileName$26,
-						lineNumber: 276,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$26,
-						lineNumber: 272,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+					})] }), /* @__PURE__ */ jsxs(AppLink, {
 						href: "/properties",
 						onNavigate,
 						className: "flex items-center gap-2 text-xs uppercase tracking-widest text-[#c5a059] hover:text-[#d4af5f] transition-colors cursor-pointer group",
-						children: [/* @__PURE__ */ jsxDEV("span", { children: [
+						children: [/* @__PURE__ */ jsxs("span", { children: [
 							"Explore Complete Portfolio (",
 							properties.length,
 							")"
-						] }, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 286,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" }, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 287,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$26,
-						lineNumber: 281,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$26,
-					lineNumber: 271,
-					columnNumber: 9
-				}, void 0), displayProperties.length > 0 ? /* @__PURE__ */ jsxDEV("div", {
+						] }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" })]
+					})]
+				}), displayProperties.length > 0 ? /* @__PURE__ */ jsx("div", {
 					className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-					children: displayProperties.map((prop) => /* @__PURE__ */ jsxDEV(PropertyCard, {
+					children: displayProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
 						property: prop,
 						onSelect: onSelectProperty,
 						isSaved: savedIds.includes(prop.id),
 						onToggleSave
-					}, prop.id, false, {
-						fileName: _jsxFileName$26,
-						lineNumber: 295,
-						columnNumber: 15
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$26,
-					lineNumber: 293,
-					columnNumber: 11
-				}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+					}, prop.id))
+				}) : /* @__PURE__ */ jsxs("div", {
 					className: "p-12 text-center bg-[#101419] border border-[#202732] rounded-sm space-y-3",
 					children: [
-						/* @__PURE__ */ jsxDEV(MapPin, { className: "w-8 h-8 text-[#c5a059] mx-auto opacity-70" }, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 306,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h3", {
+						/* @__PURE__ */ jsx(MapPin, { className: "w-8 h-8 text-[#c5a059] mx-auto opacity-70" }),
+						/* @__PURE__ */ jsxs("h3", {
 							className: "font-serif text-xl font-normal text-white",
 							children: ["No Published Assets Found in ", selectedLocationName]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 307,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsxs("p", {
 							className: "text-xs text-[#8a909a] max-w-md mx-auto",
 							children: [
 								"Our acquisitions division is actively sourcing prime residential and commercial holdings in ",
 								selectedLocationName,
 								"."
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 310,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+						}),
+						/* @__PURE__ */ jsx("button", {
 							onClick: () => setSelectedLocation("all"),
 							className: "mt-2 px-4 py-2 bg-[#1b222d] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono uppercase tracking-wider rounded-sm transition-colors cursor-pointer",
 							children: "Show All Locations"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 313,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$26,
-					lineNumber: 305,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$26,
-				lineNumber: 269,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+				})]
+			}),
+			/* @__PURE__ */ jsxs("section", {
 				className: "max-w-7xl mx-auto px-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "mb-10 text-center max-w-2xl mx-auto",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", {
 							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-2",
 							children: "Asset Categorization"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 328,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h2", {
+						}),
+						/* @__PURE__ */ jsx("h2", {
 							className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
 							children: "Curated Investment Collections"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 331,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-sm text-[#8a909a] mt-2",
 							children: "Targeted portfolio discovery across prime residential, commercial, acreage, and development classes."
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 334,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$26,
-					lineNumber: 327,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsx("div", {
 					className: "grid grid-cols-1 md:grid-cols-12 gap-6",
 					children: curatedCollections.map((col, index) => {
 						const colSpanClass = index % 4 === 0 || index % 4 === 3 ? "md:col-span-7" : "md:col-span-5";
-						return /* @__PURE__ */ jsxDEV(AppLink, {
+						return /* @__PURE__ */ jsxs(AppLink, {
 							href: `/collection/${encodeURIComponent(col.slug)}`,
 							onNavigate,
 							className: `${colSpanClass} block relative h-96 rounded-sm overflow-hidden group cursor-pointer border border-[#202732] bg-[#12161d] hover:border-[#c5a059]/40 transition-all duration-300`,
 							children: [
-								/* @__PURE__ */ jsxDEV("img", {
+								/* @__PURE__ */ jsx("img", {
 									src: col.coverImageUrl || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
 									alt: col.title,
 									className: "w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-[0.55]"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 351,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" }, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 356,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" }),
+								/* @__PURE__ */ jsxs("div", {
 									className: "absolute top-4 right-4 bg-[#0c0f12]/80 backdrop-blur-md px-3 py-1 rounded-sm border border-[#262f3c] text-[11px] font-mono text-[#c5a059] flex items-center gap-1.5",
-									children: [/* @__PURE__ */ jsxDEV(Layers, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 358,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [col.propertyIds?.length || 0, " Assets"] }, void 0, true, {
-										fileName: _jsxFileName$26,
-										lineNumber: 359,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$26,
-									lineNumber: 357,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsx(Layers, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: [col.propertyIds?.length || 0, " Assets"] })]
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "absolute bottom-6 left-6 right-6",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsx("span", {
 											className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059]",
 											children: col.subtitle || "Investment Collection"
-										}, void 0, false, {
-											fileName: _jsxFileName$26,
-											lineNumber: 362,
-											columnNumber: 19
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("h3", {
+										}),
+										/* @__PURE__ */ jsx("h3", {
 											className: "font-serif text-2xl font-medium text-white mt-1 group-hover:text-[#c5a059] transition-colors",
 											children: col.title
-										}, void 0, false, {
-											fileName: _jsxFileName$26,
-											lineNumber: 365,
-											columnNumber: 19
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("p", {
+										}),
+										/* @__PURE__ */ jsx("p", {
 											className: "text-xs text-[#cbd5e1] mt-1.5 max-w-md line-clamp-2",
 											children: col.description
-										}, void 0, false, {
-											fileName: _jsxFileName$26,
-											lineNumber: 368,
-											columnNumber: 19
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+										}),
+										/* @__PURE__ */ jsxs("div", {
 											className: "mt-3 inline-flex items-center gap-1.5 text-xs text-[#c5a059] font-medium group-hover:translate-x-1 transition-transform",
-											children: ["View Collection ", /* @__PURE__ */ jsxDEV(ChevronRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-												fileName: _jsxFileName$26,
-												lineNumber: 372,
-												columnNumber: 37
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$26,
-											lineNumber: 371,
-											columnNumber: 19
-										}, void 0)
+											children: ["View Collection ", /* @__PURE__ */ jsx(ChevronRight, { className: "w-3.5 h-3.5" })]
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$26,
-									lineNumber: 361,
-									columnNumber: 17
-								}, void 0)
+								})
 							]
-						}, col.id, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 345,
-							columnNumber: 15
-						}, void 0);
+						}, col.id);
 					})
-				}, void 0, false, {
-					fileName: _jsxFileName$26,
-					lineNumber: 339,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$26,
-				lineNumber: 325,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+				})]
+			}),
+			/* @__PURE__ */ jsx("section", {
 				className: "max-w-7xl mx-auto px-6",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsx("div", {
 					className: "bg-[#12161d] border border-[#242b36] p-8 md:p-12 rounded-sm",
-					children: /* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsxs("div", {
 						className: "grid grid-cols-1 lg:grid-cols-2 gap-10 items-center",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "space-y-6",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsx("span", {
 									className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059]",
 									children: "Featured New Development"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 388,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h2", {
+								}),
+								/* @__PURE__ */ jsx("h2", {
 									className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2] leading-tight",
 									children: "The Aurora Residences Zürichberg"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 391,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-sm text-[#9ca3af] leading-relaxed font-light",
 									children: "A limited commission of eight carbon-neutral private residences overlooking Lake Zurich and the Swiss Alps. Integrating deep geothermal heating, private solariums, and five-star hospitality concierge managed by The Dolder Grand."
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 394,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-2 gap-4 py-2 border-y border-[#1f2631] text-xs",
-									children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 										className: "text-[#737a85] font-mono uppercase block",
 										children: "Delivery"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 401,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-[#f7f5f2] font-semibold",
 										children: "Q4 2026 Active Construction"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 402,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$26,
-										lineNumber: 400,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+									})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 										className: "text-[#737a85] font-mono uppercase block",
 										children: "Starting From"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 405,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-[#c5a059] font-mono font-semibold",
 										children: "€18,900,000"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 406,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$26,
-										lineNumber: 404,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$26,
-									lineNumber: 399,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+									})] })]
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex flex-wrap items-center gap-4",
-									children: [/* @__PURE__ */ jsxDEV(AppLink, {
+									children: [/* @__PURE__ */ jsx(AppLink, {
 										href: "/property/the-aurora-residences-zurichberg-switzerland",
 										onNavigate,
 										className: "inline-block px-6 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-all cursor-pointer",
 										children: "View Residence Dossier"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 411,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+									}), /* @__PURE__ */ jsx(AppLink, {
 										href: "/contact",
 										onNavigate,
 										className: "inline-block px-6 py-2.5 bg-[#181f2a] hover:bg-[#202937] text-[#f7f5f2] text-xs uppercase tracking-wider font-medium rounded-sm border border-[#2b3646] transition-all cursor-pointer",
 										children: "Register Early Interest"
-									}, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 418,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$26,
-									lineNumber: 410,
-									columnNumber: 15
-								}, void 0)
+									})]
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 387,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsx("div", {
 							className: "relative aspect-[4/3] rounded-sm overflow-hidden border border-[#242b36]",
-							children: /* @__PURE__ */ jsxDEV("img", {
+							children: /* @__PURE__ */ jsx("img", {
 								src: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=80",
 								alt: "The Aurora Residences",
 								className: "w-full h-full object-cover"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 429,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 428,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$26,
-						lineNumber: 385,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$26,
-					lineNumber: 384,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$26,
-				lineNumber: 383,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+							})
+						})]
+					})
+				})
+			}),
+			/* @__PURE__ */ jsxs("section", {
 				className: "max-w-7xl mx-auto px-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "text-center max-w-2xl mx-auto mb-12",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", {
 							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-2",
 							children: "Discreet Representation"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 443,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h2", {
+						}),
+						/* @__PURE__ */ jsx("h2", {
 							className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
 							children: "Private Client Wealth Advisory"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 446,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-sm text-[#8a909a] mt-2",
 							children: "Comprehensive acquisition, disposal, and cross-border portfolio structuring for sovereign entities and family offices."
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 449,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$26,
-					lineNumber: 442,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "grid grid-cols-1 md:grid-cols-3 gap-8",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-8 bg-[#101419] border border-[#202732] rounded-sm space-y-4",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsx("div", {
 									className: "w-10 h-10 rounded-sm bg-[#161c24] border border-[#263140] flex items-center justify-center text-[#c5a059]",
-									children: /* @__PURE__ */ jsxDEV(Lock, { className: "w-5 h-5" }, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 458,
-										columnNumber: 15
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 457,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h3", {
+									children: /* @__PURE__ */ jsx(Lock, { className: "w-5 h-5" })
+								}),
+								/* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-xl font-medium text-[#f7f5f2]",
 									children: "Strict Confidentiality & NDA"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 460,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#8a909a] leading-relaxed",
 									children: "Every mandate operates under sovereign-grade non-disclosure protocols. Ultra-prime off-market properties are shared solely with pre-vetted family offices."
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 463,
-									columnNumber: 13
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 456,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-8 bg-[#101419] border border-[#202732] rounded-sm space-y-4",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsx("div", {
 									className: "w-10 h-10 rounded-sm bg-[#161c24] border border-[#263140] flex items-center justify-center text-[#c5a059]",
-									children: /* @__PURE__ */ jsxDEV(TrendingUp, { className: "w-5 h-5" }, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 470,
-										columnNumber: 15
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 469,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h3", {
+									children: /* @__PURE__ */ jsx(TrendingUp, { className: "w-5 h-5" })
+								}),
+								/* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-xl font-medium text-[#f7f5f2]",
 									children: "Multi-Source Network Sync"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 472,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#8a909a] leading-relaxed",
 									children: "Consolidating listings across 60+ European and Middle Eastern WordPress partner registries into one verified, deduplicated database with live price diffing."
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 475,
-									columnNumber: 13
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 468,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-8 bg-[#101419] border border-[#202732] rounded-sm space-y-4",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsx("div", {
 									className: "w-10 h-10 rounded-sm bg-[#161c24] border border-[#263140] flex items-center justify-center text-[#c5a059]",
-									children: /* @__PURE__ */ jsxDEV(KeyRound, { className: "w-5 h-5" }, void 0, false, {
-										fileName: _jsxFileName$26,
-										lineNumber: 482,
-										columnNumber: 15
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 481,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h3", {
+									children: /* @__PURE__ */ jsx(KeyRound, { className: "w-5 h-5" })
+								}),
+								/* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-xl font-medium text-[#f7f5f2]",
 									children: "Title & Covenants Audit"
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 484,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#8a909a] leading-relaxed",
 									children: "Independent architectural, zoning, and legal title review performed before any property enters the BUILDsmore central registry."
-								}, void 0, false, {
-									fileName: _jsxFileName$26,
-									lineNumber: 487,
-									columnNumber: 13
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$26,
-							lineNumber: 480,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$26,
-					lineNumber: 454,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$26,
-				lineNumber: 441,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+				})]
+			}),
+			/* @__PURE__ */ jsx("section", {
 				className: "max-w-5xl mx-auto px-6",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "relative overflow-hidden bg-gradient-to-r from-[#141a22] to-[#10141a] border border-[#2a3646] p-10 md:p-14 rounded-sm text-center space-y-6",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", {
 							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059]",
 							children: "Private Consultation"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 498,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h2", {
+						}),
+						/* @__PURE__ */ jsx("h2", {
 							className: "font-serif text-3xl sm:text-4xl font-normal text-white max-w-xl mx-auto",
 							children: "Schedule a Confidential Consultation with a Senior Advisor"
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 501,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-xs sm:text-sm text-[#9ca3af] max-w-lg mx-auto",
 							children: "Whether seeking an off-market acquisition in Port d'Andratx or divesting a commercial asset in Mayfair, our principals are at your disposal."
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 504,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "pt-2",
-							children: /* @__PURE__ */ jsxDEV(AppLink, {
+							children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/contact",
 								onNavigate,
 								className: "inline-block px-8 py-3 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all cursor-pointer shadow-lg",
 								children: "Contact Concierge Desk"
-							}, void 0, false, {
-								fileName: _jsxFileName$26,
-								lineNumber: 508,
-								columnNumber: 13
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$26,
-							lineNumber: 507,
-							columnNumber: 11
-						}, void 0)
+							})
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$26,
-					lineNumber: 497,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$26,
-				lineNumber: 496,
-				columnNumber: 7
-			}, void 0)
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$26,
-		lineNumber: 95,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/components/property/PropertyFilterBar.tsx
-var _jsxFileName$25 = "/app/applet/src/components/property/PropertyFilterBar.tsx";
 var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 	const categories = [
 		"All",
@@ -6287,289 +5105,151 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 		}
 	];
 	const hasActiveFilters = filters.searchQuery.trim() !== "" || filters.category !== "All" || filters.priceRange !== "all" || filters.bedrooms !== "any" || filters.sortBy !== "newest";
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "bg-[#101419] border border-[#202732] p-5 rounded-sm mb-8 space-y-4 shadow-lg",
-		children: [/* @__PURE__ */ jsxDEV("div", {
+		children: [/* @__PURE__ */ jsxs("div", {
 			className: "grid grid-cols-1 md:grid-cols-12 gap-3 items-center",
 			children: [
-				/* @__PURE__ */ jsxDEV("div", {
+				/* @__PURE__ */ jsxs("div", {
 					className: "md:col-span-5 relative",
 					children: [
-						/* @__PURE__ */ jsxDEV(Search, { className: "w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }, void 0, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 73,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("input", {
+						/* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }),
+						/* @__PURE__ */ jsx("input", {
 							type: "text",
 							value: filters.searchQuery,
 							onChange: (e) => onChange({ searchQuery: e.target.value }),
 							placeholder: "Search by city, country, architecture, or title...",
 							className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm pl-10 pr-4 py-2.5 text-xs text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-						}, void 0, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 74,
-							columnNumber: 11
-						}, void 0),
-						filters.searchQuery && /* @__PURE__ */ jsxDEV("button", {
+						}),
+						filters.searchQuery && /* @__PURE__ */ jsx("button", {
 							onClick: () => onChange({ searchQuery: "" }),
 							className: "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8a909a] hover:text-[#f7f5f2]",
 							children: "×"
-						}, void 0, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 82,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$25,
-					lineNumber: 72,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "md:col-span-3",
-					children: /* @__PURE__ */ jsxDEV("select", {
+					children: /* @__PURE__ */ jsx("select", {
 						value: filters.priceRange,
 						onChange: (e) => onChange({ priceRange: e.target.value }),
 						className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-						children: priceOptions.map((opt) => /* @__PURE__ */ jsxDEV("option", {
+						children: priceOptions.map((opt) => /* @__PURE__ */ jsx("option", {
 							value: opt.value,
 							className: "bg-[#161b22] text-[#f7f5f2]",
 							children: opt.label
-						}, opt.value, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 99,
-							columnNumber: 15
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$25,
-						lineNumber: 93,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$25,
-					lineNumber: 92,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+						}, opt.value))
+					})
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "md:col-span-2",
-					children: /* @__PURE__ */ jsxDEV("select", {
+					children: /* @__PURE__ */ jsx("select", {
 						value: filters.bedrooms,
 						onChange: (e) => onChange({ bedrooms: e.target.value }),
 						className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-						children: bedroomOptions.map((opt) => /* @__PURE__ */ jsxDEV("option", {
+						children: bedroomOptions.map((opt) => /* @__PURE__ */ jsx("option", {
 							value: opt.value,
 							className: "bg-[#161b22] text-[#f7f5f2]",
 							children: opt.label
-						}, opt.value, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 114,
-							columnNumber: 15
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$25,
-						lineNumber: 108,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$25,
-					lineNumber: 107,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+						}, opt.value))
+					})
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "md:col-span-2",
-					children: /* @__PURE__ */ jsxDEV("select", {
+					children: /* @__PURE__ */ jsx("select", {
 						value: filters.sortBy,
 						onChange: (e) => onChange({ sortBy: e.target.value }),
 						className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-						children: sortOptions.map((opt) => /* @__PURE__ */ jsxDEV("option", {
+						children: sortOptions.map((opt) => /* @__PURE__ */ jsx("option", {
 							value: opt.value,
 							className: "bg-[#161b22] text-[#f7f5f2]",
 							children: opt.label
-						}, opt.value, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 129,
-							columnNumber: 15
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$25,
-						lineNumber: 123,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$25,
-					lineNumber: 122,
-					columnNumber: 9
-				}, void 0)
+						}, opt.value))
+					})
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$25,
-			lineNumber: 69,
-			columnNumber: 7
-		}, void 0), /* @__PURE__ */ jsxDEV("div", {
+		}), /* @__PURE__ */ jsxs("div", {
 			className: "flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#1c232d]",
-			children: [/* @__PURE__ */ jsxDEV("div", {
+			children: [/* @__PURE__ */ jsx("div", {
 				className: "flex flex-wrap items-center gap-1.5",
 				children: categories.map((cat) => {
 					const isActive = filters.category === cat;
-					return /* @__PURE__ */ jsxDEV("button", {
+					return /* @__PURE__ */ jsx("button", {
 						onClick: () => onChange({ category: cat }),
 						className: `px-3 py-1.5 text-xs tracking-wider uppercase rounded-sm transition-all cursor-pointer font-medium ${isActive ? "bg-[#c5a059] text-[#0c0f12] font-semibold shadow-sm" : "bg-[#161b22] text-[#9ca3af] hover:text-[#f7f5f2] border border-[#262f3d]"}`,
 						children: cat === "All" ? "All Classes" : cat
-					}, cat, false, {
-						fileName: _jsxFileName$25,
-						lineNumber: 146,
-						columnNumber: 15
-					}, void 0);
+					}, cat);
 				})
-			}, void 0, false, {
-				fileName: _jsxFileName$25,
-				lineNumber: 142,
-				columnNumber: 9
-			}, void 0), /* @__PURE__ */ jsxDEV("div", {
+			}), /* @__PURE__ */ jsxs("div", {
 				className: "flex items-center gap-4 text-xs text-[#8a909a]",
 				children: [
-					/* @__PURE__ */ jsxDEV("span", {
+					/* @__PURE__ */ jsxs("span", {
 						className: "font-mono tabular-nums text-[#d1d5db]",
 						children: [
-							/* @__PURE__ */ jsxDEV("strong", {
+							/* @__PURE__ */ jsx("strong", {
 								className: "text-[#f7f5f2]",
 								children: totalResults
-							}, void 0, false, {
-								fileName: _jsxFileName$25,
-								lineNumber: 164,
-								columnNumber: 13
-							}, void 0),
+							}),
 							" ",
 							totalResults === 1 ? "Property" : "Properties",
 							" Found"
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$25,
-						lineNumber: 163,
-						columnNumber: 11
-					}, void 0),
-					hasActiveFilters && /* @__PURE__ */ jsxDEV("button", {
+					}),
+					hasActiveFilters && /* @__PURE__ */ jsxs("button", {
 						onClick: onReset,
 						className: "flex items-center gap-1 text-xs text-[#c5a059] hover:underline cursor-pointer",
-						children: [/* @__PURE__ */ jsxDEV(RotateCcw, { className: "w-3 h-3" }, void 0, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 172,
-							columnNumber: 15
-						}, void 0), "Reset Filters"]
-					}, void 0, true, {
-						fileName: _jsxFileName$25,
-						lineNumber: 168,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3 h-3" }), "Reset Filters"]
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center border border-[#262f3d] rounded-sm p-0.5 bg-[#161b22]",
-						children: [/* @__PURE__ */ jsxDEV("button", {
+						children: [/* @__PURE__ */ jsx("button", {
 							onClick: () => onChange({ viewMode: "grid" }),
 							"aria-label": "Grid View",
 							className: `p-1.5 rounded-sm transition-colors cursor-pointer ${filters.viewMode === "grid" ? "bg-[#c5a059] text-[#0c0f12]" : "text-[#8a909a] hover:text-[#f7f5f2]"}`,
-							children: /* @__PURE__ */ jsxDEV(LayoutGrid, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$25,
-								lineNumber: 186,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 179,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							children: /* @__PURE__ */ jsx(LayoutGrid, { className: "w-3.5 h-3.5" })
+						}), /* @__PURE__ */ jsx("button", {
 							onClick: () => onChange({ viewMode: "list" }),
 							"aria-label": "List View",
 							className: `p-1.5 rounded-sm transition-colors cursor-pointer ${filters.viewMode === "list" ? "bg-[#c5a059] text-[#0c0f12]" : "text-[#8a909a] hover:text-[#f7f5f2]"}`,
-							children: /* @__PURE__ */ jsxDEV(List, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$25,
-								lineNumber: 195,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$25,
-							lineNumber: 188,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$25,
-						lineNumber: 178,
-						columnNumber: 11
-					}, void 0)
+							children: /* @__PURE__ */ jsx(List, { className: "w-3.5 h-3.5" })
+						})]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$25,
-				lineNumber: 162,
-				columnNumber: 9
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$25,
-			lineNumber: 139,
-			columnNumber: 7
-		}, void 0)]
-	}, void 0, true, {
-		fileName: _jsxFileName$25,
-		lineNumber: 66,
-		columnNumber: 5
-	}, void 0);
+			})]
+		})]
+	});
 };
 // src/components/common/Breadcrumbs.tsx
-var _jsxFileName$24 = "/app/applet/src/components/common/Breadcrumbs.tsx";
 var Breadcrumbs = ({ items, onNavigate, align = "left", className = "" }) => {
 	if (!items || items.length === 0) return null;
-	return /* @__PURE__ */ jsxDEV("nav", {
+	return /* @__PURE__ */ jsx("nav", {
 		"aria-label": "Breadcrumb",
 		className: `${align === "center" ? "flex justify-center" : ""} ${className}`,
-		children: /* @__PURE__ */ jsxDEV("ol", {
+		children: /* @__PURE__ */ jsx("ol", {
 			className: `flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-[#8a909a] ${align === "center" ? "justify-center font-mono uppercase tracking-wider" : ""}`,
 			children: items.map((item, idx) => {
 				const isLast = idx === items.length - 1;
-				return /* @__PURE__ */ jsxDEV("li", {
+				return /* @__PURE__ */ jsxs("li", {
 					className: "inline-flex items-center gap-1.5 sm:gap-2",
-					children: [idx > 0 && /* @__PURE__ */ jsxDEV(ChevronRight, {
+					children: [idx > 0 && /* @__PURE__ */ jsx(ChevronRight, {
 						className: "w-3 h-3 text-[#4b5563] shrink-0",
 						"aria-hidden": "true"
-					}, void 0, false, {
-						fileName: _jsxFileName$24,
-						lineNumber: 36,
-						columnNumber: 17
-					}, void 0), item.href && !isLast ? /* @__PURE__ */ jsxDEV(AppLink, {
+					}), item.href && !isLast ? /* @__PURE__ */ jsx(AppLink, {
 						href: item.href,
 						onNavigate,
 						className: align === "center" ? "text-[#c5a059] hover:underline transition-colors" : "hover:text-[#f7f5f2] transition-colors",
 						children: item.label
-					}, void 0, false, {
-						fileName: _jsxFileName$24,
-						lineNumber: 39,
-						columnNumber: 17
-					}, void 0) : /* @__PURE__ */ jsxDEV("span", {
+					}) : /* @__PURE__ */ jsx("span", {
 						"aria-current": isLast ? "page" : void 0,
 						className: isLast ? "text-[#f7f5f2] font-medium truncate max-w-[240px] sm:max-w-xs" : "text-[#8a909a]",
 						children: item.label
-					}, void 0, false, {
-						fileName: _jsxFileName$24,
-						lineNumber: 51,
-						columnNumber: 17
-					}, void 0)]
-				}, `${item.label}-${idx}`, true, {
-					fileName: _jsxFileName$24,
-					lineNumber: 34,
-					columnNumber: 13
-				}, void 0);
+					})]
+				}, `${item.label}-${idx}`);
 			})
-		}, void 0, false, {
-			fileName: _jsxFileName$24,
-			lineNumber: 26,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$24,
-		lineNumber: 22,
-		columnNumber: 5
-	}, void 0);
+		})
+	});
 };
 // src/pages/PropertiesPage.tsx
-var _jsxFileName$23 = "/app/applet/src/pages/PropertiesPage.tsx";
 var ITEMS_PER_PAGE = 6;
 var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onToggleSave, initialCategory = "All" }) => {
 	const { formatPrice } = useCurrency();
@@ -6691,98 +5371,54 @@ var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onTo
 	]);
 	const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 	const paginatedProperties = filteredProperties.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "max-w-7xl mx-auto px-6 py-12 space-y-8",
 		children: [
-			/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+			/* @__PURE__ */ jsx(Breadcrumbs, {
 				items: [{
 					label: "Home",
 					href: "/"
 				}, { label: "Portfolio" }],
 				onNavigate
-			}, void 0, false, {
-				fileName: _jsxFileName$23,
-				lineNumber: 187,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#202732]",
-				children: [/* @__PURE__ */ jsxDEV("div", { children: [
-					/* @__PURE__ */ jsxDEV("span", {
+				children: [/* @__PURE__ */ jsxs("div", { children: [
+					/* @__PURE__ */ jsx("span", {
 						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 						children: "Prime Holdings Registry"
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 195,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("h1", {
+					}),
+					/* @__PURE__ */ jsx("h1", {
 						className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
 						children: "International Portfolio"
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 198,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+					}),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-xs text-[#8a909a] mt-1",
 						children: "Architectural residences, trophy commercial towers, and private vineyard estates worldwide."
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 201,
-						columnNumber: 11
-					}, void 0)
-				] }, void 0, true, {
-					fileName: _jsxFileName$23,
-					lineNumber: 194,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					})
+				] }), /* @__PURE__ */ jsx("div", {
 					className: "flex items-center gap-3",
-					children: /* @__PURE__ */ jsxDEV("button", {
+					children: /* @__PURE__ */ jsxs("button", {
 						onClick: () => setShowSavedOnly(!showSavedOnly),
 						className: `flex items-center gap-2 px-3 py-1.5 text-xs rounded-sm transition-colors cursor-pointer border ${showSavedOnly ? "bg-[#c5a059] text-[#0c0f12] font-semibold border-[#c5a059]" : "bg-[#14181d] text-[#9ca3af] hover:text-[#f7f5f2] border-[#242b35]"}`,
-						children: [/* @__PURE__ */ jsxDEV(Bookmark, {
+						children: [/* @__PURE__ */ jsx(Bookmark, {
 							className: "w-3.5 h-3.5",
 							fill: showSavedOnly ? "currentColor" : "none"
-						}, void 0, false, {
-							fileName: _jsxFileName$23,
-							lineNumber: 216,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+						}), /* @__PURE__ */ jsxs("span", { children: [
 							"Saved Portfolio (",
 							savedIds.length,
 							")"
-						] }, void 0, true, {
-							fileName: _jsxFileName$23,
-							lineNumber: 217,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$23,
-						lineNumber: 208,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$23,
-					lineNumber: 207,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$23,
-				lineNumber: 193,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV(PropertyFilterBar, {
+						] })]
+					})
+				})]
+			}),
+			/* @__PURE__ */ jsx(PropertyFilterBar, {
 				filters,
 				onChange: handleFilterChange,
 				onReset: handleReset,
 				totalResults: filteredProperties.length
-			}, void 0, false, {
-				fileName: _jsxFileName$23,
-				lineNumber: 223,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV(LocationTabs, {
+			}),
+			/* @__PURE__ */ jsx(LocationTabs, {
 				selectedLocation,
 				onSelectLocation: (loc) => {
 					setSelectedLocation(loc);
@@ -6790,55 +5426,35 @@ var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onTo
 				},
 				properties: properties.filter((p) => filters.category === "All" || p.category === filters.category),
 				categoryTitle: filters.category === "All" ? "Portfolio" : filters.category
-			}, void 0, false, {
-				fileName: _jsxFileName$23,
-				lineNumber: 231,
-				columnNumber: 7
-			}, void 0),
-			paginatedProperties.length > 0 ? filters.viewMode === "grid" ? /* @__PURE__ */ jsxDEV("div", {
+			}),
+			paginatedProperties.length > 0 ? filters.viewMode === "grid" ? /* @__PURE__ */ jsx("div", {
 				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-				children: paginatedProperties.map((prop) => /* @__PURE__ */ jsxDEV(PropertyCard, {
+				children: paginatedProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
 					property: prop,
 					onSelect: onSelectProperty,
 					isSaved: savedIds.includes(prop.id),
 					onToggleSave
-				}, prop.id, false, {
-					fileName: _jsxFileName$23,
-					lineNumber: 247,
-					columnNumber: 15
-				}, void 0))
-			}, void 0, false, {
-				fileName: _jsxFileName$23,
-				lineNumber: 245,
-				columnNumber: 11
-			}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+				}, prop.id))
+			}) : /* @__PURE__ */ jsx("div", {
 				className: "space-y-4",
-				children: paginatedProperties.map((prop) => /* @__PURE__ */ jsxDEV(AppLink, {
+				children: paginatedProperties.map((prop) => /* @__PURE__ */ jsxs(AppLink, {
 					href: `/property/${encodeURIComponent(prop.slug)}`,
 					onNavigate: () => onSelectProperty(prop),
 					className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-colors p-4 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer group",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-4 w-full md:w-auto",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsx("div", {
 							className: "w-24 h-20 shrink-0 bg-[#14181d] rounded-sm overflow-hidden",
 							children: (() => {
 								const primaryImg = getPrimaryPropertyImage(prop);
-								return primaryImg.url ? /* @__PURE__ */ jsxDEV("img", {
+								return primaryImg.url ? /* @__PURE__ */ jsx("img", {
 									src: primaryImg.url,
 									alt: prop.title,
 									className: `w-full h-full transition-transform ${primaryImg.isLogo ? "object-contain p-2 bg-[#0f141b]" : "object-cover group-hover:scale-105"}`
-								}, void 0, false, {
-									fileName: _jsxFileName$23,
-									lineNumber: 271,
-									columnNumber: 25
-								}, void 0) : null;
+								}) : null;
 							})()
-						}, void 0, false, {
-							fileName: _jsxFileName$23,
-							lineNumber: 267,
-							columnNumber: 19
-						}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [
-							/* @__PURE__ */ jsxDEV("span", {
+						}), /* @__PURE__ */ jsxs("div", { children: [
+							/* @__PURE__ */ jsxs("span", {
 								className: "text-[10px] uppercase tracking-wider text-[#c5a059] font-mono block",
 								children: [
 									prop.category,
@@ -6847,175 +5463,78 @@ var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onTo
 									", ",
 									prop.country
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$23,
-								lineNumber: 282,
-								columnNumber: 21
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("h3", {
+							}),
+							/* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-lg font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors",
 								children: prop.title
-							}, void 0, false, {
-								fileName: _jsxFileName$23,
-								lineNumber: 285,
-								columnNumber: 21
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+							}),
+							/* @__PURE__ */ jsxs("p", {
 								className: "text-xs text-[#8a909a] font-mono mt-0.5",
 								children: [prop.bedrooms > 0 ? `${prop.bedrooms} Beds · ` : "", prop.interiorAreaSqFt ? `${prop.interiorAreaSqFt.toLocaleString()} sq ft` : ""]
-							}, void 0, true, {
-								fileName: _jsxFileName$23,
-								lineNumber: 288,
-								columnNumber: 21
-							}, void 0)
-						] }, void 0, true, {
-							fileName: _jsxFileName$23,
-							lineNumber: 281,
-							columnNumber: 19
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$23,
-						lineNumber: 266,
-						columnNumber: 17
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							})
+						] })]
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between md:justify-end gap-6 w-full md:w-auto pt-3 md:pt-0 border-t md:border-0 border-[#1c232d]",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "text-right",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[10px] text-[#737a85] uppercase block font-mono",
 								children: "Valuation"
-							}, void 0, false, {
-								fileName: _jsxFileName$23,
-								lineNumber: 297,
-								columnNumber: 21
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "font-mono text-base font-bold text-[#f7f5f2] tabular-nums",
 								children: formatPrice(prop.price, prop.currency)
-							}, void 0, false, {
-								fileName: _jsxFileName$23,
-								lineNumber: 298,
-								columnNumber: 21
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$23,
-							lineNumber: 296,
-							columnNumber: 19
-						}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							})]
+						}), /* @__PURE__ */ jsxs("span", {
 							className: "px-3 py-1.5 bg-[#181f2a] group-hover:bg-[#c5a059] group-hover:text-[#0c0f12] text-xs font-semibold rounded-sm transition-colors text-[#d1d5db] flex items-center gap-1",
-							children: ["Inspect ", /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3 h-3" }, void 0, false, {
-								fileName: _jsxFileName$23,
-								lineNumber: 304,
-								columnNumber: 29
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$23,
-							lineNumber: 303,
-							columnNumber: 19
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$23,
-						lineNumber: 295,
-						columnNumber: 17
-					}, void 0)]
-				}, prop.id, true, {
-					fileName: _jsxFileName$23,
-					lineNumber: 260,
-					columnNumber: 15
-				}, void 0))
-			}, void 0, false, {
-				fileName: _jsxFileName$23,
-				lineNumber: 258,
-				columnNumber: 11
-			}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+							children: ["Inspect ", /* @__PURE__ */ jsx(ArrowRight, { className: "w-3 h-3" })]
+						})]
+					})]
+				}, prop.id))
+			}) : /* @__PURE__ */ jsxs("div", {
 				className: "text-center py-20 px-6 bg-[#101419] border border-[#202732] rounded-sm space-y-4 max-w-xl mx-auto my-12",
 				children: [
-					/* @__PURE__ */ jsxDEV(Building2, { className: "w-12 h-12 text-[#64748b] mx-auto" }, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 314,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("h3", {
+					/* @__PURE__ */ jsx(Building2, { className: "w-12 h-12 text-[#64748b] mx-auto" }),
+					/* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-2xl font-medium text-[#f7f5f2]",
 						children: "No Holdings Match Your Criteria"
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 315,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+					}),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-xs text-[#8a909a] leading-relaxed max-w-sm mx-auto",
 						children: "Try adjusting your location, price boundaries, or bedroom thresholds to explore other available assets."
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 318,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("button", {
+					}),
+					/* @__PURE__ */ jsxs("button", {
 						onClick: handleReset,
 						className: "inline-flex items-center gap-2 px-5 py-2 bg-[#c5a059] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm hover:bg-[#d4af5f] transition-colors cursor-pointer",
-						children: [/* @__PURE__ */ jsxDEV(RotateCcw, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$23,
-							lineNumber: 325,
-							columnNumber: 13
-						}, void 0), "Clear All Filters"]
-					}, void 0, true, {
-						fileName: _jsxFileName$23,
-						lineNumber: 321,
-						columnNumber: 11
-					}, void 0)
+						children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }), "Clear All Filters"]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$23,
-				lineNumber: 313,
-				columnNumber: 9
-			}, void 0),
-			totalPages > 1 && /* @__PURE__ */ jsxDEV("div", {
+			}),
+			totalPages > 1 && /* @__PURE__ */ jsxs("div", {
 				className: "flex items-center justify-center gap-2 pt-8 border-t border-[#1c232d]",
 				children: [
-					/* @__PURE__ */ jsxDEV("button", {
+					/* @__PURE__ */ jsx("button", {
 						onClick: () => setCurrentPage((p) => Math.max(1, p - 1)),
 						disabled: currentPage === 1,
 						className: "px-3 py-1.5 text-xs text-[#9ca3af] disabled:opacity-40 hover:text-white bg-[#14181d] border border-[#242b35] rounded-sm cursor-pointer disabled:cursor-not-allowed",
 						children: "Previous"
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 334,
-						columnNumber: 11
-					}, void 0),
-					Array.from({ length: totalPages }).map((_, idx) => /* @__PURE__ */ jsxDEV("button", {
+					}),
+					Array.from({ length: totalPages }).map((_, idx) => /* @__PURE__ */ jsx("button", {
 						onClick: () => setCurrentPage(idx + 1),
 						className: `w-8 h-8 text-xs font-mono rounded-sm transition-colors cursor-pointer ${currentPage === idx + 1 ? "bg-[#c5a059] text-[#0c0f12] font-bold" : "bg-[#14181d] text-[#9ca3af] hover:text-white border border-[#242b35]"}`,
 						children: idx + 1
-					}, idx + 1, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 343,
-						columnNumber: 13
-					}, void 0)),
-					/* @__PURE__ */ jsxDEV("button", {
+					}, idx + 1)),
+					/* @__PURE__ */ jsx("button", {
 						onClick: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
 						disabled: currentPage === totalPages,
 						className: "px-3 py-1.5 text-xs text-[#9ca3af] disabled:opacity-40 hover:text-white bg-[#14181d] border border-[#242b35] rounded-sm cursor-pointer disabled:cursor-not-allowed",
 						children: "Next"
-					}, void 0, false, {
-						fileName: _jsxFileName$23,
-						lineNumber: 356,
-						columnNumber: 11
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$23,
-				lineNumber: 333,
-				columnNumber: 9
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$23,
-		lineNumber: 184,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/components/property/BrochureModal.tsx
-var _jsxFileName$22 = "/app/applet/src/components/property/BrochureModal.tsx";
 var BrochureModal = ({ property, isOpen, onClose }) => {
 	const { formatPrice } = useCurrency();
 	const [downloaded, setDownloaded] = React.useState(false);
@@ -7027,441 +5546,180 @@ var BrochureModal = ({ property, isOpen, onClose }) => {
 		setDownloaded(true);
 		setTimeout(() => setDownloaded(false), 3e3);
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx("div", {
 		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto",
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "relative w-full max-w-4xl bg-[#0f1318] border border-[#2c3645] text-[#f7f5f2] rounded-sm shadow-2xl overflow-hidden my-8",
-			children: [/* @__PURE__ */ jsxDEV("div", {
+			children: [/* @__PURE__ */ jsxs("div", {
 				className: "flex items-center justify-between px-6 py-4 bg-[#141a22] border-b border-[#242c38]",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-3",
-					children: [/* @__PURE__ */ jsxDEV("img", {
+					children: [/* @__PURE__ */ jsx("img", {
 						src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 						alt: "BUILDsmore",
 						className: "w-9 h-9 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm"
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 35,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "font-serif text-base tracking-widest text-[#c5a059] uppercase font-bold block leading-none",
 						children: "BUILDsmore"
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 41,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					}), /* @__PURE__ */ jsx("span", {
 						className: "text-[9px] text-[#8a909a] font-mono uppercase mt-0.5 block",
 						children: "Let's Grow Together · Concierge: 977-987-8303"
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 44,
-						columnNumber: 15
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 40,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$22,
-					lineNumber: 34,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					})] })]
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-3",
 					children: [
-						/* @__PURE__ */ jsxDEV("button", {
+						/* @__PURE__ */ jsxs("button", {
 							onClick: handlePrint,
 							className: "flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#d1d5db] hover:text-[#f7f5f2] bg-[#1a212c] rounded-sm transition-colors cursor-pointer",
-							children: [/* @__PURE__ */ jsxDEV(Printer, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 55,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Print Dossier" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 56,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$22,
-							lineNumber: 51,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx(Printer, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Print Dossier" })]
+						}),
+						/* @__PURE__ */ jsxs("button", {
 							onClick: handleDownload,
 							className: "flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#0c0f12] bg-[#c5a059] hover:bg-[#d4af5f] font-medium rounded-sm transition-colors cursor-pointer",
-							children: [downloaded ? /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 62,
-								columnNumber: 29
-							}, void 0) : /* @__PURE__ */ jsxDEV(Download, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 62,
-								columnNumber: 72
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: downloaded ? "Brochure Generated" : "Save PDF" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 63,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$22,
-							lineNumber: 58,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+							children: [downloaded ? /* @__PURE__ */ jsx(CheckCircle2, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx(Download, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: downloaded ? "Brochure Generated" : "Save PDF" })]
+						}),
+						/* @__PURE__ */ jsx("button", {
 							onClick: onClose,
 							className: "p-1.5 text-[#8a909a] hover:text-[#f7f5f2] rounded-sm transition-colors cursor-pointer",
-							children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 69,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$22,
-							lineNumber: 65,
-							columnNumber: 13
-						}, void 0)
+							children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$22,
-					lineNumber: 50,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$22,
-				lineNumber: 33,
-				columnNumber: 9
-			}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				})]
+			}), /* @__PURE__ */ jsxs("div", {
 				className: "p-8 space-y-8 max-h-[80vh] overflow-y-auto",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "relative aspect-[16/9] w-full overflow-hidden rounded-sm bg-[#181f29]",
 						children: [
 							(() => {
 								const primaryImg = getPrimaryPropertyImage(property);
-								return /* @__PURE__ */ jsxDEV("img", {
+								return /* @__PURE__ */ jsx("img", {
 									src: primaryImg.url,
 									alt: property.title,
 									className: `w-full h-full ${primaryImg.isLogo ? "object-contain p-10 bg-[#0f141b]" : "object-cover"}`
-								}, void 0, false, {
-									fileName: _jsxFileName$22,
-									lineNumber: 82,
-									columnNumber: 17
-								}, void 0);
+								});
 							})(),
-							/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 89,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" }),
+							/* @__PURE__ */ jsxs("div", {
 								className: "absolute bottom-6 left-6 right-6 flex items-end justify-between",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [
-									/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [
+									/* @__PURE__ */ jsx("span", {
 										className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 										children: "Confidential Property Dossier"
-									}, void 0, false, {
-										fileName: _jsxFileName$22,
-										lineNumber: 92,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("h2", {
+									}),
+									/* @__PURE__ */ jsx("h2", {
 										className: "font-serif text-3xl font-medium text-white",
 										children: property.title
-									}, void 0, false, {
-										fileName: _jsxFileName$22,
-										lineNumber: 95,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("p", {
+									}),
+									/* @__PURE__ */ jsxs("p", {
 										className: "text-xs text-[#d1d5db] flex items-center gap-1.5 mt-1",
 										children: [
-											/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-												fileName: _jsxFileName$22,
-												lineNumber: 99,
-												columnNumber: 19
-											}, void 0),
+											/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
 											property.address,
 											", ",
 											property.city,
 											", ",
 											property.country
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$22,
-										lineNumber: 98,
-										columnNumber: 17
-									}, void 0)
-								] }, void 0, true, {
-									fileName: _jsxFileName$22,
-									lineNumber: 91,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									})
+								] }), /* @__PURE__ */ jsxs("div", {
 									className: "text-right",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: "text-xs text-[#9ca3af] uppercase tracking-wider block font-mono",
 										children: "Valuation"
-									}, void 0, false, {
-										fileName: _jsxFileName$22,
-										lineNumber: 105,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsx("span", {
 										className: "font-serif text-2xl font-bold text-white font-mono tabular-nums",
 										children: formatPrice(property.price, property.currency)
-									}, void 0, false, {
-										fileName: _jsxFileName$22,
-										lineNumber: 108,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$22,
-									lineNumber: 104,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$22,
-								lineNumber: 90,
-								columnNumber: 13
-							}, void 0)
+									})]
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 78,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[#141922] border border-[#242b36] rounded-sm text-center",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
 								children: "Bedrooms"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 118,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-lg font-semibold text-[#f7f5f2] font-mono",
 								children: property.bedrooms || "Bespoke"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 119,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$22,
-								lineNumber: 117,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
 								children: "Bathrooms"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 122,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-lg font-semibold text-[#f7f5f2] font-mono",
 								children: property.bathrooms || "En-Suite"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 123,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$22,
-								lineNumber: 121,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
 								children: "Interior Living"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 126,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-lg font-semibold text-[#f7f5f2] font-mono",
 								children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} sq ft` : "Commercial"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 127,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$22,
-								lineNumber: 125,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
 								children: "Energy Rating"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 132,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-lg font-semibold text-[#c5a059] font-mono",
 								children: property.energyRating || "A+ Certified"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 133,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$22,
-								lineNumber: 131,
-								columnNumber: 13
-							}, void 0)
+							})] })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 116,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h3", {
+					}),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-xl font-medium text-[#f7f5f2] mb-3",
 						children: "Architectural Overview & Narrative"
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 139,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", {
+					}), /* @__PURE__ */ jsx("p", {
 						className: "text-sm text-[#9ca3af] leading-relaxed font-light",
 						children: property.description
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 142,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 138,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h3", {
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-lg font-medium text-[#f7f5f2] mb-3",
 						children: "Technical Specifications & Building Covenants"
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 149,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsx("div", {
 						className: "grid grid-cols-1 md:grid-cols-2 gap-3 text-xs",
-						children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxDEV("div", {
+						children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxs("div", {
 							className: "flex justify-between py-2 border-b border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[#8a909a] font-mono",
 								children: key
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 155,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[#f7f5f2] font-medium text-right",
 								children: val
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 156,
-								columnNumber: 19
-							}, void 0)]
-						}, key, true, {
-							fileName: _jsxFileName$22,
-							lineNumber: 154,
-							columnNumber: 17
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 152,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 148,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h3", {
+							})]
+						}, key))
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-lg font-medium text-[#f7f5f2] mb-3",
 						children: "Private Amenities & Estate Features"
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 164,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsx("div", {
 						className: "grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs text-[#d1d5db]",
-						children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxDEV("div", {
+						children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxs("div", {
 							className: "flex items-center gap-2 py-1",
-							children: [/* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 170,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: amenity }, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 171,
-								columnNumber: 19
-							}, void 0)]
-						}, idx, true, {
-							fileName: _jsxFileName$22,
-							lineNumber: 169,
-							columnNumber: 17
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$22,
-						lineNumber: 167,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 163,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: amenity })]
+						}, idx))
+					})] }),
+					/* @__PURE__ */ jsxs("div", {
 						className: "pt-6 border-t border-[#202732] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#6b7280]",
-						children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("p", { children: "BUILDsmore Private Portfolio Advisory · Direct Hotline: 977-987-8303 · info@buildsmoremohali.com" }, void 0, false, {
-							fileName: _jsxFileName$22,
-							lineNumber: 180,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("p", {
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", { children: "BUILDsmore Private Portfolio Advisory · Direct Hotline: 977-987-8303 · info@buildsmoremohali.com" }), /* @__PURE__ */ jsx("p", {
 							className: "mt-0.5",
 							children: "Strictly confidential. Issued for private client inspection only under mutual NDA."
-						}, void 0, false, {
-							fileName: _jsxFileName$22,
-							lineNumber: 181,
-							columnNumber: 15
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$22,
-							lineNumber: 179,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})] }), /* @__PURE__ */ jsx("div", {
 							className: "text-right",
-							children: /* @__PURE__ */ jsxDEV("span", {
+							children: /* @__PURE__ */ jsx("span", {
 								className: "font-serif text-[#c5a059] tracking-widest uppercase",
 								children: "Verified Title Deed"
-							}, void 0, false, {
-								fileName: _jsxFileName$22,
-								lineNumber: 184,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$22,
-							lineNumber: 183,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$22,
-						lineNumber: 178,
-						columnNumber: 11
-					}, void 0)
+							})
+						})]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$22,
-				lineNumber: 75,
-				columnNumber: 9
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$22,
-			lineNumber: 30,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$22,
-		lineNumber: 29,
-		columnNumber: 5
-	}, void 0);
+			})]
+		})
+	});
 };
 // src/components/property/MortgageCalculator.tsx
-var _jsxFileName$21 = "/app/applet/src/components/property/MortgageCalculator.tsx";
 var MortgageCalculator = ({ propertyPrice }) => {
 	const { formatPrice } = useCurrency();
 	const [downPaymentPercent, setDownPaymentPercent] = useState(30);
@@ -7473,71 +5731,39 @@ var MortgageCalculator = ({ propertyPrice }) => {
 	const totalMonths = loanTermYears * 12;
 	const monthlyPayment = monthlyRate > 0 && totalMonths > 0 ? loanPrincipal * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1) : 0;
 	const estimatedTransferDuty = propertyPrice * .05;
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "bg-[#12161d] border border-[#222b37] p-6 rounded-sm space-y-6",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex items-center justify-between pb-4 border-b border-[#202733]",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2.5",
-					children: [/* @__PURE__ */ jsxDEV(Calculator, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 38,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+					children: [/* @__PURE__ */ jsx(Calculator, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-lg font-medium text-[#f7f5f2]",
 						children: "Private Wealth Financing Estimator"
-					}, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 39,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$21,
-					lineNumber: 37,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					})]
+				}), /* @__PURE__ */ jsx("span", {
 					className: "text-[11px] font-mono text-[#8a909a] uppercase tracking-wider",
 					children: "Private Bank Terms"
-				}, void 0, false, {
-					fileName: _jsxFileName$21,
-					lineNumber: 43,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$21,
-				lineNumber: 36,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 md:grid-cols-3 gap-6",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "space-y-2",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex justify-between text-xs",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#8a909a]",
 									children: "Equity Down Payment"
-								}, void 0, false, {
-									fileName: _jsxFileName$21,
-									lineNumber: 53,
-									columnNumber: 13
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-[#f7f5f2] font-mono font-semibold",
 									children: [downPaymentPercent, "%"]
-								}, void 0, true, {
-									fileName: _jsxFileName$21,
-									lineNumber: 54,
-									columnNumber: 13
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$21,
-								lineNumber: 52,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("input", {
+								})]
+							}),
+							/* @__PURE__ */ jsx("input", {
 								type: "range",
 								min: "10",
 								max: "70",
@@ -7545,51 +5771,27 @@ var MortgageCalculator = ({ propertyPrice }) => {
 								value: downPaymentPercent,
 								onChange: (e) => setDownPaymentPercent(parseInt(e.target.value, 10)),
 								className: "w-full accent-[#c5a059] cursor-pointer"
-							}, void 0, false, {
-								fileName: _jsxFileName$21,
-								lineNumber: 56,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							}),
+							/* @__PURE__ */ jsx("div", {
 								className: "text-[11px] font-mono text-[#737a85] text-right tabular-nums",
 								children: formatPrice(downPaymentAmount)
-							}, void 0, false, {
-								fileName: _jsxFileName$21,
-								lineNumber: 65,
-								columnNumber: 11
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 51,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "space-y-2",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex justify-between text-xs",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#8a909a]",
 									children: "Interest Rate (Fixed/LTV)"
-								}, void 0, false, {
-									fileName: _jsxFileName$21,
-									lineNumber: 73,
-									columnNumber: 13
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-[#f7f5f2] font-mono font-semibold",
 									children: [interestRate, "%"]
-								}, void 0, true, {
-									fileName: _jsxFileName$21,
-									lineNumber: 74,
-									columnNumber: 13
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$21,
-								lineNumber: 72,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("input", {
+								})]
+							}),
+							/* @__PURE__ */ jsx("input", {
 								type: "range",
 								min: "2.5",
 								max: "9.0",
@@ -7597,181 +5799,81 @@ var MortgageCalculator = ({ propertyPrice }) => {
 								value: interestRate,
 								onChange: (e) => setInterestRate(parseFloat(e.target.value)),
 								className: "w-full accent-[#c5a059] cursor-pointer"
-							}, void 0, false, {
-								fileName: _jsxFileName$21,
-								lineNumber: 76,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							}),
+							/* @__PURE__ */ jsx("div", {
 								className: "text-[11px] font-mono text-[#737a85] text-right",
 								children: "Lombard & Structured Credit"
-							}, void 0, false, {
-								fileName: _jsxFileName$21,
-								lineNumber: 85,
-								columnNumber: 11
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 71,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "space-y-2",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex justify-between text-xs",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[#8a909a]",
 								children: "Repayment Horizon"
-							}, void 0, false, {
-								fileName: _jsxFileName$21,
-								lineNumber: 93,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsxs("span", {
 								className: "text-[#f7f5f2] font-mono font-semibold",
 								children: [loanTermYears, " Years"]
-							}, void 0, true, {
-								fileName: _jsxFileName$21,
-								lineNumber: 94,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$21,
-							lineNumber: 92,
-							columnNumber: 11
-						}, void 0), /* @__PURE__ */ jsxDEV("select", {
+							})]
+						}), /* @__PURE__ */ jsxs("select", {
 							value: loanTermYears,
 							onChange: (e) => setLoanTermYears(parseInt(e.target.value, 10)),
 							className: "w-full bg-[#181f2a] border border-[#283342] text-[#f7f5f2] text-xs rounded-sm px-3 py-1.5 focus:outline-none cursor-pointer",
 							children: [
-								/* @__PURE__ */ jsxDEV("option", {
+								/* @__PURE__ */ jsx("option", {
 									value: "15",
 									children: "15 Years (180 Payments)"
-								}, void 0, false, {
-									fileName: _jsxFileName$21,
-									lineNumber: 101,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "20",
 									children: "20 Years (240 Payments)"
-								}, void 0, false, {
-									fileName: _jsxFileName$21,
-									lineNumber: 102,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "25",
 									children: "25 Years (300 Payments)"
-								}, void 0, false, {
-									fileName: _jsxFileName$21,
-									lineNumber: 103,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "30",
 									children: "30 Years (360 Payments)"
-								}, void 0, false, {
-									fileName: _jsxFileName$21,
-									lineNumber: 104,
-									columnNumber: 13
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$21,
-							lineNumber: 96,
-							columnNumber: 11
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 91,
-						columnNumber: 9
-					}, void 0)
+						})]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$21,
-				lineNumber: 48,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-[#202733] bg-[#0e1217] p-4 rounded-sm",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block",
 						children: "Estimated Monthly Service"
-					}, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 113,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					}), /* @__PURE__ */ jsxs("span", {
 						className: "text-xl font-bold font-serif text-[#c5a059] font-mono tabular-nums",
-						children: [formatPrice(Math.round(monthlyPayment)), /* @__PURE__ */ jsxDEV("span", {
+						children: [formatPrice(Math.round(monthlyPayment)), /* @__PURE__ */ jsx("span", {
 							className: "text-xs text-[#8a909a] font-sans font-normal ml-1",
 							children: "/mo"
-						}, void 0, false, {
-							fileName: _jsxFileName$21,
-							lineNumber: 118,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 116,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 112,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						})]
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block",
 						children: "Loan Principal Amount"
-					}, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 123,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					}), /* @__PURE__ */ jsx("span", {
 						className: "text-sm font-semibold text-[#f7f5f2] font-mono tabular-nums",
 						children: formatPrice(loanPrincipal)
-					}, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 126,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 122,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block",
 						children: "Est. Transfer & Legal Duty (5%)"
-					}, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 132,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", {
+					}), /* @__PURE__ */ jsx("span", {
 						className: "text-sm font-semibold text-[#f7f5f2] font-mono tabular-nums",
 						children: formatPrice(estimatedTransferDuty)
-					}, void 0, false, {
-						fileName: _jsxFileName$21,
-						lineNumber: 135,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$21,
-						lineNumber: 131,
-						columnNumber: 9
-					}, void 0)
+					})] })
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$21,
-				lineNumber: 111,
-				columnNumber: 7
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$21,
-		lineNumber: 34,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/utils/seo.ts
 var PRODUCTION_DOMAIN = "https://buildsmoremohali.com";
@@ -8071,6 +6173,13 @@ var STATIC_ROUTE_META = {
 	"/admin/blogs": {
 		title: "Blog & Journal – Admin Console – BUILDsmore",
 		description: "Restricted BUILDsmore editorial journal and blog management.",
+		ogImage: DEFAULT_SOCIAL_IMAGE,
+		ogImageAlt: "BUILDsmore Admin Terminal",
+		robots: "noindex, nofollow"
+	},
+	"/admin/hero-slides": {
+		title: "Hero Banner Slider – Admin Console – BUILDsmore",
+		description: "Restricted BUILDsmore homepage hero banner slider management.",
 		ogImage: DEFAULT_SOCIAL_IMAGE,
 		ogImageAlt: "BUILDsmore Admin Terminal",
 		robots: "noindex, nofollow"
@@ -8394,7 +6503,6 @@ function applyDocumentSeo(seo) {
 	} else if (jsonLdEl) jsonLdEl.remove();
 }
 // src/pages/PropertyDetailPage.tsx
-var _jsxFileName$20 = "/app/applet/src/pages/PropertyDetailPage.tsx";
 var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, isSaved, onToggleSave, onSelectProperty, allProperties }) => {
 	const { formatPrice } = useCurrency();
 	const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -8489,12 +6597,12 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 			setTimeout(() => setShareCopied(false), 2500);
 		}
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "max-w-7xl mx-auto px-6 py-8 space-y-12",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202732] text-xs",
-				children: [/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+				children: [/* @__PURE__ */ jsx(Breadcrumbs, {
 					items: [
 						{
 							label: "Home",
@@ -8515,697 +6623,281 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 						else if (targetPath === "/properties") onBack();
 						else if (targetPath.startsWith("/category/")) onNavigateCategory(property.category);
 					}
-				}, void 0, false, {
-					fileName: _jsxFileName$20,
-					lineNumber: 180,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-3",
 					children: [
-						/* @__PURE__ */ jsxDEV("button", {
+						/* @__PURE__ */ jsxs("button", {
 							onClick: () => setBrochureOpen(true),
 							className: "flex items-center gap-1.5 px-3 py-1.5 bg-[#14181d] border border-[#242b35] hover:border-[#c5a059] text-[#f7f5f2] rounded-sm transition-colors cursor-pointer",
-							children: [/* @__PURE__ */ jsxDEV(FileText, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 203,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Brochure" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 204,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 199,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Brochure" })]
+						}),
+						/* @__PURE__ */ jsxs("button", {
 							onClick: handleShare,
 							className: "flex items-center gap-1.5 px-3 py-1.5 bg-[#14181d] border border-[#242b35] hover:border-[#c5a059] text-[#f7f5f2] rounded-sm transition-colors cursor-pointer",
-							children: [/* @__PURE__ */ jsxDEV(Share2, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 211,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: shareCopied ? "Link Copied" : "Share" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 212,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 207,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx(Share2, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: shareCopied ? "Link Copied" : "Share" })]
+						}),
+						/* @__PURE__ */ jsxs("button", {
 							onClick: (e) => onToggleSave(property.id, e),
 							className: `flex items-center gap-1.5 px-3 py-1.5 border rounded-sm transition-colors cursor-pointer ${isSaved ? "bg-[#c5a059] text-[#0c0f12] font-semibold border-[#c5a059]" : "bg-[#14181d] border-[#242b35] text-[#f7f5f2] hover:border-[#c5a059]"}`,
-							children: [/* @__PURE__ */ jsxDEV(Bookmark, {
+							children: [/* @__PURE__ */ jsx(Bookmark, {
 								className: "w-3.5 h-3.5",
 								fill: isSaved ? "currentColor" : "none"
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 223,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: isSaved ? "Saved" : "Save" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 224,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 215,
-							columnNumber: 11
-						}, void 0)
+							}), /* @__PURE__ */ jsx("span", { children: isSaved ? "Saved" : "Save" })]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$20,
-					lineNumber: 198,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 179,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col lg:flex-row lg:items-end justify-between gap-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "space-y-2 max-w-3xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-wrap items-center gap-2",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsxs("span", {
 									className: "text-xs uppercase font-mono tracking-[0.2em] text-[#c5a059] block",
 									children: [
 										property.propertyType,
 										" · ",
 										property.category
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 233,
-									columnNumber: 13
-								}, void 0),
-								property.developerName && /* @__PURE__ */ jsxDEV("span", {
+								}),
+								property.developerName && /* @__PURE__ */ jsxs("span", {
 									className: "text-xs font-mono px-2.5 py-0.5 rounded-sm bg-[#161c24] border border-[#2a3442] text-[#c5a059] flex items-center gap-1",
-									children: [/* @__PURE__ */ jsxDEV(Building, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 238,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: ["By ", property.developerName] }, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 239,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 237,
-									columnNumber: 15
-								}, void 0),
-								property.reraNumber && /* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx(Building, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: ["By ", property.developerName] })]
+								}),
+								property.reraNumber && /* @__PURE__ */ jsxs("span", {
 									className: "text-xs font-mono px-2.5 py-0.5 rounded-sm bg-[#111a14] border border-emerald-900/60 text-emerald-300 flex items-center gap-1",
-									children: [/* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-3 h-3 text-emerald-400" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 244,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: ["RERA: ", property.reraNumber] }, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 245,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 243,
-									columnNumber: 15
-								}, void 0)
+									children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3 h-3 text-emerald-400" }), /* @__PURE__ */ jsxs("span", { children: ["RERA: ", property.reraNumber] })]
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 232,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h1", {
+						}),
+						/* @__PURE__ */ jsx("h1", {
 							className: "font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#f7f5f2] leading-tight",
 							children: property.title
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 249,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-wrap items-center gap-4 text-sm text-[#9ca3af] font-light",
-							children: [/* @__PURE__ */ jsxDEV("p", {
+							children: [/* @__PURE__ */ jsxs("p", {
 								className: "flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 254,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+								children: [/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsxs("span", { children: [
 									property.address,
 									property.locality ? `, ${property.locality}` : "",
 									", ",
 									property.city,
 									", ",
 									property.country
-								] }, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 255,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 253,
-								columnNumber: 13
-							}, void 0), property.source?.sourceUrl && /* @__PURE__ */ jsxDEV("a", {
+								] })]
+							}), property.source?.sourceUrl && /* @__PURE__ */ jsxs("a", {
 								href: property.source.sourceUrl,
 								target: "_blank",
 								rel: "noopener noreferrer",
 								className: "text-xs text-[#c5a059] hover:underline flex items-center gap-1 font-mono",
-								children: [/* @__PURE__ */ jsxDEV("span", { children: "Partner Source Website" }, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 264,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3 h-3" }, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 265,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 258,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 252,
-							columnNumber: 11
-						}, void 0)
+								children: [/* @__PURE__ */ jsx("span", { children: "Partner Source Website" }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3" })]
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$20,
-					lineNumber: 231,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "lg:text-right bg-[#12161d] p-5 rounded-sm border border-[#202732] shrink-0",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", {
 							className: "text-[11px] uppercase tracking-wider text-[#8a909a] font-mono block",
 							children: "Acquisition Asking Price"
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 272,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", {
+						}),
+						/* @__PURE__ */ jsx("span", {
 							className: "font-serif text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums",
 							children: formatPrice(property.price, property.currency)
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 275,
-							columnNumber: 11
-						}, void 0),
-						property.originalPriceText ? /* @__PURE__ */ jsxDEV("span", {
+						}),
+						property.originalPriceText ? /* @__PURE__ */ jsxs("span", {
 							className: "text-[11px] text-[#737a85] font-mono block mt-1",
 							children: ["Source Listing: ", property.originalPriceText]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 279,
-							columnNumber: 13
-						}, void 0) : /* @__PURE__ */ jsxDEV("span", {
+						}) : /* @__PURE__ */ jsx("span", {
 							className: "text-[11px] text-[#737a85] font-mono block mt-1",
 							children: "Verified Direct Valuation (INR)"
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 283,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$20,
-					lineNumber: 271,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 230,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "space-y-4",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					onClick: () => setLightboxOpen(true),
 					className: `relative aspect-[16/9] w-full max-h-[640px] rounded-sm overflow-hidden border border-[#242b35] cursor-zoom-in group ${isCurrentLogo ? "bg-[#0f141b]" : "bg-[#14181d]"}`,
 					children: [
-						/* @__PURE__ */ jsxDEV("img", {
+						/* @__PURE__ */ jsx("img", {
 							src: currentImage.url,
 							alt: currentImage.caption || property.title,
 							className: isCurrentLogo ? "w-full h-full object-contain p-12 transition-transform duration-500 group-hover:scale-[1.02]" : "w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 299,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 308,
-							columnNumber: 11
-						}, void 0),
-						images.length > 1 && /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV("button", {
+						}),
+						/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" }),
+						images.length > 1 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("button", {
 							onClick: (e) => {
 								e.stopPropagation();
 								setActiveImageIndex((prev) => prev > 0 ? prev - 1 : images.length - 1);
 							},
 							className: "absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-[#c5a059] text-white hover:text-black flex items-center justify-center transition-colors cursor-pointer",
 							"aria-label": "Previous photo",
-							children: /* @__PURE__ */ jsxDEV(ChevronLeft, { className: "w-5 h-5" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 321,
-								columnNumber: 17
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 313,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-5 h-5" })
+						}), /* @__PURE__ */ jsx("button", {
 							onClick: (e) => {
 								e.stopPropagation();
 								setActiveImageIndex((prev) => prev < images.length - 1 ? prev + 1 : 0);
 							},
 							className: "absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-[#c5a059] text-white hover:text-black flex items-center justify-center transition-colors cursor-pointer",
 							"aria-label": "Next photo",
-							children: /* @__PURE__ */ jsxDEV(ChevronRight, { className: "w-5 h-5" }, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 331,
-								columnNumber: 17
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 323,
-							columnNumber: 15
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 312,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-5 h-5" })
+						})] }),
+						/* @__PURE__ */ jsxs("div", {
 							className: "absolute bottom-4 left-6 right-6 flex items-center justify-between text-xs text-white",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "font-light truncate max-w-md",
 								children: currentImage.caption || property.subtitle
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 338,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsxs("span", {
 								className: "flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-sm font-mono text-[11px]",
 								children: [
-									/* @__PURE__ */ jsxDEV(Maximize2, { className: "w-3.5 h-3.5" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 342,
-										columnNumber: 15
-									}, void 0),
+									/* @__PURE__ */ jsx(Maximize2, { className: "w-3.5 h-3.5" }),
 									activeImageIndex + 1,
 									" of ",
 									images.length
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 341,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 337,
-							columnNumber: 11
-						}, void 0)
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$20,
-					lineNumber: 293,
-					columnNumber: 9
-				}, void 0), images.length > 1 && /* @__PURE__ */ jsxDEV("div", {
+				}), images.length > 1 && /* @__PURE__ */ jsx("div", {
 					className: "flex items-center gap-3 overflow-x-auto pb-2",
-					children: images.map((img, idx) => /* @__PURE__ */ jsxDEV("button", {
+					children: images.map((img, idx) => /* @__PURE__ */ jsx("button", {
 						onClick: () => setActiveImageIndex(idx),
 						className: `relative w-28 h-20 shrink-0 rounded-sm overflow-hidden border-2 transition-all cursor-pointer ${activeImageIndex === idx ? "border-[#c5a059] opacity-100" : "border-[#242b35] opacity-50 hover:opacity-80"}`,
-						children: /* @__PURE__ */ jsxDEV("img", {
+						children: /* @__PURE__ */ jsx("img", {
 							src: img.url,
 							alt: `Thumbnail ${idx + 1}`,
 							className: "w-full h-full object-cover"
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 359,
-							columnNumber: 17
-						}, void 0)
-					}, img.id || idx, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 352,
-						columnNumber: 15
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$20,
-					lineNumber: 350,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 291,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+						})
+					}, img.id || idx))
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-6 bg-[#101419] border border-[#202732] rounded-sm text-center",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
 						children: "Bedrooms"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 369,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsxDEV(Bed, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 373,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: property.bedrooms || "Bespoke" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 374,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 372,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 368,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						children: [/* @__PURE__ */ jsx(Bed, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.bedrooms || "Bespoke" })]
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
 						children: "Bathrooms"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 379,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsxDEV(Bath, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 383,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: property.bathrooms || "En-Suite" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 384,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 382,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 378,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						children: [/* @__PURE__ */ jsx(Bath, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.bathrooms || "En-Suite" })]
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
 						children: "Interior Living"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 389,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsxDEV(Maximize2, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 393,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} sq ft` : "Commercial" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 394,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 392,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 388,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						children: [/* @__PURE__ */ jsx(Maximize2, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} sq ft` : "Commercial" })]
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
 						children: "Private Lot"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 399,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsx("div", {
 						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: /* @__PURE__ */ jsxDEV("span", { children: property.lotSizeAcres ? `${property.lotSizeAcres} Acres` : "Urban" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 403,
-							columnNumber: 13
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 402,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 398,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						children: /* @__PURE__ */ jsx("span", { children: property.lotSizeAcres ? `${property.lotSizeAcres} Acres` : "Urban" })
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
 						children: "Secure Parking"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 408,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsxDEV(Car, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 412,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [property.parkingSpaces || 2, " Bays"] }, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 413,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 411,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 407,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						children: [/* @__PURE__ */ jsx(Car, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: [property.parkingSpaces || 2, " Bays"] })]
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
 						children: "Energy Rating"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 418,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#c5a059] font-mono",
-						children: [/* @__PURE__ */ jsxDEV(Zap, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 422,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: property.energyRating || "A+" }, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 423,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 421,
-						columnNumber: 11
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 417,
-						columnNumber: 9
-					}, void 0)
+						children: [/* @__PURE__ */ jsx(Zap, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.energyRating || "A+" })]
+					})] })
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 367,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-7 space-y-10",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-4",
-							children: [/* @__PURE__ */ jsxDEV("h2", {
+							children: [/* @__PURE__ */ jsx("h2", {
 								className: "font-serif text-2xl font-normal text-[#f7f5f2]",
 								children: "Architectural Profile & Residence Overview"
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 436,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("p", {
+							}), /* @__PURE__ */ jsx("p", {
 								className: "text-sm text-[#cbd5e1] leading-relaxed font-light whitespace-pre-line",
 								children: property.description
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 439,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 435,
-							columnNumber: 11
-						}, void 0),
-						property.highlights && property.highlights.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						property.highlights && property.highlights.length > 0 && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-3 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsxs("h3", {
 								className: "font-serif text-xl font-normal text-[#f7f5f2] flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV(Sparkles, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 448,
-									columnNumber: 17
-								}, void 0), "Key Architectural Highlights"]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 447,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-4 h-4 text-[#c5a059]" }), "Key Architectural Highlights"]
+							}), /* @__PURE__ */ jsx("div", {
 								className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5",
-								children: property.highlights.map((h, i) => /* @__PURE__ */ jsxDEV("div", {
+								children: property.highlights.map((h, i) => /* @__PURE__ */ jsxs("div", {
 									className: "flex items-start gap-2 bg-[#12161d] p-3 rounded-sm border border-[#202732]",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: "text-[#c5a059] font-mono font-bold text-xs mt-0.5",
 										children: "•"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 454,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-xs text-[#e2e8f0] font-light leading-snug",
 										children: h
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 455,
-										columnNumber: 21
-									}, void 0)]
-								}, i, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 453,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 451,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 446,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+									})]
+								}, i))
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-xl font-normal text-[#f7f5f2]",
 								children: "Verified Estate Amenities"
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 464,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsx("div", {
 								className: "grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#d1d5db]",
-								children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxDEV("div", {
+								children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-2.5 p-2 bg-[#12161d] border border-[#202732] rounded-sm",
-									children: [/* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-4 h-4 text-[#c5a059] shrink-0" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 470,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: amenity }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 471,
-										columnNumber: 19
-									}, void 0)]
-								}, idx, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 469,
-									columnNumber: 17
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 467,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 463,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-4 h-4 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: amenity })]
+								}, idx))
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-xl font-normal text-[#f7f5f2]",
 								children: "Building & Material Specifications"
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 479,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsx("div", {
 								className: "bg-[#101419] border border-[#202732] rounded-sm p-4 text-xs divide-y divide-[#1c232d]",
-								children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxDEV("div", {
+								children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxs("div", {
 									className: "flex justify-between py-2.5",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: "text-[#8a909a] font-mono",
 										children: key
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 485,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-[#f7f5f2] font-medium text-right max-w-xs",
 										children: val
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 486,
-										columnNumber: 19
-									}, void 0)]
-								}, key, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 484,
-									columnNumber: 17
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 482,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 478,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+									})]
+								}, key))
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center justify-between",
-								children: [/* @__PURE__ */ jsxDEV("h3", {
+								children: [/* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-xl font-normal text-[#f7f5f2]",
 									children: "Location & Luxury Infrastructure"
-								}, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 495,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-xs font-mono text-[#8a909a]",
 									children: [
 										property.coordinates.lat.toFixed(4),
@@ -9213,331 +6905,139 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 										property.coordinates.lng.toFixed(4),
 										"° E"
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 498,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 494,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})]
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "relative aspect-[16/9] w-full rounded-sm overflow-hidden border border-[#242b35] bg-[#141a22] flex flex-col items-center justify-center p-8 text-center",
 								children: [
-									/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 opacity-20 bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:16px_16px]" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 505,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsx("div", { className: "absolute inset-0 opacity-20 bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:16px_16px]" }),
+									/* @__PURE__ */ jsxs("div", {
 										className: "relative z-10 space-y-3",
 										children: [
-											/* @__PURE__ */ jsxDEV("div", {
+											/* @__PURE__ */ jsx("div", {
 												className: "w-12 h-12 rounded-full bg-[#c5a059]/20 border border-[#c5a059] flex items-center justify-center text-[#c5a059] mx-auto animate-pulse",
-												children: /* @__PURE__ */ jsxDEV(Compass, { className: "w-6 h-6" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 509,
-													columnNumber: 19
-												}, void 0)
-											}, void 0, false, {
-												fileName: _jsxFileName$20,
-												lineNumber: 508,
-												columnNumber: 17
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("h4", {
+												children: /* @__PURE__ */ jsx(Compass, { className: "w-6 h-6" })
+											}),
+											/* @__PURE__ */ jsxs("h4", {
 												className: "font-serif text-lg font-medium text-[#f7f5f2]",
 												children: [
 													property.city,
 													", ",
 													property.country
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$20,
-												lineNumber: 511,
-												columnNumber: 17
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("p", {
+											}),
+											/* @__PURE__ */ jsx("p", {
 												className: "text-xs text-[#8a909a] max-w-sm",
 												children: property.address
-											}, void 0, false, {
-												fileName: _jsxFileName$20,
-												lineNumber: 514,
-												columnNumber: 17
-											}, void 0)
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 507,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "absolute bottom-4 left-4 right-4 grid grid-cols-3 gap-2 text-[10px] text-[#cbd5e1] font-mono",
 										children: [
-											/* @__PURE__ */ jsxDEV("div", {
+											/* @__PURE__ */ jsxs("div", {
 												className: "bg-[#0c0f12]/80 backdrop-blur-sm p-2 rounded-sm border border-[#242b35] flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsxDEV(Plane, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 522,
-													columnNumber: 19
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Private FBO: ~18 min" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 523,
-													columnNumber: 19
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$20,
-												lineNumber: 521,
-												columnNumber: 17
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("div", {
+												children: [/* @__PURE__ */ jsx(Plane, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Private FBO: ~18 min" })]
+											}),
+											/* @__PURE__ */ jsxs("div", {
 												className: "bg-[#0c0f12]/80 backdrop-blur-sm p-2 rounded-sm border border-[#242b35] flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsxDEV(Anchor, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 526,
-													columnNumber: 19
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Superyacht Marina: ~8 min" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 527,
-													columnNumber: 19
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$20,
-												lineNumber: 525,
-												columnNumber: 17
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("div", {
+												children: [/* @__PURE__ */ jsx(Anchor, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Superyacht Marina: ~8 min" })]
+											}),
+											/* @__PURE__ */ jsxs("div", {
 												className: "bg-[#0c0f12]/80 backdrop-blur-sm p-2 rounded-sm border border-[#242b35] flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsxDEV(Sparkles, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 530,
-													columnNumber: 19
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Michelin Dining: ~5 min" }, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 531,
-													columnNumber: 19
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$20,
-												lineNumber: 529,
-												columnNumber: 17
-											}, void 0)
+												children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Michelin Dining: ~5 min" })]
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 520,
-										columnNumber: 15
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 504,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 493,
-							columnNumber: 11
-						}, void 0),
-						property.floorPlans && property.floorPlans.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						property.floorPlans && property.floorPlans.length > 0 && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center justify-between",
-								children: [/* @__PURE__ */ jsxDEV("h3", {
+								children: [/* @__PURE__ */ jsxs("h3", {
 									className: "font-serif text-xl font-normal text-[#f7f5f2] flex items-center gap-2",
-									children: [/* @__PURE__ */ jsxDEV(Layers, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 542,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Floor Plans & Master Site Layout" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 543,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 541,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Floor Plans & Master Site Layout" })]
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-xs font-mono text-[#8a909a]",
 									children: [property.floorPlans.length, " Plans Available"]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 545,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 540,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})]
+							}), /* @__PURE__ */ jsx("div", {
 								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-								children: property.floorPlans.map((fp, i) => /* @__PURE__ */ jsxDEV("div", {
+								children: property.floorPlans.map((fp, i) => /* @__PURE__ */ jsxs("div", {
 									className: "bg-[#101419] border border-[#202732] rounded-sm overflow-hidden p-3 space-y-2",
-									children: [/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsx("div", {
 										className: "aspect-[4/3] bg-black/40 rounded-sm overflow-hidden border border-[#1a212b]",
-										children: /* @__PURE__ */ jsxDEV("img", {
+										children: /* @__PURE__ */ jsx("img", {
 											src: fp.imageUrl,
 											alt: fp.title,
 											className: "w-full h-full object-contain"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 551,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 550,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										})
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-xs text-white font-mono block truncate",
 										children: fp.title
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 553,
-										columnNumber: 21
-									}, void 0)]
-								}, i, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 549,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 547,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 539,
-							columnNumber: 13
-						}, void 0),
-						property.sourceSections && property.sourceSections.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+									})]
+								}, i))
+							})]
+						}),
+						property.sourceSections && property.sourceSections.length > 0 && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsxs("h3", {
 								className: "font-serif text-xl font-normal text-[#f7f5f2] flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV(Building, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 564,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Verified Project Dossier" }, void 0, false, {
-									fileName: _jsxFileName$20,
-									lineNumber: 565,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 563,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsx(Building, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Verified Project Dossier" })]
+							}), /* @__PURE__ */ jsx("div", {
 								className: "space-y-3",
-								children: property.sourceSections.map((sec) => /* @__PURE__ */ jsxDEV("div", {
+								children: property.sourceSections.map((sec) => /* @__PURE__ */ jsxs("div", {
 									className: "p-4 bg-[#101419] border border-[#202732] rounded-sm space-y-1.5",
-									children: [/* @__PURE__ */ jsxDEV("h4", {
+									children: [/* @__PURE__ */ jsx("h4", {
 										className: "text-xs font-mono uppercase tracking-wider text-[#c5a059]",
 										children: sec.title
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 570,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("p", {
+									}), /* @__PURE__ */ jsx("p", {
 										className: "text-xs text-[#cbd5e1] leading-relaxed font-light",
 										children: sec.content
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 573,
-										columnNumber: 21
-									}, void 0)]
-								}, sec.id, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 569,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 567,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$20,
-							lineNumber: 562,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+									})]
+								}, sec.id))
+							})]
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "pt-6 border-t border-[#1c232d]",
-							children: /* @__PURE__ */ jsxDEV(MortgageCalculator, {
+							children: /* @__PURE__ */ jsx(MortgageCalculator, {
 								propertyPrice: property.price,
 								currency: property.currency
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 584,
-								columnNumber: 13
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$20,
-							lineNumber: 583,
-							columnNumber: 11
-						}, void 0)
+							})
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$20,
-					lineNumber: 432,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsx("div", {
 					className: "lg:col-span-5 lg:sticky lg:top-24",
-					children: /* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsxs("div", {
 						className: "bg-[#12161d] border border-[#252f3e] p-6 rounded-sm shadow-xl space-y-6",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "border-b border-[#202733] pb-4",
 								children: [
-									/* @__PURE__ */ jsxDEV("span", {
+									/* @__PURE__ */ jsx("span", {
 										className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 										children: "Private Client Advisory"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 595,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("h3", {
+									}),
+									/* @__PURE__ */ jsx("h3", {
 										className: "font-serif text-2xl font-medium text-[#f7f5f2]",
 										children: "Inquire or Schedule Inspection"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 598,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("p", {
+									}),
+									/* @__PURE__ */ jsx("p", {
 										className: "text-xs text-[#8a909a] mt-1",
 										children: "Direct access to the appointed managing partner under strict non-disclosure."
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 601,
-										columnNumber: 15
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 594,
-								columnNumber: 13
-							}, void 0),
-							inquirySubmitted ? /* @__PURE__ */ jsxDEV("div", {
+							}),
+							inquirySubmitted ? /* @__PURE__ */ jsxs("div", {
 								className: "p-6 bg-[#16221c] border border-emerald-500/30 rounded-sm text-center space-y-3",
 								children: [
-									/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-8 h-8 text-emerald-400 mx-auto" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 608,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("h4", {
+									/* @__PURE__ */ jsx(CheckCircle2, { className: "w-8 h-8 text-emerald-400 mx-auto" }),
+									/* @__PURE__ */ jsx("h4", {
 										className: "font-serif text-lg font-medium text-white",
 										children: "Inquiry Received"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 609,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("p", {
+									}),
+									/* @__PURE__ */ jsxs("p", {
 										className: "text-xs text-[#a7f3d0] leading-relaxed",
 										children: [
 											"Thank you, ",
@@ -9546,12 +7046,8 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 											" ",
 											inquirySuccessNote || `Your confidential dossier request for ${property.title} has been registered with our advisory desk.`
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 612,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+									}),
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => {
 											setInquirySubmitted(false);
 											setInquirySuccessNote(null);
@@ -9561,32 +7057,20 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 										},
 										className: "mt-2 text-xs text-[#c5a059] underline cursor-pointer",
 										children: "Submit Additional Request"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 617,
-										columnNumber: 17
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 607,
-								columnNumber: 15
-							}, void 0) : /* @__PURE__ */ jsxDEV("form", {
+							}) : /* @__PURE__ */ jsxs("form", {
 								onSubmit: handleInquirySubmit,
 								className: "space-y-4",
 								noValidate: true,
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "sr-only",
 										"aria-hidden": "true",
-										children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx("label", {
 											htmlFor: "property-website-field",
 											children: "Website"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 633,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											id: "property-website-field",
 											type: "text",
 											name: "website",
@@ -9594,456 +7078,211 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 											autoComplete: "off",
 											value: honeypot,
 											onChange: (e) => setHoneypot(e.target.value)
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 634,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 632,
-										columnNumber: 17
-									}, void 0),
-									inquiryError && /* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									inquiryError && /* @__PURE__ */ jsx("div", {
 										role: "alert",
 										className: "p-3 bg-red-950/40 border border-red-800 text-xs text-red-200 rounded-sm",
 										children: inquiryError
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 646,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									}),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
 										children: "Full Legal Name *"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 652,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										type: "text",
 										required: true,
 										value: clientName,
 										onChange: (e) => setClientName(e.target.value),
 										placeholder: "e.g. Lord Alistair Sterling / Elena Rostova",
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 655,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 651,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+									})] }),
+									/* @__PURE__ */ jsxs("div", {
 										className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-										children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
 											children: "Direct Email *"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 667,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "email",
 											required: true,
 											value: email,
 											onChange: (e) => setEmail(e.target.value),
 											placeholder: "client@familyoffice.com",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 670,
-											columnNumber: 21
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$20,
-											lineNumber: 666,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
 											children: "Phone / Mobile *"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 681,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "tel",
 											required: true,
 											value: phone,
 											onChange: (e) => setPhone(e.target.value),
 											placeholder: "+44 20 7946 ...",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 684,
-											columnNumber: 21
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$20,
-											lineNumber: 680,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 665,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})] })]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-										children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
 											children: "Contact Channel"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 697,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("select", {
+										}), /* @__PURE__ */ jsxs("select", {
 											value: preferredContact,
 											onChange: (e) => setPreferredContact(e.target.value),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
 											children: [
-												/* @__PURE__ */ jsxDEV("option", {
+												/* @__PURE__ */ jsx("option", {
 													value: "email",
 													children: "Direct Email"
-												}, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 705,
-													columnNumber: 23
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "phone",
 													children: "Private Phone Call"
-												}, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 706,
-													columnNumber: 23
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "whatsapp",
 													children: "Encrypted WhatsApp"
-												}, void 0, false, {
-													fileName: _jsxFileName$20,
-													lineNumber: 707,
-													columnNumber: 23
-												}, void 0)
+												})
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$20,
-											lineNumber: 700,
-											columnNumber: 21
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$20,
-											lineNumber: 696,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
 											children: "Target Inspection Date"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 712,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "date",
 											value: tourDate,
 											onChange: (e) => setTourDate(e.target.value),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 715,
-											columnNumber: 21
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$20,
-											lineNumber: 711,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 695,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] })]
+									}),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
 										children: "Confidential Requirements / Message"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 725,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+									}), /* @__PURE__ */ jsx("textarea", {
 										rows: 3,
 										value: message,
 										onChange: (e) => setMessage(e.target.value),
 										placeholder: "Specify helicopter landing requirements, NDA requirements, or private viewing dates...",
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm p-3 text-xs text-[#f7f5f2] focus:outline-none resize-none"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 728,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 724,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+									})] }),
+									/* @__PURE__ */ jsxs("button", {
 										type: "submit",
 										disabled: inquirySubmitting,
 										className: "w-full py-3 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50",
-										children: [/* @__PURE__ */ jsxDEV(Send, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 742,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: inquirySubmitting ? "Transmitting Request..." : "Transmit Confidential Inquiry" }, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 743,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 737,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("p", {
+										children: [/* @__PURE__ */ jsx(Send, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: inquirySubmitting ? "Transmitting Request..." : "Transmit Confidential Inquiry" })]
+									}),
+									/* @__PURE__ */ jsx("p", {
 										className: "text-[10px] text-[#6b7280] text-center leading-normal",
 										children: "Transmissions are strictly encrypted under our mutual international privacy covenant."
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 746,
-										columnNumber: 17
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 631,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "pt-4 border-t border-[#202733] flex items-center justify-between gap-3",
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-3",
-									children: [/* @__PURE__ */ jsxDEV("img", {
+									children: [/* @__PURE__ */ jsx("img", {
 										src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
 										alt: "Marcus Vance",
 										className: "w-10 h-10 rounded-full object-cover border border-[#c5a059]/40"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 756,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "text-xs",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#f7f5f2] font-medium block",
 											children: "Marcus Vance"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 762,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a] text-[11px]",
 											children: "Managing Partner, Advisory"
-										}, void 0, false, {
-											fileName: _jsxFileName$20,
-											lineNumber: 763,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$20,
-										lineNumber: 761,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 755,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("a", {
+										})]
+									})]
+								}), /* @__PURE__ */ jsxs("a", {
 									href: "tel:9779878303",
 									className: "flex items-center gap-1.5 px-2.5 py-1.5 bg-[#181f2a] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#f7f5f2] border border-[#2a3442] rounded-sm text-xs font-mono transition-colors cursor-pointer",
 									title: "Direct Phone Call",
-									children: [/* @__PURE__ */ jsxDEV(PhoneCall, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 772,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx(PhoneCall, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", {
 										className: "tabular-nums",
 										children: "9779878303"
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 773,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$20,
-									lineNumber: 767,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 754,
-								columnNumber: 13
-							}, void 0)
+									})]
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 592,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$20,
-					lineNumber: 590,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 429,
-				columnNumber: 7
-			}, void 0),
-			similarProperties.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+					})
+				})]
+			}),
+			similarProperties.length > 0 && /* @__PURE__ */ jsxs("div", {
 				className: "pt-16 border-t border-[#202732] space-y-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-end justify-between",
-					children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 						children: "Comparative Assets"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 788,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+					}), /* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-2xl font-normal text-[#f7f5f2]",
 						children: "Similar Holdings in the Registry"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 791,
-						columnNumber: 15
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 787,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+					})] }), /* @__PURE__ */ jsx(AppLink, {
 						href: "/properties",
 						onNavigate: onNavigate || (() => onBack()),
 						className: "text-xs text-[#c5a059] hover:underline cursor-pointer",
 						children: "View Full Portfolio"
-					}, void 0, false, {
-						fileName: _jsxFileName$20,
-						lineNumber: 795,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$20,
-					lineNumber: 786,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					})]
+				}), /* @__PURE__ */ jsx("div", {
 					className: "grid grid-cols-1 md:grid-cols-3 gap-6",
-					children: similarProperties.map((p) => /* @__PURE__ */ jsxDEV(AppLink, {
+					children: similarProperties.map((p) => /* @__PURE__ */ jsxs(AppLink, {
 						href: `/property/${encodeURIComponent(p.slug)}`,
 						onNavigate: () => onSelectProperty(p),
 						className: "block bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-colors p-3 rounded-sm cursor-pointer group",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsx("div", {
 								className: "aspect-[4/3] rounded-sm overflow-hidden mb-3 bg-[#14181d]",
 								children: (() => {
 									const simPrimary = getPrimaryPropertyImage(p);
-									return /* @__PURE__ */ jsxDEV("img", {
+									return /* @__PURE__ */ jsx("img", {
 										src: simPrimary.url,
 										alt: p.title,
 										className: `w-full h-full transition-transform ${simPrimary.isLogo ? "object-contain p-6 bg-[#0f141b]" : "object-cover group-hover:scale-105"}`
-									}, void 0, false, {
-										fileName: _jsxFileName$20,
-										lineNumber: 816,
-										columnNumber: 23
-									}, void 0);
+									});
 								})()
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 812,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("span", {
+							}),
+							/* @__PURE__ */ jsxs("span", {
 								className: "text-[10px] font-mono uppercase text-[#c5a059]",
 								children: [
 									p.city,
 									", ",
 									p.country
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$20,
-								lineNumber: 826,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("h4", {
+							}),
+							/* @__PURE__ */ jsx("h4", {
 								className: "font-serif text-base font-medium text-[#f7f5f2] truncate group-hover:text-[#c5a059]",
 								children: p.title
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 827,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+							}),
+							/* @__PURE__ */ jsx("p", {
 								className: "text-xs font-mono text-[#d1d5db] mt-1 tabular-nums",
 								children: formatPrice(p.price, p.currency)
-							}, void 0, false, {
-								fileName: _jsxFileName$20,
-								lineNumber: 830,
-								columnNumber: 17
-							}, void 0)
+							})
 						]
-					}, p.id, true, {
-						fileName: _jsxFileName$20,
-						lineNumber: 806,
-						columnNumber: 15
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$20,
-					lineNumber: 804,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 785,
-				columnNumber: 9
-			}, void 0),
-			lightboxOpen && /* @__PURE__ */ jsxDEV("div", {
+					}, p.id))
+				})]
+			}),
+			lightboxOpen && /* @__PURE__ */ jsxs("div", {
 				onClick: () => setLightboxOpen(false),
 				className: "fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 cursor-zoom-out",
-				children: [/* @__PURE__ */ jsxDEV("img", {
+				children: [/* @__PURE__ */ jsx("img", {
 					src: currentImage.url,
 					alt: property.title,
 					className: "max-w-full max-h-[90vh] object-contain"
-				}, void 0, false, {
-					fileName: _jsxFileName$20,
-					lineNumber: 845,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+				}), /* @__PURE__ */ jsx("button", {
 					onClick: () => setLightboxOpen(false),
 					className: "absolute top-6 right-6 text-white text-lg font-mono bg-black/60 px-3 py-1 rounded-sm",
 					children: "Close [Esc]"
-				}, void 0, false, {
-					fileName: _jsxFileName$20,
-					lineNumber: 850,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$20,
-				lineNumber: 841,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV(BrochureModal, {
+				})]
+			}),
+			/* @__PURE__ */ jsx(BrochureModal, {
 				property,
 				isOpen: brochureOpen,
 				onClose: () => setBrochureOpen(false)
-			}, void 0, false, {
-				fileName: _jsxFileName$20,
-				lineNumber: 860,
-				columnNumber: 7
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$20,
-		lineNumber: 176,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/CategoryPage.tsx
-var _jsxFileName$19 = "/app/applet/src/pages/CategoryPage.tsx";
 var CATEGORY_INFO = {
 	"Residential": {
 		title: "Prime Residential Estates & Penthouses",
@@ -10085,30 +7324,22 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 		const qLoc = selectedLocation.toLowerCase();
 		return categoryProperties.filter((p) => p.locationId && p.locationId === selectedLocation || p.city && p.city.toLowerCase().includes(qLoc) || p.locality && p.locality.toLowerCase().includes(qLoc) || p.address && p.address.toLowerCase().includes(qLoc));
 	}, [categoryProperties, selectedLocation]);
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-12 pb-20",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "relative min-h-[380px] flex items-center justify-center px-6 overflow-hidden bg-[#101419]",
 				children: [
-					/* @__PURE__ */ jsxDEV("img", {
+					/* @__PURE__ */ jsx("img", {
 						src: info.heroImg,
 						alt: info.title,
 						className: "absolute inset-0 w-full h-full object-cover filter brightness-[0.35]"
-					}, void 0, false, {
-						fileName: _jsxFileName$19,
-						lineNumber: 93,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/50 to-transparent" }, void 0, false, {
-						fileName: _jsxFileName$19,
-						lineNumber: 98,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/50 to-transparent" }),
+					/* @__PURE__ */ jsxs("div", {
 						className: "relative z-10 max-w-4xl mx-auto text-center space-y-4",
 						children: [
-							/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+							/* @__PURE__ */ jsx(Breadcrumbs, {
 								items: [
 									{
 										label: "Home",
@@ -10125,162 +7356,81 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 									if (onNavigate) onNavigate(path);
 									else if (path === "/") onNavigateHome();
 								}
-							}, void 0, false, {
-								fileName: _jsxFileName$19,
-								lineNumber: 101,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("h1", {
+							}),
+							/* @__PURE__ */ jsx("h1", {
 								className: "font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-white",
 								children: info.title
-							}, void 0, false, {
-								fileName: _jsxFileName$19,
-								lineNumber: 116,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+							}),
+							/* @__PURE__ */ jsx("p", {
 								className: "text-sm text-[#cbd5e1] max-w-xl mx-auto font-light leading-relaxed",
 								children: info.subtitle
-							}, void 0, false, {
-								fileName: _jsxFileName$19,
-								lineNumber: 119,
-								columnNumber: 11
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$19,
-						lineNumber: 100,
-						columnNumber: 9
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$19,
-				lineNumber: 92,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsx("div", {
 				className: "max-w-7xl mx-auto px-6 -mt-4",
-				children: /* @__PURE__ */ jsxDEV(LocationTabs, {
+				children: /* @__PURE__ */ jsx(LocationTabs, {
 					selectedLocation,
 					onSelectLocation: setSelectedLocation,
 					properties: categoryProperties,
 					categoryTitle: category
-				}, void 0, false, {
-					fileName: _jsxFileName$19,
-					lineNumber: 127,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$19,
-				lineNumber: 126,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "max-w-7xl mx-auto px-6 space-y-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center justify-between pb-4 border-b border-[#202732] text-xs font-mono text-[#8a909a]",
-					children: [/* @__PURE__ */ jsxDEV("span", { children: [
+					children: [/* @__PURE__ */ jsxs("span", { children: [
 						"Showing ",
-						/* @__PURE__ */ jsxDEV("strong", {
+						/* @__PURE__ */ jsx("strong", {
 							className: "text-[#f7f5f2]",
 							children: filteredProperties.length
-						}, void 0, false, {
-							fileName: _jsxFileName$19,
-							lineNumber: 139,
-							columnNumber: 21
-						}, void 0),
+						}),
 						" of",
 						" ",
-						/* @__PURE__ */ jsxDEV("strong", {
+						/* @__PURE__ */ jsx("strong", {
 							className: "text-[#8a909a]",
 							children: categoryProperties.length
-						}, void 0, false, {
-							fileName: _jsxFileName$19,
-							lineNumber: 140,
-							columnNumber: 13
-						}, void 0),
+						}),
 						" ",
 						category,
 						" assets"
-					] }, void 0, true, {
-						fileName: _jsxFileName$19,
-						lineNumber: 138,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Verified Registry Covenants" }, void 0, false, {
-						fileName: _jsxFileName$19,
-						lineNumber: 142,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$19,
-					lineNumber: 137,
-					columnNumber: 9
-				}, void 0), filteredProperties.length > 0 ? /* @__PURE__ */ jsxDEV("div", {
+					] }), /* @__PURE__ */ jsx("span", { children: "Verified Registry Covenants" })]
+				}), filteredProperties.length > 0 ? /* @__PURE__ */ jsx("div", {
 					className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-					children: filteredProperties.map((prop) => /* @__PURE__ */ jsxDEV(PropertyCard, {
+					children: filteredProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
 						property: prop,
 						onSelect: onSelectProperty,
 						isSaved: savedIds.includes(prop.id),
 						onToggleSave
-					}, prop.id, false, {
-						fileName: _jsxFileName$19,
-						lineNumber: 148,
-						columnNumber: 15
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$19,
-					lineNumber: 146,
-					columnNumber: 11
-				}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+					}, prop.id))
+				}) : /* @__PURE__ */ jsxs("div", {
 					className: "p-12 text-center bg-[#101419] border border-[#202732] rounded-sm space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("p", {
+					children: [/* @__PURE__ */ jsxs("p", {
 						className: "text-xs text-[#8a909a]",
 						children: [
 							"No ",
 							category,
 							" properties currently listed for this location."
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$19,
-						lineNumber: 159,
-						columnNumber: 13
-					}, void 0), selectedLocation !== "all" && /* @__PURE__ */ jsxDEV("button", {
+					}), selectedLocation !== "all" && /* @__PURE__ */ jsxs("button", {
 						onClick: () => setSelectedLocation("all"),
 						className: "inline-flex items-center gap-1.5 px-4 py-2 bg-[#1b222c] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono uppercase tracking-wider text-[#d1d5db] rounded-sm transition-colors cursor-pointer",
 						children: [
-							/* @__PURE__ */ jsxDEV(RotateCcw, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$19,
-								lineNumber: 167,
-								columnNumber: 17
-							}, void 0),
+							/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }),
 							"View All ",
 							category,
 							" Properties"
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$19,
-						lineNumber: 163,
-						columnNumber: 15
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$19,
-					lineNumber: 158,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$19,
-				lineNumber: 136,
-				columnNumber: 7
-			}, void 0)
+					})]
+				})]
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$19,
-		lineNumber: 89,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/ContactPage.tsx
-var _jsxFileName$18 = "/app/applet/src/pages/ContactPage.tsx";
 var FAQ_ITEMS = [
 	{
 		question: "How are properties verified on BUILDsmore?",
@@ -10393,121 +7543,73 @@ var ContactPage = ({ onNavigate }) => {
 			setLoading(false);
 		}
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "w-full bg-[#0c0f12] text-[#f7f5f2]",
 		children: [
-			/* @__PURE__ */ jsxDEV("section", {
+			/* @__PURE__ */ jsxs("section", {
 				className: "relative w-full min-h-[290px] sm:min-h-[360px] lg:min-h-[420px] flex items-center justify-center overflow-hidden bg-[#101419] border-b border-[#1f2631]",
 				children: [
-					/* @__PURE__ */ jsxDEV("img", {
+					/* @__PURE__ */ jsx("img", {
 						src: "/assets/images/contact_hero_estate_1795013193435.jpg",
 						alt: "Modern architectural luxury residence at twilight",
 						referrerPolicy: "no-referrer",
 						className: "absolute inset-0 w-full h-full object-cover object-center"
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 163,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", {
 						"aria-hidden": "true",
 						className: "absolute inset-0 bg-gradient-to-b from-[#0c0f12]/80 via-[#0c0f12]/55 to-[#0c0f12]/90"
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 169,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 text-center space-y-4",
 						children: [
-							/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+							/* @__PURE__ */ jsx(Breadcrumbs, {
 								items: [{
 									label: "Home",
 									href: "/"
 								}, { label: "Contact" }],
 								align: "center",
 								onNavigate
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 175,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("h1", {
+							}),
+							/* @__PURE__ */ jsx("h1", {
 								className: "font-serif text-3xl sm:text-5xl lg:text-[3.5rem] font-normal text-white tracking-tight leading-[1.1] text-balance",
 								children: "Get In Touch With Us"
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 180,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+							}),
+							/* @__PURE__ */ jsx("p", {
 								className: "text-sm sm:text-base text-[#e2e5ea] max-w-xl mx-auto leading-relaxed font-light",
 								children: "Browse through a curated selection of properties tailored to your goals. Connect with our advisory principals for your residence, investment, or commercial holding today."
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 183,
-								columnNumber: 11
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$18,
-						lineNumber: 174,
-						columnNumber: 9
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$18,
-				lineNumber: 162,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+			}),
+			/* @__PURE__ */ jsx("section", {
 				className: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 lg:gap-14 items-start",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "md:col-span-5 order-1 space-y-3",
-							children: [/* @__PURE__ */ jsxDEV("h2", {
+							children: [/* @__PURE__ */ jsx("h2", {
 								className: "font-serif text-3xl sm:text-4xl lg:text-[2.6rem] font-normal text-[#f7f5f2] leading-[1.15] text-balance",
 								children: "Have Questions Or Need Assistance?"
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 194,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("p", {
+							}), /* @__PURE__ */ jsx("p", {
 								className: "text-sm text-[#9ca3af] leading-relaxed font-light",
 								children: "We're here to help! Whether you have inquiries about our listings, need guidance on your next acquisition, or require private advisory, our team is ready to assist you."
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 197,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 193,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsx("div", {
 							id: "contact-form",
 							ref: formSectionRef,
 							className: "md:col-span-7 md:row-span-2 order-2 bg-[#101419] border border-[#202732] rounded-md p-6 sm:p-8 shadow-2xl",
-							children: submitted ? /* @__PURE__ */ jsxDEV("div", {
+							children: submitted ? /* @__PURE__ */ jsxs("div", {
 								className: "p-6 sm:p-10 bg-[#121e18] border border-emerald-500/30 rounded-sm text-center space-y-4",
 								children: [
-									/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-10 h-10 text-emerald-400 mx-auto" }, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 210,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("h3", {
+									/* @__PURE__ */ jsx(CheckCircle2, { className: "w-10 h-10 text-emerald-400 mx-auto" }),
+									/* @__PURE__ */ jsx("h3", {
 										className: "font-serif text-2xl font-normal text-white",
 										children: "Inquiry Received"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 211,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("p", {
+									}),
+									/* @__PURE__ */ jsxs("p", {
 										className: "text-sm text-[#a7f3d0] leading-relaxed max-w-md mx-auto",
 										children: [
 											"Thank you, ",
@@ -10516,12 +7618,8 @@ var ContactPage = ({ onNavigate }) => {
 											" ",
 											successNote || "Your inquiry has been registered with our advisory desk and routed for confidential review."
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 214,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+									}),
+									/* @__PURE__ */ jsx("button", {
 										type: "button",
 										onClick: () => {
 											setSubmitted(false);
@@ -10537,32 +7635,20 @@ var ContactPage = ({ onNavigate }) => {
 										},
 										className: "inline-flex items-center justify-center px-5 py-2.5 text-xs uppercase tracking-wider font-semibold text-[#c5a059] border border-[#c5a059]/40 hover:bg-[#c5a059]/10 rounded-sm cursor-pointer transition-colors",
 										children: "Send Another Message"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 219,
-										columnNumber: 17
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 209,
-								columnNumber: 15
-							}, void 0) : /* @__PURE__ */ jsxDEV("form", {
+							}) : /* @__PURE__ */ jsxs("form", {
 								onSubmit: handleSubmit,
 								className: "space-y-4 sm:space-y-5",
 								noValidate: true,
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "sr-only",
 										"aria-hidden": "true",
-										children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx("label", {
 											htmlFor: "contact-website-field",
 											children: "Website"
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 241,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											id: "contact-website-field",
 											type: "text",
 											name: "website",
@@ -10570,42 +7656,18 @@ var ContactPage = ({ onNavigate }) => {
 											autoComplete: "off",
 											value: honeypot,
 											onChange: (e) => setHoneypot(e.target.value)
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 242,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 240,
-										columnNumber: 17
-									}, void 0),
-									error && /* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									error && /* @__PURE__ */ jsxs("div", {
 										role: "alert",
 										className: "p-3.5 bg-red-950/60 border border-red-500/40 rounded-sm text-xs text-red-200 flex items-start gap-2.5",
-										children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 258,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: error }, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 259,
-											columnNumber: 21
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 254,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
+									}),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										htmlFor: "contact-full-name",
 										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
 										children: "Full Name"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 264,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										ref: nameInputRef,
 										id: "contact-full-name",
 										type: "text",
@@ -10614,24 +7676,12 @@ var ContactPage = ({ onNavigate }) => {
 										onChange: (e) => setName(e.target.value),
 										placeholder: "Enter your full name",
 										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 270,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 263,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] }),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										htmlFor: "contact-email",
 										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
 										children: "Email Address"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 283,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										id: "contact-email",
 										type: "email",
 										required: true,
@@ -10639,24 +7689,12 @@ var ContactPage = ({ onNavigate }) => {
 										onChange: (e) => setEmail(e.target.value),
 										placeholder: "Enter your email address",
 										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 289,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 282,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] }),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										htmlFor: "contact-phone",
 										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
 										children: "Phone Number"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 301,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										id: "contact-phone",
 										type: "tel",
 										required: true,
@@ -10664,48 +7702,24 @@ var ContactPage = ({ onNavigate }) => {
 										onChange: (e) => setPhone(e.target.value),
 										placeholder: "Enter your phone number",
 										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors tabular-nums"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 307,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 300,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] }),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										htmlFor: "contact-subject",
 										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
 										children: "Subject"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 319,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										id: "contact-subject",
 										type: "text",
 										value: subject,
 										onChange: (e) => setSubject(e.target.value),
 										placeholder: "Enter the subject of your message",
 										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 325,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 318,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] }),
+									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										htmlFor: "contact-message",
 										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
 										children: "Message"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 336,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+									}), /* @__PURE__ */ jsx("textarea", {
 										id: "contact-message",
 										rows: 4,
 										required: true,
@@ -10713,771 +7727,349 @@ var ContactPage = ({ onNavigate }) => {
 										onChange: (e) => setMessage(e.target.value),
 										placeholder: "Enter your message here",
 										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none resize-y transition-colors"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 342,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 335,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+									})] }),
+									/* @__PURE__ */ jsx("button", {
 										type: "submit",
 										disabled: loading,
 										className: "w-full py-3.5 px-6 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs sm:text-sm uppercase tracking-widest font-semibold rounded-sm transition-colors cursor-pointer shadow-md disabled:opacity-50",
 										children: loading ? "Submitting..." : "Submit"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 353,
-										columnNumber: 17
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 239,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$18,
-							lineNumber: 203,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "md:col-span-5 order-3 space-y-6 pt-2 md:pt-4 border-t border-[#1c232e]",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-1 sm:grid-cols-2 gap-6",
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-xs text-[#8a909a] block",
 											children: "Message Us"
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 368,
-											columnNumber: 17
-										}, void 0), /* @__PURE__ */ jsxDEV("a", {
+										}), /* @__PURE__ */ jsx("a", {
 											href: `mailto:${office.email}`,
 											className: "text-sm font-medium text-[#f7f5f2] hover:text-[#c5a059] transition-colors break-all block",
 											children: office.email
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 369,
-											columnNumber: 17
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 367,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-xs text-[#8a909a] block",
 											children: "Call Us"
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 378,
-											columnNumber: 17
-										}, void 0), /* @__PURE__ */ jsxDEV("a", {
+										}), /* @__PURE__ */ jsx("a", {
 											href: `tel:${office.rawPhone}`,
 											className: "text-sm font-medium text-[#f7f5f2] hover:text-[#c5a059] transition-colors tabular-nums block",
 											children: office.phone
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 379,
-											columnNumber: 17
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 377,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-xs text-[#8a909a] block",
 											children: "Location"
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 388,
-											columnNumber: 17
-										}, void 0), /* @__PURE__ */ jsxDEV("p", {
+										}), /* @__PURE__ */ jsxs("p", {
 											className: "text-sm font-medium text-[#f7f5f2] leading-relaxed",
 											children: [
 												office.addressLine1,
 												", ",
 												office.addressLine2
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$18,
-											lineNumber: 389,
-											columnNumber: 17
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 387,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-xs text-[#8a909a] block",
 											children: "Business Hours"
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 395,
-											columnNumber: 17
-										}, void 0), /* @__PURE__ */ jsxDEV("p", {
+										}), /* @__PURE__ */ jsx("p", {
 											className: "text-sm font-medium text-[#f7f5f2] leading-relaxed tabular-nums",
 											children: office.hours
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 396,
-											columnNumber: 17
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$18,
-										lineNumber: 394,
-										columnNumber: 15
-									}, void 0)
+										})]
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 366,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "pt-4 border-t border-[#1c232e] space-y-2.5",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-xs text-[#8a909a] block",
 									children: "Direct Channels"
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 403,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								}), /* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-3",
 									children: [
-										/* @__PURE__ */ jsxDEV("a", {
+										/* @__PURE__ */ jsx("a", {
 											href: office.whatsappUrl,
 											target: "_blank",
 											rel: "noopener noreferrer",
 											"aria-label": "Message BUILDsmore on WhatsApp",
 											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsxDEV(MessageCircle, { className: "w-4 h-4" }, void 0, false, {
-												fileName: _jsxFileName$18,
-												lineNumber: 412,
-												columnNumber: 19
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 405,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("a", {
+											children: /* @__PURE__ */ jsx(MessageCircle, { className: "w-4 h-4" })
+										}),
+										/* @__PURE__ */ jsx("a", {
 											href: `tel:${office.rawPhone}`,
 											"aria-label": "Call BUILDsmore Advisory Desk",
 											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsxDEV(Phone, { className: "w-4 h-4" }, void 0, false, {
-												fileName: _jsxFileName$18,
-												lineNumber: 419,
-												columnNumber: 19
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 414,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("a", {
+											children: /* @__PURE__ */ jsx(Phone, { className: "w-4 h-4" })
+										}),
+										/* @__PURE__ */ jsx("a", {
 											href: `mailto:${office.email}`,
 											"aria-label": "Email BUILDsmore Advisory Desk",
 											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsxDEV(Mail, { className: "w-4 h-4" }, void 0, false, {
-												fileName: _jsxFileName$18,
-												lineNumber: 426,
-												columnNumber: 19
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 421,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("a", {
+											children: /* @__PURE__ */ jsx(Mail, { className: "w-4 h-4" })
+										}),
+										/* @__PURE__ */ jsx("a", {
 											href: office.mapsExternalUrl,
 											target: "_blank",
 											rel: "noopener noreferrer",
 											"aria-label": "Open BUILDsmore office directions on Google Maps",
 											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsxDEV(MapPin, { className: "w-4 h-4" }, void 0, false, {
-												fileName: _jsxFileName$18,
-												lineNumber: 435,
-												columnNumber: 19
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$18,
-											lineNumber: 428,
-											columnNumber: 17
-										}, void 0)
+											children: /* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4" })
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$18,
-									lineNumber: 404,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 402,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 365,
-							columnNumber: 11
-						}, void 0)
+								})]
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$18,
-					lineNumber: 191,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$18,
-				lineNumber: 190,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+				})
+			}),
+			/* @__PURE__ */ jsx("section", {
 				"aria-label": "BUILDsmore Corporate Office Location Map",
 				className: "relative w-full border-y border-[#1e2530] bg-[#101419]",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "w-full h-[300px] sm:h-[360px] lg:h-[420px] relative",
-					children: [/* @__PURE__ */ jsxDEV("iframe", {
+					children: [/* @__PURE__ */ jsx("iframe", {
 						title: "BUILDsmore Corporate Office Map — Sector 82 A, Mohali",
 						src: office.mapsEmbedUrl,
 						className: "w-full h-full border-0 filter contrast-[0.95] brightness-[0.92]",
 						loading: "lazy",
 						referrerPolicy: "no-referrer-when-downgrade"
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 446,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "hidden sm:flex items-center justify-between gap-4 absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-md bg-[#0c0f12]/95 backdrop-blur-md border border-[#26303d] rounded-sm px-4 py-3 shadow-xl",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "min-w-0",
-							children: [/* @__PURE__ */ jsxDEV("p", {
+							children: [/* @__PURE__ */ jsx("p", {
 								className: "text-xs font-semibold text-[#f7f5f2] truncate",
 								children: office.name
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 455,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("p", {
+							}), /* @__PURE__ */ jsxs("p", {
 								className: "text-[11px] text-[#9ca3af] truncate",
 								children: [office.addressLine1, ", Mohali 140306"]
-							}, void 0, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 458,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 454,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("a", {
+							})]
+						}), /* @__PURE__ */ jsxs("a", {
 							href: office.mapsExternalUrl,
 							target: "_blank",
 							rel: "noopener noreferrer",
 							className: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-[11px] font-semibold uppercase tracking-wider rounded-sm shrink-0 transition-colors",
-							children: [/* @__PURE__ */ jsxDEV("span", { children: "Directions" }, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 468,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3 h-3" }, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 469,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 462,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$18,
-						lineNumber: 453,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$18,
-					lineNumber: 445,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$18,
-				lineNumber: 444,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+							children: [/* @__PURE__ */ jsx("span", { children: "Directions" }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3" })]
+						})]
+					})]
+				})
+			}),
+			/* @__PURE__ */ jsx("section", {
 				className: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-14 items-start",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "md:col-span-5 flex flex-col justify-between space-y-8 md:min-h-[340px]",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "space-y-3",
-							children: [/* @__PURE__ */ jsxDEV("h2", {
+							children: [/* @__PURE__ */ jsx("h2", {
 								className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2] leading-tight text-balance",
 								children: "Frequently Asked Questions"
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 481,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("p", {
+							}), /* @__PURE__ */ jsx("p", {
 								className: "text-sm text-[#9ca3af] leading-relaxed font-light",
 								children: "Answers to your real estate, RERA verification, and advisory questions."
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 484,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 480,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "space-y-3 pt-4 border-t border-[#1c232e] md:border-t-0 md:pt-0",
 							children: [
-								/* @__PURE__ */ jsxDEV("h3", {
+								/* @__PURE__ */ jsx("h3", {
 									className: "text-sm font-semibold text-[#f7f5f2]",
 									children: "Still have a Question?"
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 490,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#9ca3af] leading-relaxed max-w-sm",
 									children: "We're here to help! Reach out directly and get confidential answers tailored to your property search."
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 493,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsx("div", {
 									className: "pt-1",
-									children: /* @__PURE__ */ jsxDEV("button", {
+									children: /* @__PURE__ */ jsx("button", {
 										type: "button",
 										onClick: scrollToContactForm,
 										className: "inline-flex items-center justify-center px-5 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0",
 										children: "Contact Us"
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 497,
-										columnNumber: 17
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 496,
-									columnNumber: 15
-								}, void 0)
+									})
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 489,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$18,
-						lineNumber: 479,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsx("div", {
 						className: "md:col-span-7 border-t border-[#202732] divide-y divide-[#202732]",
 						children: FAQ_ITEMS.map((item, idx) => {
 							const isOpen = openFaqIndex === idx;
-							return /* @__PURE__ */ jsxDEV("div", {
+							return /* @__PURE__ */ jsxs("div", {
 								className: "py-1",
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsxs("button", {
 									type: "button",
 									"aria-expanded": isOpen,
 									onClick: () => setOpenFaqIndex(isOpen ? null : idx),
 									className: "w-full py-4 flex items-center justify-between gap-4 text-left cursor-pointer group focus:outline-none focus-visible:text-[#c5a059]",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: `text-sm sm:text-base font-medium transition-colors ${isOpen ? "text-[#c5a059]" : "text-[#f7f5f2] group-hover:text-[#c5a059]"}`,
 										children: item.question
-									}, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 520,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV(ChevronDown, { className: `w-4 h-4 text-[#8a909a] shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#c5a059]" : ""}` }, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 527,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$18,
-									lineNumber: 514,
-									columnNumber: 19
-								}, void 0), isOpen && /* @__PURE__ */ jsxDEV("div", {
+									}), /* @__PURE__ */ jsx(ChevronDown, { className: `w-4 h-4 text-[#8a909a] shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#c5a059]" : ""}` })]
+								}), isOpen && /* @__PURE__ */ jsx("div", {
 									className: "pb-4 pr-6 text-xs sm:text-sm text-[#9ca3af] leading-relaxed font-light",
 									children: item.answer
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 534,
-									columnNumber: 21
-								}, void 0)]
-							}, item.question, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 513,
-								columnNumber: 17
-							}, void 0);
+								})]
+							}, item.question);
 						})
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 509,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$18,
-					lineNumber: 477,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$18,
-				lineNumber: 476,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+					})]
+				})
+			}),
+			/* @__PURE__ */ jsxs("section", {
 				className: "relative w-full overflow-hidden border-t border-[#1e2530] bg-[#101419]",
 				children: [
-					/* @__PURE__ */ jsxDEV("img", {
+					/* @__PURE__ */ jsx("img", {
 						src: "/assets/images/contact_cta_residence_1795013194422.jpg",
 						alt: "Cantilevered modern architectural residence at sunset",
 						referrerPolicy: "no-referrer",
 						className: "absolute inset-0 w-full h-full object-cover object-center"
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 547,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", {
 						"aria-hidden": "true",
 						className: "absolute inset-0 bg-gradient-to-b from-[#0c0f12]/90 via-[#0c0f12]/55 to-[#0c0f12]/35"
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 553,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", {
 						className: "relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20 pb-40 sm:pb-52 lg:pb-64",
-						children: /* @__PURE__ */ jsxDEV("div", {
+						children: /* @__PURE__ */ jsxs("div", {
 							className: "grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "md:col-span-7",
-								children: /* @__PURE__ */ jsxDEV("h2", {
+								children: /* @__PURE__ */ jsx("h2", {
 									className: "font-serif text-3xl sm:text-4xl lg:text-[3rem] font-normal text-white leading-[1.1] text-balance",
 									children: "Find Your Perfect Property With BUILDsmore"
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 561,
-									columnNumber: 15
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$18,
-								lineNumber: 560,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "md:col-span-5 space-y-4",
-								children: [/* @__PURE__ */ jsxDEV("p", {
+								children: [/* @__PURE__ */ jsx("p", {
 									className: "text-sm text-[#e2e5ea] leading-relaxed font-light",
 									children: "Looking for an exceptional residence, commercial landmark, or investment plot? Explore curated listings with experienced BUILDsmore advisors."
-								}, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 567,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: /* @__PURE__ */ jsxDEV(AppLink, {
+								}), /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs(AppLink, {
 									href: "/properties",
 									onNavigate,
 									className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#f7f5f2] hover:bg-[#c5a059] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0",
-									children: [/* @__PURE__ */ jsxDEV("span", { children: "Start Your Search" }, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 576,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-										fileName: _jsxFileName$18,
-										lineNumber: 577,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$18,
-									lineNumber: 571,
-									columnNumber: 17
-								}, void 0) }, void 0, false, {
-									fileName: _jsxFileName$18,
-									lineNumber: 570,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$18,
-								lineNumber: 566,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$18,
-							lineNumber: 559,
-							columnNumber: 11
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$18,
-						lineNumber: 558,
-						columnNumber: 9
-					}, void 0)
+									children: [/* @__PURE__ */ jsx("span", { children: "Start Your Search" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+								}) })]
+							})]
+						})
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$18,
-				lineNumber: 546,
-				columnNumber: 7
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$18,
-		lineNumber: 160,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/LegalPage.tsx
-var _jsxFileName$17 = "/app/applet/src/pages/LegalPage.tsx";
 var LegalPage = ({ type, onNavigate }) => {
 	const isPrivacy = type === "privacy";
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "max-w-4xl mx-auto px-6 py-16 space-y-12 text-[#cbd5e1] font-light leading-relaxed text-sm",
-		children: [/* @__PURE__ */ jsxDEV("div", {
+		children: [/* @__PURE__ */ jsxs("div", {
 			className: "space-y-3 pb-6 border-b border-[#202732]",
 			children: [
-				/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+				/* @__PURE__ */ jsx(Breadcrumbs, {
 					items: [{
 						label: "Home",
 						href: "/"
 					}, { label: isPrivacy ? "Privacy Policy" : "Terms of Service" }],
 					onNavigate
-				}, void 0, false, {
-					fileName: _jsxFileName$17,
-					lineNumber: 17,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("span", {
+				}),
+				/* @__PURE__ */ jsx("span", {
 					className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
 					children: "Regulatory Compliance & Governance"
-				}, void 0, false, {
-					fileName: _jsxFileName$17,
-					lineNumber: 24,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("h1", {
+				}),
+				/* @__PURE__ */ jsx("h1", {
 					className: "font-serif text-3xl sm:text-4xl font-normal text-white",
 					children: isPrivacy ? "Global Privacy & Sovereign Data Protection Policy" : "Terms of Platform Advisory & Listing Access"
-				}, void 0, false, {
-					fileName: _jsxFileName$17,
-					lineNumber: 27,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("p", {
+				}),
+				/* @__PURE__ */ jsx("p", {
 					className: "text-xs text-[#8a909a] font-mono",
 					children: "Effective: October 2026 · Compliant with Swiss FADP, EU GDPR, UK Data Protection Act, and DIFC Data Protection Law."
-				}, void 0, false, {
-					fileName: _jsxFileName$17,
-					lineNumber: 30,
-					columnNumber: 9
-				}, void 0)
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$17,
-			lineNumber: 16,
-			columnNumber: 7
-		}, void 0), isPrivacy ? /* @__PURE__ */ jsxDEV("div", {
+		}), isPrivacy ? /* @__PURE__ */ jsxs("div", {
 			className: "space-y-8",
 			children: [
-				/* @__PURE__ */ jsxDEV("section", {
+				/* @__PURE__ */ jsxs("section", {
 					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsxs("h2", {
 						className: "font-serif text-xl font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$17,
-							lineNumber: 39,
-							columnNumber: 15
-						}, void 0), "1. Fiduciary Commitment to Principal Privacy"]
-					}, void 0, true, {
-						fileName: _jsxFileName$17,
-						lineNumber: 38,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", { children: "BUILDsmore operates at the apex of international private wealth advisory. We adhere to the most stringent data minimization principles. We do not sell, license, rent, or publicly disclose client contact data, financial covenants, or transactional inquiries under any circumstance." }, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 42,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$17,
-					lineNumber: 37,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("section", {
+						children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-5 h-5 text-[#c5a059]" }), "1. Fiduciary Commitment to Principal Privacy"]
+					}), /* @__PURE__ */ jsx("p", { children: "BUILDsmore operates at the apex of international private wealth advisory. We adhere to the most stringent data minimization principles. We do not sell, license, rent, or publicly disclose client contact data, financial covenants, or transactional inquiries under any circumstance." })]
+				}),
+				/* @__PURE__ */ jsxs("section", {
 					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsxs("h2", {
 						className: "font-serif text-xl font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV(Lock, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$17,
-							lineNumber: 49,
-							columnNumber: 15
-						}, void 0), "2. Data Collected via Inquiry and Synchronization Engines"]
-					}, void 0, true, {
-						fileName: _jsxFileName$17,
-						lineNumber: 48,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", { children: "When clients transmit confidential inquiries for listed or off-market estates, we collect verified identifiers (legal name, institutional email, phone, target acquisition timelines). For partner WordPress sites connected via our WordPress Importer API, we ingest only publicly published or authorized custom-field metadata (property specifications, pricing, imagery, geographic coordinates)." }, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 52,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$17,
-					lineNumber: 47,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("section", {
+						children: [/* @__PURE__ */ jsx(Lock, { className: "w-5 h-5 text-[#c5a059]" }), "2. Data Collected via Inquiry and Synchronization Engines"]
+					}), /* @__PURE__ */ jsx("p", { children: "When clients transmit confidential inquiries for listed or off-market estates, we collect verified identifiers (legal name, institutional email, phone, target acquisition timelines). For partner WordPress sites connected via our WordPress Importer API, we ingest only publicly published or authorized custom-field metadata (property specifications, pricing, imagery, geographic coordinates)." })]
+				}),
+				/* @__PURE__ */ jsxs("section", {
 					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-xl font-medium text-white",
 						children: "3. Encryption & Access Governance"
-					}, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 58,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", { children: "All data transmissions employ TLS 1.3 encryption. Internal administrative access is restricted via strict Role-Based Access Control (RBAC) and monitored via immutable audit logs." }, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 61,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$17,
-					lineNumber: 57,
-					columnNumber: 11
-				}, void 0)
+					}), /* @__PURE__ */ jsx("p", { children: "All data transmissions employ TLS 1.3 encryption. Internal administrative access is restricted via strict Role-Based Access Control (RBAC) and monitored via immutable audit logs." })]
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$17,
-			lineNumber: 36,
-			columnNumber: 9
-		}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+		}) : /* @__PURE__ */ jsxs("div", {
 			className: "space-y-8",
 			children: [
-				/* @__PURE__ */ jsxDEV("section", {
+				/* @__PURE__ */ jsxs("section", {
 					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsxs("h2", {
 						className: "font-serif text-xl font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV(FileText, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$17,
-							lineNumber: 70,
-							columnNumber: 15
-						}, void 0), "1. Platform Mandate and Nature of Listings"]
-					}, void 0, true, {
-						fileName: _jsxFileName$17,
-						lineNumber: 69,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", { children: "BUILDsmore provides a curated registry of prime residential, commercial, and agricultural real estate. While every listing is reviewed for title deed authenticity and architectural merit, representations of interior dimensions, zoning permits, and passing yields are subject to formal legal verification during contract exchange." }, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 73,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$17,
-					lineNumber: 68,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("section", {
+						children: [/* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 text-[#c5a059]" }), "1. Platform Mandate and Nature of Listings"]
+					}), /* @__PURE__ */ jsx("p", { children: "BUILDsmore provides a curated registry of prime residential, commercial, and agricultural real estate. While every listing is reviewed for title deed authenticity and architectural merit, representations of interior dimensions, zoning permits, and passing yields are subject to formal legal verification during contract exchange." })]
+				}),
+				/* @__PURE__ */ jsxs("section", {
 					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-xl font-medium text-white",
 						children: "2. Multi-Source WordPress Integration Terms"
-					}, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 79,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", { children: "Properties synchronized from third-party agency WordPress endpoints retain original copyright and source attribution. The BUILDsmore central registry enforces safe deduplication and preserves central listings unless explicitly decommissioned by the respective listing principal." }, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 82,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$17,
-					lineNumber: 78,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("section", {
+					}), /* @__PURE__ */ jsx("p", { children: "Properties synchronized from third-party agency WordPress endpoints retain original copyright and source attribution. The BUILDsmore central registry enforces safe deduplication and preserves central listings unless explicitly decommissioned by the respective listing principal." })]
+				}),
+				/* @__PURE__ */ jsxs("section", {
 					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-xl font-medium text-white",
 						children: "3. Non-Disclosure & Private Inspections"
-					}, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 88,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", { children: "Certain marquee holdings (including private islands and sovereign diplomatic palaces) require an executed Mutual Non-Disclosure Agreement (NDA) and proof of funds before architectural floorplans or precise cadastre coordinates are unlocked." }, void 0, false, {
-						fileName: _jsxFileName$17,
-						lineNumber: 91,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$17,
-					lineNumber: 87,
-					columnNumber: 11
-				}, void 0)
+					}), /* @__PURE__ */ jsx("p", { children: "Certain marquee holdings (including private islands and sovereign diplomatic palaces) require an executed Mutual Non-Disclosure Agreement (NDA) and proof of funds before architectural floorplans or precise cadastre coordinates are unlocked." })]
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$17,
-			lineNumber: 67,
-			columnNumber: 9
-		}, void 0)]
-	}, void 0, true, {
-		fileName: _jsxFileName$17,
-		lineNumber: 14,
-		columnNumber: 5
-	}, void 0);
+		})]
+	});
 };
 // src/pages/CollectionDetailPage.tsx
-var _jsxFileName$16 = "/app/applet/src/pages/CollectionDetailPage.tsx";
 var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNavigateHome, onNavigate, savedIds, onToggleSave }) => {
 	const { formatPrice } = useCurrency();
 	const propMap = new Map(properties.map((p) => [p.id, p]));
 	const collectionProperties = collection.propertyIds.map((id) => propMap.get(id)).filter((p) => p !== void 0 && p.status === "Published");
 	const totalValuation = collectionProperties.reduce((sum, p) => sum + (p.price || 0), 0);
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-12 pb-20 animate-in fade-in duration-200",
-		children: [/* @__PURE__ */ jsxDEV("div", {
+		children: [/* @__PURE__ */ jsxs("div", {
 			className: "relative min-h-[420px] flex items-center justify-center px-6 overflow-hidden bg-[#101419]",
 			children: [
-				/* @__PURE__ */ jsxDEV("img", {
+				/* @__PURE__ */ jsx("img", {
 					src: collection.coverImageUrl,
 					alt: collection.title,
 					className: "absolute inset-0 w-full h-full object-cover filter brightness-[0.35]"
-				}, void 0, false, {
-					fileName: _jsxFileName$16,
-					lineNumber: 44,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-transparent" }, void 0, false, {
-					fileName: _jsxFileName$16,
-					lineNumber: 49,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-radial-gradient from-transparent to-[#0c0f12]/80" }, void 0, false, {
-					fileName: _jsxFileName$16,
-					lineNumber: 50,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				}),
+				/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-transparent" }),
+				/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-radial-gradient from-transparent to-[#0c0f12]/80" }),
+				/* @__PURE__ */ jsxs("div", {
 					className: "relative z-10 max-w-4xl mx-auto text-center space-y-4 pt-12 pb-8",
 					children: [
-						/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+						/* @__PURE__ */ jsx(Breadcrumbs, {
 							items: [
 								{
 									label: "Home",
@@ -11494,221 +8086,96 @@ var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNaviga
 								if (onNavigate) onNavigate(path);
 								else if (path === "/") onNavigateHome();
 							}
-						}, void 0, false, {
-							fileName: _jsxFileName$16,
-							lineNumber: 53,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "inline-flex items-center gap-2 px-3 py-1 bg-[#c5a059]/10 border border-[#c5a059]/30 rounded-sm text-[11px] font-mono uppercase tracking-[0.2em] text-[#c5a059]",
-							children: [/* @__PURE__ */ jsxDEV(Layers, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$16,
-								lineNumber: 70,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Curated Investment Collection" }, void 0, false, {
-								fileName: _jsxFileName$16,
-								lineNumber: 71,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$16,
-							lineNumber: 69,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h1", {
+							children: [/* @__PURE__ */ jsx(Layers, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Curated Investment Collection" })]
+						}),
+						/* @__PURE__ */ jsx("h1", {
 							className: "font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white tracking-tight",
 							children: collection.title
-						}, void 0, false, {
-							fileName: _jsxFileName$16,
-							lineNumber: 74,
-							columnNumber: 11
-						}, void 0),
-						collection.subtitle && /* @__PURE__ */ jsxDEV("p", {
+						}),
+						collection.subtitle && /* @__PURE__ */ jsx("p", {
 							className: "text-base sm:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto leading-relaxed",
 							children: collection.subtitle
-						}, void 0, false, {
-							fileName: _jsxFileName$16,
-							lineNumber: 79,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-xs sm:text-sm text-[#9ca3af] max-w-2xl mx-auto leading-relaxed pt-2",
 							children: collection.description
-						}, void 0, false, {
-							fileName: _jsxFileName$16,
-							lineNumber: 84,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "pt-4 flex items-center justify-center gap-6 text-xs font-mono text-[#cbd5e1]",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#8a909a] block text-[10px] uppercase",
 									children: "Curated Assets"
-								}, void 0, false, {
-									fileName: _jsxFileName$16,
-									lineNumber: 91,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("strong", {
+								}), /* @__PURE__ */ jsxs("strong", {
 									className: "text-white text-sm",
 									children: [collectionProperties.length, " Properties"]
-								}, void 0, true, {
-									fileName: _jsxFileName$16,
-									lineNumber: 92,
-									columnNumber: 15
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$16,
-									lineNumber: 90,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { className: "h-6 w-[1px] bg-[#242c38]" }, void 0, false, {
-									fileName: _jsxFileName$16,
-									lineNumber: 94,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+								})] }),
+								/* @__PURE__ */ jsx("div", { className: "h-6 w-[1px] bg-[#242c38]" }),
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#8a909a] block text-[10px] uppercase",
 									children: "Total Valuation"
-								}, void 0, false, {
-									fileName: _jsxFileName$16,
-									lineNumber: 96,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("strong", {
+								}), /* @__PURE__ */ jsx("strong", {
 									className: "text-[#c5a059] text-sm",
 									children: formatPrice(totalValuation, "INR")
-								}, void 0, false, {
-									fileName: _jsxFileName$16,
-									lineNumber: 97,
-									columnNumber: 15
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$16,
-									lineNumber: 95,
-									columnNumber: 13
-								}, void 0)
+								})] })
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$16,
-							lineNumber: 89,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$16,
-					lineNumber: 52,
-					columnNumber: 9
-				}, void 0)
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$16,
-			lineNumber: 43,
-			columnNumber: 7
-		}, void 0), /* @__PURE__ */ jsxDEV("div", {
+		}), /* @__PURE__ */ jsxs("div", {
 			className: "max-w-7xl mx-auto px-6 space-y-8",
-			children: [/* @__PURE__ */ jsxDEV("div", {
+			children: [/* @__PURE__ */ jsxs("div", {
 				className: "flex items-center justify-between pb-4 border-b border-[#202732] text-xs font-mono text-[#8a909a]",
-				children: [/* @__PURE__ */ jsxDEV("span", { children: [
+				children: [/* @__PURE__ */ jsxs("span", { children: [
 					"Displaying ",
-					/* @__PURE__ */ jsxDEV("strong", {
+					/* @__PURE__ */ jsx("strong", {
 						className: "text-white",
 						children: collectionProperties.length
-					}, void 0, false, {
-						fileName: _jsxFileName$16,
-						lineNumber: 107,
-						columnNumber: 24
-					}, void 0),
+					}),
 					" verified holdings in this portfolio"
-				] }, void 0, true, {
-					fileName: _jsxFileName$16,
-					lineNumber: 106,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("span", {
+				] }), /* @__PURE__ */ jsx("span", {
 					className: "hidden sm:inline",
 					children: "Strict INR Valuation · Direct Developer & Owner Covenants"
-				}, void 0, false, {
-					fileName: _jsxFileName$16,
-					lineNumber: 109,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$16,
-				lineNumber: 105,
-				columnNumber: 9
-			}, void 0), collectionProperties.length > 0 ? /* @__PURE__ */ jsxDEV("div", {
+				})]
+			}), collectionProperties.length > 0 ? /* @__PURE__ */ jsx("div", {
 				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-				children: collectionProperties.map((prop) => /* @__PURE__ */ jsxDEV(PropertyCard, {
+				children: collectionProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
 					property: prop,
 					onSelect: onSelectProperty,
 					isSaved: savedIds.includes(prop.id),
 					onToggleSave
-				}, prop.id, false, {
-					fileName: _jsxFileName$16,
-					lineNumber: 115,
-					columnNumber: 15
-				}, void 0))
-			}, void 0, false, {
-				fileName: _jsxFileName$16,
-				lineNumber: 113,
-				columnNumber: 11
-			}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+				}, prop.id))
+			}) : /* @__PURE__ */ jsxs("div", {
 				className: "py-20 px-6 bg-[#101419] border border-[#202732] rounded-sm text-center space-y-3 max-w-lg mx-auto",
 				children: [
-					/* @__PURE__ */ jsxDEV(Building2, { className: "w-12 h-12 text-[#64748b] mx-auto" }, void 0, false, {
-						fileName: _jsxFileName$16,
-						lineNumber: 126,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("h3", {
+					/* @__PURE__ */ jsx(Building2, { className: "w-12 h-12 text-[#64748b] mx-auto" }),
+					/* @__PURE__ */ jsx("h3", {
 						className: "font-serif text-xl text-white",
 						children: "No Properties Listed Yet"
-					}, void 0, false, {
-						fileName: _jsxFileName$16,
-						lineNumber: 127,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+					}),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-xs text-[#8a909a]",
 						children: "Holdings are being finalized by the advisory team for this collection."
-					}, void 0, false, {
-						fileName: _jsxFileName$16,
-						lineNumber: 128,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", {
 						className: "pt-2",
-						children: /* @__PURE__ */ jsxDEV(AppLink, {
+						children: /* @__PURE__ */ jsx(AppLink, {
 							href: "/",
 							onNavigate: onNavigate || (() => onNavigateHome()),
 							className: "inline-block px-4 py-2 bg-[#c5a059] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer",
 							children: "Return to Homepage"
-						}, void 0, false, {
-							fileName: _jsxFileName$16,
-							lineNumber: 132,
-							columnNumber: 15
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$16,
-						lineNumber: 131,
-						columnNumber: 13
-					}, void 0)
+						})
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$16,
-				lineNumber: 125,
-				columnNumber: 11
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$16,
-			lineNumber: 104,
-			columnNumber: 7
-		}, void 0)]
-	}, void 0, true, {
-		fileName: _jsxFileName$16,
-		lineNumber: 40,
-		columnNumber: 5
-	}, void 0);
+			})]
+		})]
+	});
 };
 // src/pages/BlogPage.tsx
-var _jsxFileName$15 = "/app/applet/src/pages/BlogPage.tsx";
 var ARTICLES_PER_PAGE = 6;
 function formatEditorialDate(dateStr) {
 	if (!dateStr) return "";
@@ -11776,172 +8243,84 @@ var BlogPage = ({ blogs, onNavigate, initialTag = "" }) => {
 		setSelectedCategory(cat);
 		setCurrentPage(1);
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12",
-		children: [/* @__PURE__ */ jsxDEV("div", {
+		children: [/* @__PURE__ */ jsxs("div", {
 			className: "space-y-4 border-b border-[#1d242e] pb-8",
-			children: [/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+			children: [/* @__PURE__ */ jsx(Breadcrumbs, {
 				items: [{
 					label: "Home",
 					href: "/"
 				}, { label: "Journal" }],
 				onNavigate
-			}, void 0, false, {
-				fileName: _jsxFileName$15,
-				lineNumber: 131,
-				columnNumber: 9
-			}, void 0), /* @__PURE__ */ jsxDEV("div", {
+			}), /* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col lg:flex-row lg:items-end justify-between gap-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "space-y-2 max-w-2xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", {
 							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
 							children: "Editorial Insights & Market Research"
-						}, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 138,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h1", {
+						}),
+						/* @__PURE__ */ jsx("h1", {
 							className: "font-serif text-3xl sm:text-5xl font-normal text-[#f7f5f2] leading-tight",
 							children: "The BUILDsmore Journal"
-						}, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 141,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-sm text-[#9ca3af] font-light leading-relaxed",
 							children: "Architectural perspectives, Tricity real estate intelligence, RERA advisory, and curated investment briefings."
-						}, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 144,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 137,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+				}), /* @__PURE__ */ jsxs(AppLink, {
 					href: "/contact",
 					onNavigate,
 					className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#141922] hover:bg-[#1b222e] border border-[#2a3444] hover:border-[#c5a059] text-xs uppercase tracking-wider font-medium text-[#f7f5f2] rounded-sm transition-colors self-start lg:self-end shrink-0",
-					children: [/* @__PURE__ */ jsxDEV("span", { children: "Connect with Advisory" }, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 154,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 155,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 149,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$15,
-				lineNumber: 136,
-				columnNumber: 9
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$15,
-			lineNumber: 130,
-			columnNumber: 7
-		}, void 0), publishedBlogs.length === 0 ? /* @__PURE__ */ jsxDEV("section", {
+					children: [/* @__PURE__ */ jsx("span", { children: "Connect with Advisory" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 text-[#c5a059]" })]
+				})]
+			})]
+		}), publishedBlogs.length === 0 ? /* @__PURE__ */ jsxs("section", {
 			className: "py-16 px-6 bg-[#101419] border border-[#202732] rounded-sm text-center max-w-2xl mx-auto space-y-5",
 			children: [
-				/* @__PURE__ */ jsxDEV("div", {
+				/* @__PURE__ */ jsx("div", {
 					className: "w-12 h-12 mx-auto rounded-sm bg-[#161c24] border border-[#283242] flex items-center justify-center text-[#c5a059]",
-					children: /* @__PURE__ */ jsxDEV(BookOpen, { className: "w-6 h-6" }, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 164,
-						columnNumber: 13
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$15,
-					lineNumber: 163,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("h2", {
+					children: /* @__PURE__ */ jsx(BookOpen, { className: "w-6 h-6" })
+				}),
+				/* @__PURE__ */ jsx("h2", {
 					className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2]",
 					children: "No Editorial Articles Published Yet"
-				}, void 0, false, {
-					fileName: _jsxFileName$15,
-					lineNumber: 166,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("p", {
+				}),
+				/* @__PURE__ */ jsx("p", {
 					className: "text-sm text-[#9ca3af] font-light leading-relaxed",
 					children: "Our editorial briefings and architectural market dispatches are prepared directly by BUILDsmore principals and will appear here as soon as they are published."
-				}, void 0, false, {
-					fileName: _jsxFileName$15,
-					lineNumber: 169,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				}),
+				/* @__PURE__ */ jsxs("div", {
 					className: "pt-2 flex flex-wrap items-center justify-center gap-3",
-					children: [/* @__PURE__ */ jsxDEV(AppLink, {
+					children: [/* @__PURE__ */ jsxs(AppLink, {
 						href: "/properties",
 						onNavigate,
 						className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors",
-						children: [/* @__PURE__ */ jsxDEV(Building2, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 178,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Explore Portfolio" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 179,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$15,
-						lineNumber: 173,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+						children: [/* @__PURE__ */ jsx(Building2, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Explore Portfolio" })]
+					}), /* @__PURE__ */ jsx(AppLink, {
 						href: "/contact",
 						onNavigate,
 						className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#141922] hover:bg-[#1b222e] border border-[#2a3444] text-[#f7f5f2] text-xs uppercase tracking-wider font-medium rounded-sm transition-colors",
-						children: /* @__PURE__ */ jsxDEV("span", { children: "Contact Us" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 186,
-							columnNumber: 15
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 181,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 172,
-					columnNumber: 11
-				}, void 0)
+						children: /* @__PURE__ */ jsx("span", { children: "Contact Us" })
+					})]
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$15,
-			lineNumber: 162,
-			columnNumber: 9
-		}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [
-			/* @__PURE__ */ jsxDEV("div", {
+		}) : /* @__PURE__ */ jsxs(Fragment, { children: [
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex flex-wrap items-center gap-2",
 					children: [categories.map((cat) => {
-						return /* @__PURE__ */ jsxDEV("button", {
+						return /* @__PURE__ */ jsx("button", {
 							type: "button",
 							onClick: () => handleCategoryChange(cat),
 							className: `px-3.5 py-2 text-xs font-medium rounded-sm border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${selectedCategory === cat ? "bg-[#c5a059] text-[#0c0f12] border-[#c5a059] font-semibold" : "bg-[#101419] text-[#cbd5e1] border-[#222a36] hover:border-[#c5a059]/60 hover:text-white"}`,
 							children: cat
-						}, cat, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 198,
-							columnNumber: 19
-						}, void 0);
-					}), selectedTag && /* @__PURE__ */ jsxDEV("button", {
+						}, cat);
+					}), selectedTag && /* @__PURE__ */ jsxs("button", {
 						type: "button",
 						onClick: () => {
 							setSelectedTag("");
@@ -11949,31 +8328,11 @@ var BlogPage = ({ blogs, onNavigate, initialTag = "" }) => {
 							onNavigate("/blog");
 						},
 						className: "inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#181f2a] text-[#c5a059] border border-[#c5a059]/40 rounded-sm cursor-pointer hover:bg-[#1e2633]",
-						children: [/* @__PURE__ */ jsxDEV("span", { children: ["Tag: ", selectedTag] }, void 0, true, {
-							fileName: _jsxFileName$15,
-							lineNumber: 223,
-							columnNumber: 19
-						}, void 0), /* @__PURE__ */ jsxDEV(X, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 224,
-							columnNumber: 19
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$15,
-						lineNumber: 214,
-						columnNumber: 17
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 194,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("span", { children: ["Tag: ", selectedTag] }), /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" })]
+					})]
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "relative w-full md:w-72",
-					children: [/* @__PURE__ */ jsxDEV(Search, { className: "w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 230,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					children: [/* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
 						type: "text",
 						value: searchQuery,
 						onChange: (e) => {
@@ -11983,203 +8342,91 @@ var BlogPage = ({ blogs, onNavigate, initialTag = "" }) => {
 						placeholder: "Search articles, topics...",
 						"aria-label": "Search journal articles",
 						className: "w-full bg-[#101419] border border-[#222a36] focus:border-[#c5a059] rounded-sm pl-10 pr-4 py-2 text-xs text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none"
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 231,
-						columnNumber: 15
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 229,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$15,
-				lineNumber: 193,
-				columnNumber: 11
-			}, void 0),
-			featuredPost && /* @__PURE__ */ jsxDEV("article", {
+					})]
+				})]
+			}),
+			featuredPost && /* @__PURE__ */ jsxs("article", {
 				className: "grid grid-cols-1 lg:grid-cols-12 bg-[#101419] border border-[#222a36] rounded-sm overflow-hidden shadow-xl",
-				children: [/* @__PURE__ */ jsxDEV(AppLink, {
+				children: [/* @__PURE__ */ jsx(AppLink, {
 					href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
 					onNavigate,
 					className: "lg:col-span-7 relative min-h-[260px] sm:min-h-[340px] bg-[#141922] block overflow-hidden group",
-					children: featuredPost.featuredImage ? /* @__PURE__ */ jsxDEV("img", {
+					children: featuredPost.featuredImage ? /* @__PURE__ */ jsx("img", {
 						src: featuredPost.featuredImage,
 						alt: featuredPost.featuredImageAlt || featuredPost.title,
 						referrerPolicy: "no-referrer",
 						className: "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 254,
-						columnNumber: 19
-					}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+					}) : /* @__PURE__ */ jsx("div", {
 						className: "w-full h-full min-h-[260px] flex items-center justify-center bg-gradient-to-br from-[#141922] to-[#0c0f12] text-[#c5a059]/40",
-						children: /* @__PURE__ */ jsxDEV(BookOpen, { className: "w-12 h-12" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 262,
-							columnNumber: 21
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 261,
-						columnNumber: 19
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$15,
-					lineNumber: 248,
-					columnNumber: 15
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						children: /* @__PURE__ */ jsx(BookOpen, { className: "w-12 h-12" })
+					})
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "space-y-3",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex flex-wrap items-center gap-2 text-xs text-[#c5a059]",
 								children: [
-									/* @__PURE__ */ jsxDEV("span", {
+									/* @__PURE__ */ jsx("span", {
 										className: "font-semibold uppercase tracking-wider",
 										children: "Featured"
-									}, void 0, false, {
-										fileName: _jsxFileName$15,
-										lineNumber: 270,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("span", {
+									}),
+									/* @__PURE__ */ jsx("span", {
 										"aria-hidden": "true",
 										children: "·"
-									}, void 0, false, {
-										fileName: _jsxFileName$15,
-										lineNumber: 271,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("span", { children: featuredPost.category }, void 0, false, {
-										fileName: _jsxFileName$15,
-										lineNumber: 272,
-										columnNumber: 21
-									}, void 0)
+									}),
+									/* @__PURE__ */ jsx("span", { children: featuredPost.category })
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$15,
-								lineNumber: 269,
-								columnNumber: 19
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("h2", {
+							}),
+							/* @__PURE__ */ jsx("h2", {
 								className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2] leading-snug",
-								children: /* @__PURE__ */ jsxDEV(AppLink, {
+								children: /* @__PURE__ */ jsx(AppLink, {
 									href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
 									onNavigate,
 									className: "hover:text-[#c5a059] transition-colors",
 									children: featuredPost.title
-								}, void 0, false, {
-									fileName: _jsxFileName$15,
-									lineNumber: 276,
-									columnNumber: 21
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 275,
-								columnNumber: 19
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("p", {
+								})
+							}),
+							/* @__PURE__ */ jsx("p", {
 								className: "text-sm text-[#9ca3af] leading-relaxed font-light line-clamp-3",
 								children: featuredPost.excerpt
-							}, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 285,
-								columnNumber: 19
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$15,
-						lineNumber: 268,
-						columnNumber: 17
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "space-y-4 pt-4 border-t border-[#1d242e]",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-wrap items-center gap-4 text-xs text-[#8a909a]",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", { children: featuredPost.authorName }, void 0, false, {
-									fileName: _jsxFileName$15,
-									lineNumber: 292,
-									columnNumber: 21
-								}, void 0),
-								formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt) && /* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsx("span", { children: featuredPost.authorName }),
+								formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt) && /* @__PURE__ */ jsxs("span", {
 									className: "inline-flex items-center gap-1",
-									children: [/* @__PURE__ */ jsxDEV(Calendar, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$15,
-										lineNumber: 295,
-										columnNumber: 25
-									}, void 0), formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt)]
-								}, void 0, true, {
-									fileName: _jsxFileName$15,
-									lineNumber: 294,
-									columnNumber: 23
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-[#c5a059]" }), formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt)]
+								}),
+								/* @__PURE__ */ jsxs("span", {
 									className: "inline-flex items-center gap-1 tabular-nums",
 									children: [
-										/* @__PURE__ */ jsxDEV(Clock, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-											fileName: _jsxFileName$15,
-											lineNumber: 300,
-											columnNumber: 23
-										}, void 0),
+										/* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
 										featuredPost.readTimeMinutes || 1,
 										" min read"
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$15,
-									lineNumber: 299,
-									columnNumber: 21
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$15,
-							lineNumber: 291,
-							columnNumber: 19
-						}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+						}), /* @__PURE__ */ jsxs(AppLink, {
 							href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
 							onNavigate,
 							className: "inline-flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-[#c5a059] hover:text-[#e4be72] transition-colors",
-							children: [/* @__PURE__ */ jsxDEV("span", { children: "Read Full Article" }, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 310,
-								columnNumber: 21
-							}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 311,
-								columnNumber: 21
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$15,
-							lineNumber: 305,
-							columnNumber: 19
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$15,
-						lineNumber: 290,
-						columnNumber: 17
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 267,
-					columnNumber: 15
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$15,
-				lineNumber: 247,
-				columnNumber: 13
-			}, void 0),
-			filteredBlogs.length === 0 ? /* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("span", { children: "Read Full Article" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+						})]
+					})]
+				})]
+			}),
+			filteredBlogs.length === 0 ? /* @__PURE__ */ jsxs("div", {
 				className: "py-12 px-6 bg-[#101419] border border-[#202732] rounded-sm text-center space-y-3",
-				children: [/* @__PURE__ */ jsxDEV("p", {
+				children: [/* @__PURE__ */ jsx("p", {
 					className: "text-sm text-[#d1d5db]",
 					children: "No articles match your current filter criteria."
-				}, void 0, false, {
-					fileName: _jsxFileName$15,
-					lineNumber: 321,
-					columnNumber: 15
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+				}), /* @__PURE__ */ jsx("button", {
 					type: "button",
 					onClick: () => {
 						setSearchQuery("");
@@ -12189,219 +8436,106 @@ var BlogPage = ({ blogs, onNavigate, initialTag = "" }) => {
 					},
 					className: "text-xs text-[#c5a059] underline cursor-pointer hover:text-[#e4be72]",
 					children: "Reset all filters"
-				}, void 0, false, {
-					fileName: _jsxFileName$15,
-					lineNumber: 324,
-					columnNumber: 15
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$15,
-				lineNumber: 320,
-				columnNumber: 13
-			}, void 0) : /* @__PURE__ */ jsxDEV("section", {
+				})]
+			}) : /* @__PURE__ */ jsx("section", {
 				"aria-label": "Journal Articles",
 				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-				children: paginatedPosts.map((post) => /* @__PURE__ */ jsxDEV("article", {
+				children: paginatedPosts.map((post) => /* @__PURE__ */ jsxs("article", {
 					className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/45 rounded-sm overflow-hidden flex flex-col transition-colors",
-					children: [/* @__PURE__ */ jsxDEV(AppLink, {
+					children: [/* @__PURE__ */ jsx(AppLink, {
 						href: `/blog/${encodeURIComponent(post.slug)}`,
 						onNavigate,
 						className: "aspect-[16/10] w-full bg-[#141922] block overflow-hidden group",
-						children: post.featuredImage ? /* @__PURE__ */ jsxDEV("img", {
+						children: post.featuredImage ? /* @__PURE__ */ jsx("img", {
 							src: post.featuredImage,
 							alt: post.featuredImageAlt || post.title,
 							referrerPolicy: "no-referrer",
 							className: "w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-						}, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 353,
-							columnNumber: 23
-						}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+						}) : /* @__PURE__ */ jsx("div", {
 							className: "w-full h-full flex items-center justify-center text-[#c5a059]/35",
-							children: /* @__PURE__ */ jsxDEV(BookOpen, { className: "w-9 h-9" }, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 361,
-								columnNumber: 25
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 360,
-							columnNumber: 23
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 347,
-						columnNumber: 19
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							children: /* @__PURE__ */ jsx(BookOpen, { className: "w-9 h-9" })
+						})
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "p-6 flex-1 flex flex-col justify-between space-y-4",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "space-y-2.5",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-2 text-xs text-[#8a909a]",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsx("span", {
 											className: "text-[#c5a059] font-medium",
 											children: post.category
-										}, void 0, false, {
-											fileName: _jsxFileName$15,
-											lineNumber: 369,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsx("span", {
 											"aria-hidden": "true",
 											children: "·"
-										}, void 0, false, {
-											fileName: _jsxFileName$15,
-											lineNumber: 370,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsxs("span", {
 											className: "tabular-nums",
 											children: [post.readTimeMinutes || 1, " min read"]
-										}, void 0, true, {
-											fileName: _jsxFileName$15,
-											lineNumber: 371,
-											columnNumber: 25
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$15,
-									lineNumber: 368,
-									columnNumber: 23
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h3", {
+								}),
+								/* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-xl font-normal text-[#f7f5f2] leading-snug",
-									children: /* @__PURE__ */ jsxDEV(AppLink, {
+									children: /* @__PURE__ */ jsx(AppLink, {
 										href: `/blog/${encodeURIComponent(post.slug)}`,
 										onNavigate,
 										className: "hover:text-[#c5a059] transition-colors",
 										children: post.title
-									}, void 0, false, {
-										fileName: _jsxFileName$15,
-										lineNumber: 375,
-										columnNumber: 25
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$15,
-									lineNumber: 374,
-									columnNumber: 23
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+									})
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#9ca3af] leading-relaxed font-light line-clamp-3",
 									children: post.excerpt
-								}, void 0, false, {
-									fileName: _jsxFileName$15,
-									lineNumber: 384,
-									columnNumber: 23
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$15,
-							lineNumber: 367,
-							columnNumber: 21
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "pt-4 border-t border-[#1b222c] flex items-center justify-between gap-2 text-xs text-[#8a909a]",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "truncate",
 								children: post.authorName
-							}, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 390,
-								columnNumber: 23
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "shrink-0",
 								children: formatEditorialDate(post.publishedAt || post.createdAt)
-							}, void 0, false, {
-								fileName: _jsxFileName$15,
-								lineNumber: 391,
-								columnNumber: 23
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$15,
-							lineNumber: 389,
-							columnNumber: 21
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$15,
-						lineNumber: 366,
-						columnNumber: 19
-					}, void 0)]
-				}, post.id, true, {
-					fileName: _jsxFileName$15,
-					lineNumber: 343,
-					columnNumber: 17
-				}, void 0))
-			}, void 0, false, {
-				fileName: _jsxFileName$15,
-				lineNumber: 338,
-				columnNumber: 13
-			}, void 0),
-			totalPages > 1 && /* @__PURE__ */ jsxDEV("nav", {
+							})]
+						})]
+					})]
+				}, post.id))
+			}),
+			totalPages > 1 && /* @__PURE__ */ jsxs("nav", {
 				"aria-label": "Journal pagination",
 				className: "flex items-center justify-center gap-2 pt-4",
 				children: [
-					/* @__PURE__ */ jsxDEV("button", {
+					/* @__PURE__ */ jsx("button", {
 						type: "button",
 						disabled: safePage <= 1,
 						onClick: () => setCurrentPage((p) => Math.max(1, p - 1)),
 						className: "p-2 bg-[#101419] border border-[#222a36] text-[#cbd5e1] hover:border-[#c5a059] rounded-sm disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed",
 						"aria-label": "Previous page",
-						children: /* @__PURE__ */ jsxDEV(ChevronLeft, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 414,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 407,
-						columnNumber: 15
-					}, void 0),
-					Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => /* @__PURE__ */ jsxDEV("button", {
+						children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
+					}),
+					Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: () => setCurrentPage(pageNum),
 						className: `px-3.5 py-1.5 text-xs font-mono rounded-sm border transition-colors cursor-pointer ${pageNum === safePage ? "bg-[#c5a059] text-[#0c0f12] border-[#c5a059] font-bold" : "bg-[#101419] text-[#cbd5e1] border-[#222a36] hover:border-[#c5a059]/60"}`,
 						children: pageNum
-					}, pageNum, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 418,
-						columnNumber: 17
-					}, void 0)),
-					/* @__PURE__ */ jsxDEV("button", {
+					}, pageNum)),
+					/* @__PURE__ */ jsx("button", {
 						type: "button",
 						disabled: safePage >= totalPages,
 						onClick: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
 						className: "p-2 bg-[#101419] border border-[#222a36] text-[#cbd5e1] hover:border-[#c5a059] rounded-sm disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed",
 						"aria-label": "Next page",
-						children: /* @__PURE__ */ jsxDEV(ChevronRight, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$15,
-							lineNumber: 439,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$15,
-						lineNumber: 432,
-						columnNumber: 15
-					}, void 0)
+						children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$15,
-				lineNumber: 403,
-				columnNumber: 13
-			}, void 0)
-		] }, void 0, true, {
-			fileName: _jsxFileName$15,
-			lineNumber: 191,
-			columnNumber: 9
-		}, void 0)]
-	}, void 0, true, {
-		fileName: _jsxFileName$15,
-		lineNumber: 128,
-		columnNumber: 5
-	}, void 0);
+			})
+		] })]
+	});
 };
 // src/pages/BlogDetailPage.tsx
-var _jsxFileName$14 = "/app/applet/src/pages/BlogDetailPage.tsx";
 function formatFullDate(dateStr) {
 	if (!dateStr) return "";
 	const d = new Date(dateStr);
@@ -12415,45 +8549,25 @@ function formatFullDate(dateStr) {
 }
 function renderFormattedBlocks(content) {
 	return (content || "").split(/\n{2,}/).map((b) => b.trim()).filter(Boolean).map((block, index) => {
-		if (block.startsWith("### ")) return /* @__PURE__ */ jsxDEV("h3", {
+		if (block.startsWith("### ")) return /* @__PURE__ */ jsx("h3", {
 			className: "font-serif text-xl sm:text-2xl font-normal text-[#f7f5f2] pt-4",
 			children: block.slice(4).trim()
-		}, index, false, {
-			fileName: _jsxFileName$14,
-			lineNumber: 44,
-			columnNumber: 9
-		}, this);
-		if (block.startsWith("## ")) return /* @__PURE__ */ jsxDEV("h2", {
+		}, index);
+		if (block.startsWith("## ")) return /* @__PURE__ */ jsx("h2", {
 			className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2] pt-6",
 			children: block.slice(3).trim()
-		}, index, false, {
-			fileName: _jsxFileName$14,
-			lineNumber: 54,
-			columnNumber: 9
-		}, this);
+		}, index);
 		if (block.startsWith("- ") || block.startsWith("* ")) {
 			const items = block.split("\n").map((line) => line.replace(/^[-*]\s+/, "").trim()).filter(Boolean);
-			return /* @__PURE__ */ jsxDEV("ul", {
+			return /* @__PURE__ */ jsx("ul", {
 				className: "list-disc pl-6 space-y-2 text-[#cbd5e1] text-base leading-relaxed font-light",
-				children: items.map((item, idx) => /* @__PURE__ */ jsxDEV("li", { children: item }, idx, false, {
-					fileName: _jsxFileName$14,
-					lineNumber: 73,
-					columnNumber: 13
-				}, this))
-			}, index, false, {
-				fileName: _jsxFileName$14,
-				lineNumber: 68,
-				columnNumber: 9
-			}, this);
+				children: items.map((item, idx) => /* @__PURE__ */ jsx("li", { children: item }, idx))
+			}, index);
 		}
-		return /* @__PURE__ */ jsxDEV("p", {
+		return /* @__PURE__ */ jsx("p", {
 			className: "text-[#d1d5db] text-base sm:text-[17px] leading-[1.8] font-light",
 			children: block
-		}, index, false, {
-			fileName: _jsxFileName$14,
-			lineNumber: 79,
-			columnNumber: 7
-		}, this);
+		}, index);
 	});
 }
 var BlogDetailPage = ({ blog, allBlogs, onNavigate, onSelectTag }) => {
@@ -12481,10 +8595,10 @@ var BlogDetailPage = ({ blog, allBlogs, onNavigate, onSelectTag }) => {
 	const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(`${blog.title} — ${canonicalUrl}`)}`;
 	const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonicalUrl)}`;
 	const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(blog.title)}&url=${encodeURIComponent(canonicalUrl)}`;
-	return /* @__PURE__ */ jsxDEV("article", {
+	return /* @__PURE__ */ jsxs("article", {
 		className: "max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12",
 		children: [
-			/* @__PURE__ */ jsxDEV(Breadcrumbs, {
+			/* @__PURE__ */ jsx(Breadcrumbs, {
 				items: [
 					{
 						label: "Home",
@@ -12497,439 +8611,198 @@ var BlogDetailPage = ({ blog, allBlogs, onNavigate, onSelectTag }) => {
 					{ label: blog.title }
 				],
 				onNavigate
-			}, void 0, false, {
-				fileName: _jsxFileName$14,
-				lineNumber: 136,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("header", {
+			}),
+			/* @__PURE__ */ jsxs("header", {
 				className: "space-y-6 max-w-3xl",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex flex-wrap items-center gap-3 text-xs text-[#9ca3af]",
 						children: [
-							/* @__PURE__ */ jsxDEV("span", {
+							/* @__PURE__ */ jsx("span", {
 								className: "text-[#c5a059] font-semibold uppercase tracking-wider",
 								children: blog.category
-							}, void 0, false, {
-								fileName: _jsxFileName$14,
-								lineNumber: 148,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("span", {
+							}),
+							/* @__PURE__ */ jsx("span", {
 								"aria-hidden": "true",
 								children: "·"
-							}, void 0, false, {
-								fileName: _jsxFileName$14,
-								lineNumber: 151,
-								columnNumber: 11
-							}, void 0),
-							publishedDate && /* @__PURE__ */ jsxDEV("span", {
+							}),
+							publishedDate && /* @__PURE__ */ jsxs("span", {
 								className: "inline-flex items-center gap-1.5",
-								children: [/* @__PURE__ */ jsxDEV(Calendar, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 154,
-									columnNumber: 15
-								}, void 0), publishedDate]
-							}, void 0, true, {
-								fileName: _jsxFileName$14,
-								lineNumber: 153,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-[#c5a059]" }), publishedDate]
+							}),
+							/* @__PURE__ */ jsx("span", {
 								"aria-hidden": "true",
 								children: "·"
-							}, void 0, false, {
-								fileName: _jsxFileName$14,
-								lineNumber: 158,
-								columnNumber: 11
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("span", {
+							}),
+							/* @__PURE__ */ jsxs("span", {
 								className: "inline-flex items-center gap-1.5 tabular-nums",
 								children: [
-									/* @__PURE__ */ jsxDEV(Clock, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$14,
-										lineNumber: 160,
-										columnNumber: 13
-									}, void 0),
+									/* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
 									blog.readTimeMinutes || 1,
 									" min read"
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$14,
-								lineNumber: 159,
-								columnNumber: 11
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$14,
-						lineNumber: 147,
-						columnNumber: 9
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("h1", {
+					}),
+					/* @__PURE__ */ jsx("h1", {
 						className: "font-serif text-3xl sm:text-5xl font-normal text-[#f7f5f2] leading-[1.15] text-balance",
 						children: blog.title
-					}, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 165,
-						columnNumber: 9
-					}, void 0),
-					blog.excerpt && /* @__PURE__ */ jsxDEV("p", {
+					}),
+					blog.excerpt && /* @__PURE__ */ jsx("p", {
 						className: "text-base sm:text-lg text-[#9ca3af] font-light leading-relaxed",
 						children: blog.excerpt
-					}, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 170,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#1e2632]",
-						children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("p", {
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", {
 							className: "text-sm font-medium text-[#f7f5f2]",
 							children: blog.authorName
-						}, void 0, false, {
-							fileName: _jsxFileName$14,
-							lineNumber: 177,
-							columnNumber: 13
-						}, void 0), blog.authorRole && /* @__PURE__ */ jsxDEV("p", {
+						}), blog.authorRole && /* @__PURE__ */ jsx("p", {
 							className: "text-xs text-[#8a909a]",
 							children: blog.authorRole
-						}, void 0, false, {
-							fileName: _jsxFileName$14,
-							lineNumber: 179,
-							columnNumber: 15
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$14,
-							lineNumber: 176,
-							columnNumber: 11
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})] }), /* @__PURE__ */ jsxs("div", {
 							className: "flex flex-wrap items-center gap-2",
 							children: [
-								/* @__PURE__ */ jsxDEV("button", {
+								/* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: handleCopyLink,
 									className: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#12171f] hover:bg-[#1a222e] border border-[#242e3d] text-xs text-[#e2e5ea] rounded-sm cursor-pointer transition-colors",
-									children: copied ? /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(Check, { className: "w-3.5 h-3.5 text-emerald-400" }, void 0, false, {
-										fileName: _jsxFileName$14,
-										lineNumber: 191,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Copied" }, void 0, false, {
-										fileName: _jsxFileName$14,
-										lineNumber: 192,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$14,
-										lineNumber: 190,
-										columnNumber: 17
-									}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(Share2, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$14,
-										lineNumber: 196,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Copy Link" }, void 0, false, {
-										fileName: _jsxFileName$14,
-										lineNumber: 197,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$14,
-										lineNumber: 195,
-										columnNumber: 17
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 184,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("a", {
+									children: copied ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Check, { className: "w-3.5 h-3.5 text-emerald-400" }), /* @__PURE__ */ jsx("span", { children: "Copied" })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Share2, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Copy Link" })] })
+								}),
+								/* @__PURE__ */ jsx("a", {
 									href: whatsappShareUrl,
 									target: "_blank",
 									rel: "noopener noreferrer",
 									className: "px-3 py-1.5 bg-[#12171f] hover:border-[#c5a059] border border-[#242e3d] text-xs text-[#cbd5e1] rounded-sm transition-colors",
 									children: "WhatsApp"
-								}, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 202,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("a", {
+								}),
+								/* @__PURE__ */ jsx("a", {
 									href: linkedinShareUrl,
 									target: "_blank",
 									rel: "noopener noreferrer",
 									className: "px-3 py-1.5 bg-[#12171f] hover:border-[#c5a059] border border-[#242e3d] text-xs text-[#cbd5e1] rounded-sm transition-colors",
 									children: "LinkedIn"
-								}, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 210,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("a", {
+								}),
+								/* @__PURE__ */ jsx("a", {
 									href: xShareUrl,
 									target: "_blank",
 									rel: "noopener noreferrer",
 									className: "px-3 py-1.5 bg-[#12171f] hover:border-[#c5a059] border border-[#242e3d] text-xs text-[#cbd5e1] rounded-sm transition-colors",
 									children: "X"
-								}, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 218,
-									columnNumber: 13
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$14,
-							lineNumber: 183,
-							columnNumber: 11
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$14,
-						lineNumber: 175,
-						columnNumber: 9
-					}, void 0)
+						})]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$14,
-				lineNumber: 146,
-				columnNumber: 7
-			}, void 0),
-			blog.featuredImage && /* @__PURE__ */ jsxDEV("figure", {
+			}),
+			blog.featuredImage && /* @__PURE__ */ jsx("figure", {
 				className: "overflow-hidden rounded-sm border border-[#202732] bg-[#101419]",
-				children: /* @__PURE__ */ jsxDEV("img", {
+				children: /* @__PURE__ */ jsx("img", {
 					src: blog.featuredImage,
 					alt: blog.featuredImageAlt || blog.title,
 					referrerPolicy: "no-referrer",
 					className: "w-full max-h-[520px] object-cover"
-				}, void 0, false, {
-					fileName: _jsxFileName$14,
-					lineNumber: 233,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$14,
-				lineNumber: 232,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "max-w-3xl space-y-5",
-				children: [renderFormattedBlocks(blog.content), Array.isArray(blog.tags) && blog.tags.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+				children: [renderFormattedBlocks(blog.content), Array.isArray(blog.tags) && blog.tags.length > 0 && /* @__PURE__ */ jsxs("div", {
 					className: "pt-8 border-t border-[#1d242e] flex flex-wrap items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsx("span", {
 						className: "text-xs text-[#8a909a] mr-1",
 						children: "Topics:"
-					}, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 249,
-						columnNumber: 13
-					}, void 0), blog.tags.map((tag) => /* @__PURE__ */ jsxDEV(AppLink, {
+					}), blog.tags.map((tag) => /* @__PURE__ */ jsx(AppLink, {
 						href: `/blog?tag=${encodeURIComponent(tag)}`,
 						onNavigate: () => onSelectTag?.(tag),
 						className: "px-3 py-1 bg-[#12171f] hover:border-[#c5a059] border border-[#242c38] text-xs text-[#cbd5e1] hover:text-[#c5a059] rounded-sm transition-colors cursor-pointer",
 						children: tag
-					}, tag, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 251,
-						columnNumber: 15
-					}, void 0))]
-				}, void 0, true, {
-					fileName: _jsxFileName$14,
-					lineNumber: 248,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$14,
-				lineNumber: 243,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("section", {
+					}, tag))]
+				})]
+			}),
+			/* @__PURE__ */ jsxs("section", {
 				className: "p-8 bg-[#101419] border border-[#242c38] rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "space-y-2 max-w-xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsxs("span", {
 							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
 							children: [blog.category, " · BUILDsmore Journal"]
-						}, void 0, true, {
-							fileName: _jsxFileName$14,
-							lineNumber: 267,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h2", {
+						}),
+						/* @__PURE__ */ jsx("h2", {
 							className: "font-serif text-2xl font-normal text-white",
 							children: "BUILDsmore Advisory Desk"
-						}, void 0, false, {
-							fileName: _jsxFileName$14,
-							lineNumber: 270,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-xs sm:text-sm text-[#9ca3af] font-light leading-relaxed",
 							children: "Discuss RERA-verified acquisitions, commercial yields, or architectural holdings with a senior advisor."
-						}, void 0, false, {
-							fileName: _jsxFileName$14,
-							lineNumber: 273,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$14,
-					lineNumber: 266,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+				}), /* @__PURE__ */ jsxs(AppLink, {
 					href: "/contact",
 					onNavigate,
 					className: "inline-flex items-center gap-2 px-6 py-3 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-colors shrink-0 self-start md:self-center",
-					children: [/* @__PURE__ */ jsxDEV("span", { children: "Request Private Consultation" }, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 283,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-3.5 h-3.5" }, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 284,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$14,
-					lineNumber: 278,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$14,
-				lineNumber: 265,
-				columnNumber: 7
-			}, void 0),
-			relatedBlogs.length > 0 && /* @__PURE__ */ jsxDEV("section", {
+					children: [/* @__PURE__ */ jsx("span", { children: "Request Private Consultation" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+				})]
+			}),
+			relatedBlogs.length > 0 && /* @__PURE__ */ jsxs("section", {
 				className: "pt-6 border-t border-[#1e2632] space-y-6",
-				children: [/* @__PURE__ */ jsxDEV("h2", {
+				children: [/* @__PURE__ */ jsx("h2", {
 					className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2]",
 					children: "Related Dispatches"
-				}, void 0, false, {
-					fileName: _jsxFileName$14,
-					lineNumber: 291,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsx("div", {
 					className: "grid grid-cols-1 md:grid-cols-3 gap-6",
-					children: relatedBlogs.map((item) => /* @__PURE__ */ jsxDEV("article", {
+					children: relatedBlogs.map((item) => /* @__PURE__ */ jsxs("article", {
 						className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/45 rounded-sm overflow-hidden flex flex-col transition-colors",
-						children: [/* @__PURE__ */ jsxDEV(AppLink, {
+						children: [/* @__PURE__ */ jsx(AppLink, {
 							href: `/blog/${encodeURIComponent(item.slug)}`,
 							onNavigate,
 							className: "aspect-[16/10] bg-[#141922] block overflow-hidden",
-							children: item.featuredImage ? /* @__PURE__ */ jsxDEV("img", {
+							children: item.featuredImage ? /* @__PURE__ */ jsx("img", {
 								src: item.featuredImage,
 								alt: item.featuredImageAlt || item.title,
 								referrerPolicy: "no-referrer",
 								className: "w-full h-full object-cover"
-							}, void 0, false, {
-								fileName: _jsxFileName$14,
-								lineNumber: 306,
-								columnNumber: 21
-							}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+							}) : /* @__PURE__ */ jsx("div", {
 								className: "w-full h-full flex items-center justify-center text-[#c5a059]/35",
-								children: /* @__PURE__ */ jsxDEV(BookOpen, { className: "w-8 h-8" }, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 314,
-									columnNumber: 23
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$14,
-								lineNumber: 313,
-								columnNumber: 21
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$14,
-							lineNumber: 300,
-							columnNumber: 17
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								children: /* @__PURE__ */ jsx(BookOpen, { className: "w-8 h-8" })
+							})
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "p-5 space-y-2 flex-1 flex flex-col justify-between",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "space-y-1.5",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-xs text-[#c5a059] block",
 									children: item.category
-								}, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 320,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+								}), /* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-lg font-normal text-[#f7f5f2] leading-snug",
-									children: /* @__PURE__ */ jsxDEV(AppLink, {
+									children: /* @__PURE__ */ jsx(AppLink, {
 										href: `/blog/${encodeURIComponent(item.slug)}`,
 										onNavigate,
 										className: "hover:text-[#c5a059] transition-colors",
 										children: item.title
-									}, void 0, false, {
-										fileName: _jsxFileName$14,
-										lineNumber: 324,
-										columnNumber: 23
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$14,
-									lineNumber: 323,
-									columnNumber: 21
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$14,
-								lineNumber: 319,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									})
+								})]
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-xs text-[#8a909a] block pt-2",
 								children: formatFullDate(item.publishedAt || item.createdAt)
-							}, void 0, false, {
-								fileName: _jsxFileName$14,
-								lineNumber: 333,
-								columnNumber: 19
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$14,
-							lineNumber: 318,
-							columnNumber: 17
-						}, void 0)]
-					}, item.id, true, {
-						fileName: _jsxFileName$14,
-						lineNumber: 296,
-						columnNumber: 15
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$14,
-					lineNumber: 294,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$14,
-				lineNumber: 290,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+							})]
+						})]
+					}, item.id))
+				})]
+			}),
+			/* @__PURE__ */ jsx("div", {
 				className: "pt-4",
-				children: /* @__PURE__ */ jsxDEV(AppLink, {
+				children: /* @__PURE__ */ jsxs(AppLink, {
 					href: "/blog",
 					onNavigate,
 					className: "inline-flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-[#cbd5e1] hover:text-[#c5a059] transition-colors",
-					children: [/* @__PURE__ */ jsxDEV(ArrowLeft, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 350,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Back to The BUILDsmore Journal" }, void 0, false, {
-						fileName: _jsxFileName$14,
-						lineNumber: 351,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$14,
-					lineNumber: 345,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$14,
-				lineNumber: 344,
-				columnNumber: 7
-			}, void 0)
+					children: [/* @__PURE__ */ jsx(ArrowLeft, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Back to The BUILDsmore Journal" })]
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$14,
-		lineNumber: 134,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/admin/PropertyFormModal.tsx
-var _jsxFileName$13 = "/app/applet/src/pages/admin/PropertyFormModal.tsx";
 var PropertyFormModal = ({ property, initialTab = "basics", isOpen, onClose, onSave }) => {
 	const isEditing = Boolean(property);
 	const [activeTab, setActiveTab] = useState(initialTab);
@@ -13238,50 +9111,26 @@ var PropertyFormModal = ({ property, initialTab = "basics", isOpen, onClose, onS
 			setSaving(false);
 		}
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx("div", {
 		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto",
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "relative w-full max-w-4xl bg-[#101419] border border-[#2b3543] text-[#f7f5f2] rounded-sm shadow-2xl flex flex-col max-h-[90vh] my-6",
 			children: [
-				/* @__PURE__ */ jsxDEV("div", {
+				/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center justify-between px-6 py-4 bg-[#141a22] border-b border-[#242c38] shrink-0",
-					children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
 						children: "Portfolio Management"
-					}, void 0, false, {
-						fileName: _jsxFileName$13,
-						lineNumber: 374,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("h2", {
+					}), /* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-xl font-medium text-white",
 						children: isEditing ? `Edit: ${property?.title}` : "Register New Luxury Property"
-					}, void 0, false, {
-						fileName: _jsxFileName$13,
-						lineNumber: 377,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$13,
-						lineNumber: 373,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("button", {
+					})] }), /* @__PURE__ */ jsx("button", {
 						onClick: onClose,
 						className: "p-1.5 text-[#8a909a] hover:text-[#f7f5f2] rounded-sm cursor-pointer",
-						children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-							fileName: _jsxFileName$13,
-							lineNumber: 386,
-							columnNumber: 13
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$13,
-						lineNumber: 382,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$13,
-					lineNumber: 372,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+						children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+					})]
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "flex items-center gap-2 px-6 pt-3 bg-[#12161d] border-b border-[#202732] shrink-0 text-xs font-mono uppercase",
 					children: [
 						{
@@ -13304,614 +9153,302 @@ var PropertyFormModal = ({ property, initialTab = "basics", isOpen, onClose, onS
 							id: "seo",
 							label: "5. SEO & Meta"
 						}
-					].map((tab) => /* @__PURE__ */ jsxDEV("button", {
+					].map((tab) => /* @__PURE__ */ jsx("button", {
 						onClick: () => setActiveTab(tab.id),
 						className: `py-2 px-3 border-b-2 transition-colors cursor-pointer ${activeTab === tab.id ? "border-[#c5a059] text-[#c5a059] font-bold" : "border-transparent text-[#8a909a] hover:text-[#f7f5f2]"}`,
 						children: tab.label
-					}, tab.id, false, {
-						fileName: _jsxFileName$13,
-						lineNumber: 399,
-						columnNumber: 13
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$13,
-					lineNumber: 391,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("form", {
+					}, tab.id))
+				}),
+				/* @__PURE__ */ jsxs("form", {
 					onSubmit: handleSubmit,
 					className: "p-6 overflow-y-auto flex-1 space-y-6 text-xs",
 					children: [
-						activeTab === "basics" && /* @__PURE__ */ jsxDEV("div", {
+						activeTab === "basics" && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-4",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-12 gap-3",
-									children: [/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsxs("div", {
 										className: "sm:col-span-8",
-										children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Property Title *"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 421,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											required: true,
 											value: title,
 											onChange: (e) => setTitle(e.target.value),
 											placeholder: "e.g. The Imperial Residence",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-sm text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 424,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 420,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+										})]
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "sm:col-span-4",
-										children: [/* @__PURE__ */ jsxDEV("div", {
+										children: [/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center justify-between mb-1",
-											children: [/* @__PURE__ */ jsxDEV("label", {
+											children: [/* @__PURE__ */ jsx("label", {
 												className: "font-mono text-[#8a909a] uppercase block",
 												children: "Unique Slug *"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 436,
-												columnNumber: 21
-											}, void 0), /* @__PURE__ */ jsxDEV("button", {
+											}), /* @__PURE__ */ jsxs("button", {
 												type: "button",
 												onClick: handleGenerateSlug,
 												className: "text-[10px] text-[#c5a059] hover:underline flex items-center gap-1 cursor-pointer font-mono",
-												children: [/* @__PURE__ */ jsxDEV(Sparkles, { className: "w-2.5 h-2.5" }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 444,
-													columnNumber: 23
-												}, void 0), " Auto-Fill"]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 439,
-												columnNumber: 21
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 435,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+												children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-2.5 h-2.5" }), " Auto-Fill"]
+											})]
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											required: true,
 											value: slug,
 											onChange: (e) => setSlug(e.target.value),
 											placeholder: "the-imperial-residence",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 447,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 434,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 419,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})]
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Subtitle / Architectural Headline"
-								}, void 0, false, {
-									fileName: _jsxFileName$13,
-									lineNumber: 459,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: subtitle,
 									onChange: (e) => setSubtitle(e.target.value),
 									placeholder: "e.g. Master-Crafted Triplex Penthouse Overlooking Sukhna Lake Enclave",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$13,
-									lineNumber: 462,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 458,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								})] }),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-3 gap-4",
 									children: [
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Price in INR (₹) *"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 473,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("div", {
+										}), /* @__PURE__ */ jsxs("div", {
 											className: "relative",
-											children: [/* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsx("span", {
 												className: "absolute left-3 top-1/2 -translate-y-1/2 text-[#c5a059] font-mono font-bold",
 												children: "₹"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 477,
-												columnNumber: 21
-											}, void 0), /* @__PURE__ */ jsxDEV("input", {
+											}), /* @__PURE__ */ jsx("input", {
 												type: "number",
 												required: true,
 												value: price,
 												onChange: (e) => setPrice(Number(e.target.value)),
 												placeholder: "120000000",
 												className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-7 pr-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 478,
-												columnNumber: 21
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 476,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 472,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+											})]
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Display Order"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 490,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "number",
 											value: displayOrder,
 											onChange: (e) => setDisplayOrder(Number(e.target.value)),
 											placeholder: "0",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 493,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 489,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Registry Status"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 503,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("select", {
+										}), /* @__PURE__ */ jsxs("select", {
 											value: status,
 											onChange: (e) => setStatus(e.target.value),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
 											children: [
-												/* @__PURE__ */ jsxDEV("option", {
+												/* @__PURE__ */ jsx("option", {
 													value: "Published",
 													children: "Published (Public)"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 511,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "Draft",
 													children: "Draft (Private)"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 512,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "Under Offer",
 													children: "Under Offer"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 513,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "Sold",
 													children: "Sold / Closed"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 514,
-													columnNumber: 21
-												}, void 0)
+												})
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 506,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 502,
-											columnNumber: 17
-										}, void 0)
+										})] })
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 471,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-									children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										className: "font-mono text-[#8a909a] uppercase block mb-1",
 										children: "Asset Class Category *"
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 521,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("select", {
+									}), /* @__PURE__ */ jsxs("select", {
 										value: category,
 										onChange: (e) => setCategory(e.target.value),
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
 										children: [
-											/* @__PURE__ */ jsxDEV("option", {
+											/* @__PURE__ */ jsx("option", {
 												value: "Residential",
 												children: "Residential"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 529,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Commercial",
 												children: "Commercial"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 530,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Plots/Land",
 												children: "Plots/Land"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 531,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "New Projects",
 												children: "New Projects"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 532,
-												columnNumber: 21
-											}, void 0)
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 524,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 520,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										className: "font-mono text-[#8a909a] uppercase block mb-1",
 										children: "Property Architectural Type"
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 537,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("select", {
+									}), /* @__PURE__ */ jsxs("select", {
 										value: propertyType,
 										onChange: (e) => setPropertyType(e.target.value),
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
 										children: [
-											/* @__PURE__ */ jsxDEV("option", {
+											/* @__PURE__ */ jsx("option", {
 												value: "Villa",
 												children: "Villa"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 545,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Penthouse",
 												children: "Penthouse"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 546,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Chalet",
 												children: "Chalet"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 547,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Mansion",
 												children: "Mansion"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 548,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Historic Estate",
 												children: "Historic Estate"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 549,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Office Tower",
 												children: "Office Tower"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 550,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Retail Landmark",
 												children: "Retail Landmark"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 551,
-												columnNumber: 21
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("option", {
+											}),
+											/* @__PURE__ */ jsx("option", {
 												value: "Development Parcel",
 												children: "Development Parcel"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 552,
-												columnNumber: 21
-											}, void 0)
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 540,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 536,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 519,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] })]
+								}),
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Comprehensive Description *"
-								}, void 0, false, {
-									fileName: _jsxFileName$13,
-									lineNumber: 558,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+								}), /* @__PURE__ */ jsx("textarea", {
 									rows: 4,
 									required: true,
 									value: description,
 									onChange: (e) => setDescription(e.target.value),
 									placeholder: "Detail architectural concept, materials, master planning, views, and covenants...",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm p-3 text-xs text-[#f7f5f2] focus:outline-none leading-relaxed"
-								}, void 0, false, {
-									fileName: _jsxFileName$13,
-									lineNumber: 561,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 557,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								})] }),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 bg-[#141922] p-3 rounded-sm border border-[#202732]",
 									children: [
-										/* @__PURE__ */ jsxDEV("label", {
+										/* @__PURE__ */ jsxs("label", {
 											className: "flex items-center gap-2 cursor-pointer",
-											children: [/* @__PURE__ */ jsxDEV("input", {
+											children: [/* @__PURE__ */ jsx("input", {
 												type: "checkbox",
 												checked: featured,
 												onChange: (e) => setFeatured(e.target.checked),
 												className: "accent-[#c5a059] rounded"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 574,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-white",
 												children: "Featured Asset"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 580,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 573,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("label", {
+											})]
+										}),
+										/* @__PURE__ */ jsxs("label", {
 											className: "flex items-center gap-2 cursor-pointer",
-											children: [/* @__PURE__ */ jsxDEV("input", {
+											children: [/* @__PURE__ */ jsx("input", {
 												type: "checkbox",
 												checked: isLatestAdded,
 												onChange: (e) => setIsLatestAdded(e.target.checked),
 												className: "accent-[#c5a059] rounded"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 584,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-white",
 												children: "Latest Added"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 590,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 583,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("label", {
+											})]
+										}),
+										/* @__PURE__ */ jsxs("label", {
 											className: "flex items-center gap-2 cursor-pointer",
-											children: [/* @__PURE__ */ jsxDEV("input", {
+											children: [/* @__PURE__ */ jsx("input", {
 												type: "checkbox",
 												checked: isTrophyHolding,
 												onChange: (e) => setIsTrophyHolding(e.target.checked),
 												className: "accent-[#c5a059] rounded"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 594,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-[#c5a059] font-medium",
 												children: "Trophy Holdings"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 600,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 593,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("label", {
+											})]
+										}),
+										/* @__PURE__ */ jsxs("label", {
 											className: "flex items-center gap-2 cursor-pointer",
-											children: [/* @__PURE__ */ jsxDEV("input", {
+											children: [/* @__PURE__ */ jsx("input", {
 												type: "checkbox",
 												checked: isNewDevelopment,
 												onChange: (e) => setIsNewDevelopment(e.target.checked),
 												className: "accent-[#c5a059] rounded"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 604,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-white",
 												children: "New Project"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 610,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 603,
-											columnNumber: 17
-										}, void 0)
+											})]
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 572,
-									columnNumber: 15
-								}, void 0),
-								isTrophyHolding && /* @__PURE__ */ jsxDEV("div", {
+								}),
+								isTrophyHolding && /* @__PURE__ */ jsxs("div", {
 									className: "p-3 bg-[#171f2b] border border-[#c5a059]/40 rounded-sm flex items-center justify-between gap-4",
-									children: [/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsxs("div", {
 										className: "text-xs text-[#c5a059]",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "font-semibold block",
 											children: "Trophy Holdings of the Season"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 617,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-[11px] text-[#8a909a]",
 											children: "This asset will appear in the curated marquee homepage section."
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 618,
-											columnNumber: 21
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 616,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+										})]
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "flex items-center gap-2",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[11px] font-mono text-[#8a909a]",
 											children: "Priority Order:"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 621,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "number",
 											value: trophyOrder,
 											onChange: (e) => setTrophyOrder(Number(e.target.value)),
 											className: "w-16 bg-[#12161d] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-2 py-1 text-xs text-[#f7f5f2] font-mono"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 622,
-											columnNumber: 21
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 620,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 615,
-									columnNumber: 17
-								}, void 0)
+										})]
+									})]
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$13,
-							lineNumber: 418,
-							columnNumber: 13
-						}, void 0),
-						activeTab === "location" && /* @__PURE__ */ jsxDEV("div", {
+						}),
+						activeTab === "location" && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-4",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "p-3.5 bg-[#141922] border border-[#c5a059]/40 rounded-sm space-y-1",
 									children: [
-										/* @__PURE__ */ jsxDEV("div", {
+										/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center justify-between mb-1",
-											children: [/* @__PURE__ */ jsxDEV("label", {
+											children: [/* @__PURE__ */ jsxs("label", {
 												className: "font-mono text-[#c5a059] uppercase block font-semibold text-xs flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 642,
-													columnNumber: 21
-												}, void 0), "Admin-Managed Location *"]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 641,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+												children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5" }), "Admin-Managed Location *"]
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-[10px] text-[#8a909a] font-mono",
 												children: "Dynamic Master Dropdown"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 645,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 640,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("select", {
+											})]
+										}),
+										/* @__PURE__ */ jsxs("select", {
 											value: locationId,
 											onChange: (e) => {
 												const selId = e.target.value;
@@ -13925,14 +9462,10 @@ var PropertyFormModal = ({ property, initialTab = "basics", isOpen, onClose, onS
 											},
 											required: true,
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-											children: [/* @__PURE__ */ jsxDEV("option", {
+											children: [/* @__PURE__ */ jsx("option", {
 												value: "",
 												children: "-- Select Admin Location --"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 664,
-												columnNumber: 19
-											}, void 0), managedLocations.map((loc) => /* @__PURE__ */ jsxDEV("option", {
+											}), managedLocations.map((loc) => /* @__PURE__ */ jsxs("option", {
 												value: loc.id,
 												children: [
 													loc.name,
@@ -13941,221 +9474,105 @@ var PropertyFormModal = ({ property, initialTab = "basics", isOpen, onClose, onS
 													" - ",
 													loc.country || "India"
 												]
-											}, loc.id, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 666,
-												columnNumber: 21
-											}, void 0))]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 649,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("p", {
+											}, loc.id))]
+										}),
+										/* @__PURE__ */ jsx("p", {
 											className: "text-[11px] text-[#8a909a] pt-1",
 											children: "Properties linked to this location automatically show up under that location's public tab on Homepage & Category pages."
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 671,
-											columnNumber: 17
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 639,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-12 gap-3",
-									children: [/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsxs("div", {
 										className: "sm:col-span-7",
-										children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Street Address / Estate Name *"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 678,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											required: true,
 											value: address,
 											onChange: (e) => setAddress(e.target.value),
 											placeholder: "e.g. 14 Himalayan Boulevard, Sector 8",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 681,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 677,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+										})]
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "sm:col-span-5",
-										children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Locality / Sector / Neighborhood *"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 692,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											required: true,
 											value: locality,
 											onChange: (e) => setLocality(e.target.value),
 											placeholder: "e.g. Sector 8 / Sukhna Lake Enclave",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 695,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 691,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 676,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+										})]
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-3 gap-4",
 									children: [
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "City *"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 708,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											required: true,
 											value: city,
 											onChange: (e) => setCity(e.target.value),
 											placeholder: "e.g. Chandigarh / Mohali / Mumbai",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 709,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 707,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "State / Region"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 720,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											value: stateRegion,
 											onChange: (e) => setStateRegion(e.target.value),
 											placeholder: "e.g. Punjab / Chandigarh Tricity",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 721,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 719,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Country *"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 731,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "text",
 											required: true,
 											value: country,
 											onChange: (e) => setCountry(e.target.value),
 											placeholder: "e.g. India",
 											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 732,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 730,
-											columnNumber: 17
-										}, void 0)
+										})] })
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 706,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2",
-									children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										className: "font-mono text-[#8a909a] uppercase block mb-1",
 										children: "Latitude"
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 745,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										type: "number",
 										step: "0.0001",
 										value: lat,
 										onChange: (e) => setLat(Number(e.target.value)),
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 746,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 744,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 										className: "font-mono text-[#8a909a] uppercase block mb-1",
 										children: "Longitude"
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 756,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										type: "number",
 										step: "0.0001",
 										value: lng,
 										onChange: (e) => setLng(Number(e.target.value)),
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 757,
-										columnNumber: 19
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 755,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 743,
-									columnNumber: 15
-								}, void 0)
+									})] })]
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$13,
-							lineNumber: 636,
-							columnNumber: 13
-						}, void 0),
+						}),
 						activeTab === "media" && (() => {
 							const resolvedPrimary = getPrimaryPropertyImage({
 								...property,
@@ -14164,971 +9581,435 @@ var PropertyFormModal = ({ property, initialTab = "basics", isOpen, onClose, onS
 								hasManualMainImage,
 								sourceLogoUrl: property?.sourceLogoUrl
 							});
-							return /* @__PURE__ */ jsxDEV("div", {
+							return /* @__PURE__ */ jsxs("div", {
 								className: "space-y-6",
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsx("div", {
 										className: "p-5 bg-[#121821] border border-[#c5a059]/40 rounded-sm space-y-4",
-										children: /* @__PURE__ */ jsxDEV("div", {
+										children: /* @__PURE__ */ jsxs("div", {
 											className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4",
-											children: [/* @__PURE__ */ jsxDEV("div", {
+											children: [/* @__PURE__ */ jsxs("div", {
 												className: "flex items-center gap-4 min-w-0",
-												children: [/* @__PURE__ */ jsxDEV("div", {
+												children: [/* @__PURE__ */ jsx("div", {
 													className: `w-28 h-20 rounded-sm overflow-hidden border border-[#2a3442] shrink-0 flex items-center justify-center ${resolvedPrimary.isLogo ? "bg-[#0b0f14] p-2" : "bg-[#161c24]"}`,
-													children: resolvedPrimary.url ? /* @__PURE__ */ jsxDEV("img", {
+													children: resolvedPrimary.url ? /* @__PURE__ */ jsx("img", {
 														src: resolvedPrimary.url,
 														alt: title || "Primary Cover",
 														className: `w-full h-full ${resolvedPrimary.isLogo ? "object-contain" : "object-cover"}`
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 789,
-														columnNumber: 25
-													}, void 0) : /* @__PURE__ */ jsxDEV(Image, { className: "w-6 h-6 text-[#64748b]" }, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 795,
-														columnNumber: 25
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 785,
-													columnNumber: 21
-												}, void 0), /* @__PURE__ */ jsxDEV("div", {
+													}) : /* @__PURE__ */ jsx(Image, { className: "w-6 h-6 text-[#64748b]" })
+												}), /* @__PURE__ */ jsxs("div", {
 													className: "min-w-0 space-y-1",
-													children: [/* @__PURE__ */ jsxDEV("div", {
+													children: [/* @__PURE__ */ jsxs("div", {
 														className: "flex items-center gap-2 flex-wrap",
-														children: [/* @__PURE__ */ jsxDEV("h4", {
+														children: [/* @__PURE__ */ jsx("h4", {
 															className: "font-mono text-[#c5a059] uppercase font-semibold text-xs",
 															children: "Main Cover Image"
-														}, void 0, false, {
-															fileName: _jsxFileName$13,
-															lineNumber: 800,
-															columnNumber: 25
-														}, void 0), /* @__PURE__ */ jsxDEV("span", {
+														}), /* @__PURE__ */ jsxs("span", {
 															className: `text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase flex items-center gap-1 ${hasManualMainImage ? "bg-emerald-950/70 text-emerald-300 border border-emerald-800/60" : resolvedPrimary.isLogo ? "bg-amber-950/70 text-amber-300 border border-amber-800/60" : "bg-[#1a222d] text-[#cbd5e1] border border-[#2b3544]"}`,
-															children: [hasManualMainImage && /* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-3 h-3" }, void 0, false, {
-																fileName: _jsxFileName$13,
-																lineNumber: 810,
-																columnNumber: 50
-															}, void 0), /* @__PURE__ */ jsxDEV("span", { children: hasManualMainImage ? "Manual Override (Locked on Sync)" : resolvedPrimary.isLogo ? "Source Website Logo Fallback" : resolvedPrimary.origin === "wp_featured" ? "WordPress Featured Photo" : "Scraped Property Photo" }, void 0, false, {
-																fileName: _jsxFileName$13,
-																lineNumber: 811,
-																columnNumber: 27
-															}, void 0)]
-														}, void 0, true, {
-															fileName: _jsxFileName$13,
-															lineNumber: 803,
-															columnNumber: 25
-														}, void 0)]
-													}, void 0, true, {
-														fileName: _jsxFileName$13,
-														lineNumber: 799,
-														columnNumber: 23
-													}, void 0), /* @__PURE__ */ jsxDEV("p", {
+															children: [hasManualMainImage && /* @__PURE__ */ jsx(ShieldCheck, { className: "w-3 h-3" }), /* @__PURE__ */ jsx("span", { children: hasManualMainImage ? "Manual Override (Locked on Sync)" : resolvedPrimary.isLogo ? "Source Website Logo Fallback" : resolvedPrimary.origin === "wp_featured" ? "WordPress Featured Photo" : "Scraped Property Photo" })]
+														})]
+													}), /* @__PURE__ */ jsx("p", {
 														className: "text-[11px] text-[#8a909a]",
 														children: "Upload or change the main cover photo here. Manual images always take top priority and are never overwritten by WordPress syncs."
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 822,
-														columnNumber: 23
-													}, void 0)]
-												}, void 0, true, {
-													fileName: _jsxFileName$13,
-													lineNumber: 798,
-													columnNumber: 21
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 784,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("div", {
+													})]
+												})]
+											}), /* @__PURE__ */ jsx("div", {
 												className: "shrink-0",
-												children: /* @__PURE__ */ jsxDEV("label", {
+												children: /* @__PURE__ */ jsxs("label", {
 													className: `inline-flex items-center gap-2 px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer shadow-sm transition-colors ${uploadingMainImage ? "opacity-50 pointer-events-none" : ""}`,
-													children: [uploadingMainImage ? /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-3.5 h-3.5 animate-spin" }, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 832,
-														columnNumber: 27
-													}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Uploading..." }, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 833,
-														columnNumber: 27
-													}, void 0)] }, void 0, true, {
-														fileName: _jsxFileName$13,
-														lineNumber: 831,
-														columnNumber: 25
-													}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(Upload, { className: "w-3.5 h-3.5" }, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 837,
-														columnNumber: 27
-													}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Upload / Change Main Image" }, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 838,
-														columnNumber: 27
-													}, void 0)] }, void 0, true, {
-														fileName: _jsxFileName$13,
-														lineNumber: 836,
-														columnNumber: 25
-													}, void 0), /* @__PURE__ */ jsxDEV("input", {
+													children: [uploadingMainImage ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(RefreshCw, { className: "w-3.5 h-3.5 animate-spin" }), /* @__PURE__ */ jsx("span", { children: "Uploading..." })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Upload / Change Main Image" })] }), /* @__PURE__ */ jsx("input", {
 														type: "file",
 														accept: "image/*",
 														onChange: handleMainImageUpload,
 														className: "hidden",
 														disabled: uploadingMainImage
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 841,
-														columnNumber: 23
-													}, void 0)]
-												}, void 0, true, {
-													fileName: _jsxFileName$13,
-													lineNumber: 829,
-													columnNumber: 21
-												}, void 0)
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 828,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 783,
-											columnNumber: 17
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$13,
-										lineNumber: 782,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+													})]
+												})
+											})]
+										})
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-5 bg-[#141922] border border-[#262f3d] rounded-sm space-y-3",
-										children: [/* @__PURE__ */ jsxDEV("div", {
+										children: [/* @__PURE__ */ jsxs("div", {
 											className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2",
-											children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h4", {
+											children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("h4", {
 												className: "font-mono text-[#c5a059] uppercase font-semibold text-xs flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsxDEV(Upload, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 858,
-													columnNumber: 23
-												}, void 0), "Add Additional Gallery Photos"]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 857,
-												columnNumber: 21
-											}, void 0), /* @__PURE__ */ jsxDEV("p", {
+												children: [/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5" }), "Add Additional Gallery Photos"]
+											}), /* @__PURE__ */ jsx("p", {
 												className: "text-[11px] text-[#8a909a]",
 												children: "Select multiple photos from your local system (JPG, PNG, WebP) to add to the property gallery."
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 861,
-												columnNumber: 21
-											}, void 0)] }, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 856,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("div", { children: /* @__PURE__ */ jsxDEV("label", {
+											})] }), /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("label", {
 												className: `inline-flex items-center gap-2 px-4 py-2 bg-[#1e2633] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#f7f5f2] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer shadow-sm transition-colors ${uploadingPhotos ? "opacity-50 pointer-events-none" : ""}`,
-												children: [uploadingPhotos ? /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-3.5 h-3.5 animate-spin" }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 869,
-													columnNumber: 27
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Uploading..." }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 870,
-													columnNumber: 27
-												}, void 0)] }, void 0, true, {
-													fileName: _jsxFileName$13,
-													lineNumber: 868,
-													columnNumber: 25
-												}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(Upload, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 874,
-													columnNumber: 27
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Browse Files" }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 875,
-													columnNumber: 27
-												}, void 0)] }, void 0, true, {
-													fileName: _jsxFileName$13,
-													lineNumber: 873,
-													columnNumber: 25
-												}, void 0), /* @__PURE__ */ jsxDEV("input", {
+												children: [uploadingPhotos ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(RefreshCw, { className: "w-3.5 h-3.5 animate-spin" }), /* @__PURE__ */ jsx("span", { children: "Uploading..." })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Browse Files" })] }), /* @__PURE__ */ jsx("input", {
 													type: "file",
 													multiple: true,
 													accept: "image/*",
 													onChange: handleFileUpload,
 													className: "hidden",
 													disabled: uploadingPhotos
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 878,
-													columnNumber: 23
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 866,
-												columnNumber: 21
-											}, void 0) }, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 865,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 855,
-											columnNumber: 17
-										}, void 0), uploadError && /* @__PURE__ */ jsxDEV("p", {
+												})]
+											}) })]
+										}), uploadError && /* @__PURE__ */ jsx("p", {
 											className: "text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/50",
 											children: uploadError
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 891,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 854,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-4 bg-[#141922] border border-[#262f3d] rounded-sm space-y-3",
-										children: [/* @__PURE__ */ jsxDEV("h4", {
+										children: [/* @__PURE__ */ jsx("h4", {
 											className: "font-mono text-[#8a909a] uppercase text-[11px]",
 											children: "Or Add Image by URL / CDN Link"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 899,
-											columnNumber: 17
-										}, void 0), /* @__PURE__ */ jsxDEV("div", {
+										}), /* @__PURE__ */ jsxs("div", {
 											className: "grid grid-cols-1 sm:grid-cols-12 gap-3",
 											children: [
-												/* @__PURE__ */ jsxDEV("div", {
+												/* @__PURE__ */ jsx("div", {
 													className: "sm:col-span-7",
-													children: /* @__PURE__ */ jsxDEV("input", {
+													children: /* @__PURE__ */ jsx("input", {
 														type: "url",
 														value: newImageUrl,
 														onChange: (e) => setNewImageUrl(e.target.value),
 														placeholder: "https://images.unsplash.com/... or asset URL",
 														className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 902,
-														columnNumber: 21
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 901,
-													columnNumber: 19
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("div", {
+													})
+												}),
+												/* @__PURE__ */ jsx("div", {
 													className: "sm:col-span-3",
-													children: /* @__PURE__ */ jsxDEV("input", {
+													children: /* @__PURE__ */ jsx("input", {
 														type: "text",
 														value: newImageCaption,
 														onChange: (e) => setNewImageCaption(e.target.value),
 														placeholder: "Caption (e.g. Master Living Suite)",
 														className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 911,
-														columnNumber: 21
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 910,
-													columnNumber: 19
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("div", {
+													})
+												}),
+												/* @__PURE__ */ jsx("div", {
 													className: "sm:col-span-2",
-													children: /* @__PURE__ */ jsxDEV("button", {
+													children: /* @__PURE__ */ jsxs("button", {
 														type: "button",
 														onClick: handleAddImage,
 														className: "w-full py-2 bg-[#1e2633] hover:bg-[#c5a059] hover:text-[#0c0f12] font-semibold uppercase tracking-wider rounded-sm cursor-pointer flex items-center justify-center gap-1 transition-colors",
-														children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-3.5 h-3.5" }, void 0, false, {
-															fileName: _jsxFileName$13,
-															lineNumber: 925,
-															columnNumber: 23
-														}, void 0), "Add URL"]
-													}, void 0, true, {
-														fileName: _jsxFileName$13,
-														lineNumber: 920,
-														columnNumber: 21
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 919,
-													columnNumber: 19
-												}, void 0)
+														children: [/* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }), "Add URL"]
+													})
+												})
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 900,
-											columnNumber: 17
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 898,
-										columnNumber: 15
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "space-y-3",
-										children: [/* @__PURE__ */ jsxDEV("div", {
+										children: [/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center justify-between",
-											children: [/* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsxs("span", {
 												className: "font-mono text-[#8a909a] uppercase block",
 												children: [
 													"Configured Gallery Photos (",
 													images.length,
 													")"
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 935,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-[11px] text-[#8a909a]",
 												children: "Click star to set Cover Image"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 938,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 934,
-											columnNumber: 17
-										}, void 0), /* @__PURE__ */ jsxDEV("div", {
+											})]
+										}), /* @__PURE__ */ jsx("div", {
 											className: "grid grid-cols-2 sm:grid-cols-3 gap-4",
-											children: images.map((img) => /* @__PURE__ */ jsxDEV("div", {
+											children: images.map((img) => /* @__PURE__ */ jsxs("div", {
 												className: `relative aspect-[4/3] rounded-sm overflow-hidden border-2 bg-[#161c24] group ${img.isPrimary ? "border-[#c5a059]" : "border-[#263140]"}`,
 												children: [
-													/* @__PURE__ */ jsxDEV("img", {
+													/* @__PURE__ */ jsx("img", {
 														src: img.url,
 														alt: img.caption,
 														className: "w-full h-full object-cover"
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 950,
-														columnNumber: 23
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("div", {
+													}),
+													/* @__PURE__ */ jsxs("div", {
 														className: "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2",
-														children: [/* @__PURE__ */ jsxDEV("button", {
+														children: [/* @__PURE__ */ jsx("button", {
 															type: "button",
 															onClick: () => handleSetPrimaryImage(img.id),
 															className: `p-1.5 rounded-sm text-xs cursor-pointer ${img.isPrimary ? "bg-[#c5a059] text-[#0c0f12]" : "bg-white/20 text-white hover:bg-[#c5a059]"}`,
 															title: "Set as Primary Cover",
-															children: /* @__PURE__ */ jsxDEV(Star, { className: "w-4 h-4" }, void 0, false, {
-																fileName: _jsxFileName$13,
-																lineNumber: 960,
-																columnNumber: 27
-															}, void 0)
-														}, void 0, false, {
-															fileName: _jsxFileName$13,
-															lineNumber: 952,
-															columnNumber: 25
-														}, void 0), /* @__PURE__ */ jsxDEV("button", {
+															children: /* @__PURE__ */ jsx(Star, { className: "w-4 h-4" })
+														}), /* @__PURE__ */ jsx("button", {
 															type: "button",
 															onClick: () => handleRemoveImage(img.id),
 															className: "p-1.5 bg-red-600/80 text-white rounded-sm hover:bg-red-600 cursor-pointer",
 															title: "Delete photo",
-															children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-4 h-4" }, void 0, false, {
-																fileName: _jsxFileName$13,
-																lineNumber: 968,
-																columnNumber: 27
-															}, void 0)
-														}, void 0, false, {
-															fileName: _jsxFileName$13,
-															lineNumber: 962,
-															columnNumber: 25
-														}, void 0)]
-													}, void 0, true, {
-														fileName: _jsxFileName$13,
-														lineNumber: 951,
-														columnNumber: 23
-													}, void 0),
-													img.isPrimary && /* @__PURE__ */ jsxDEV("span", {
+															children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" })
+														})]
+													}),
+													img.isPrimary && /* @__PURE__ */ jsx("span", {
 														className: "absolute top-2 left-2 bg-[#c5a059] text-[#0c0f12] text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm",
 														children: "Primary Cover"
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 972,
-														columnNumber: 25
-													}, void 0)
+													})
 												]
-											}, img.id, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 944,
-												columnNumber: 21
-											}, void 0))
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 942,
-											columnNumber: 17
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$13,
-										lineNumber: 933,
-										columnNumber: 15
-									}, void 0)
+											}, img.id))
+										})]
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$13,
-								lineNumber: 779,
-								columnNumber: 13
-							}, void 0);
+							});
 						})(),
-						activeTab === "specs" && /* @__PURE__ */ jsxDEV("div", {
+						activeTab === "specs" && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-6",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-2 sm:grid-cols-5 gap-3",
 									children: [
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Bedrooms"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 992,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "number",
 											value: bedrooms,
 											onChange: (e) => setBedrooms(Number(e.target.value)),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 993,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 991,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Bathrooms"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1002,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "number",
 											value: bathrooms,
 											onChange: (e) => setBathrooms(Number(e.target.value)),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1003,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1001,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Interior Area"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1012,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "number",
 											value: interiorAreaSqFt,
 											onChange: (e) => setInteriorAreaSqFt(Number(e.target.value)),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1013,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1011,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Area Unit"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1022,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("select", {
+										}), /* @__PURE__ */ jsxs("select", {
 											value: areaUnit,
 											onChange: (e) => setAreaUnit(e.target.value),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] cursor-pointer",
 											children: [
-												/* @__PURE__ */ jsxDEV("option", {
+												/* @__PURE__ */ jsx("option", {
 													value: "sq ft",
 													children: "sq ft"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1028,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "sq yd",
 													children: "sq yd (Gaj)"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1029,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "acres",
 													children: "Acres"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1030,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("option", {
+												}),
+												/* @__PURE__ */ jsx("option", {
 													value: "sq m",
 													children: "sq m"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1031,
-													columnNumber: 21
-												}, void 0)
+												})
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1023,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1021,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#8a909a] uppercase block mb-1",
 											children: "Lot Size (Acres)"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1036,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										}), /* @__PURE__ */ jsx("input", {
 											type: "number",
 											step: "0.1",
 											value: lotSizeAcres,
 											onChange: (e) => setLotSizeAcres(Number(e.target.value)),
 											className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1037,
-											columnNumber: 19
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1035,
-											columnNumber: 17
-										}, void 0)
+										})] })
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 990,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "space-y-3 pt-3 border-t border-[#202732]",
 									children: [
-										/* @__PURE__ */ jsxDEV("div", {
+										/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center justify-between",
-											children: [/* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsxs("span", {
 												className: "font-mono text-[#c5a059] uppercase block text-xs",
 												children: [
 													"Key Architectural Highlights (",
 													highlights.length,
 													")"
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1050,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: "text-[11px] text-[#8a909a]",
 												children: "Shown prominently on detail page"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1053,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1049,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+											})]
+										}),
+										/* @__PURE__ */ jsx("div", {
 											className: "space-y-1.5",
-											children: highlights.map((h) => /* @__PURE__ */ jsxDEV("div", {
+											children: highlights.map((h) => /* @__PURE__ */ jsxs("div", {
 												className: "flex items-center justify-between bg-[#141922] px-3 py-1.5 rounded-sm border border-[#222b37]",
-												children: [/* @__PURE__ */ jsxDEV("span", {
+												children: [/* @__PURE__ */ jsxs("span", {
 													className: "text-[#f7f5f2] text-xs",
 													children: ["• ", h]
-												}, void 0, true, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1058,
-													columnNumber: 23
-												}, void 0), /* @__PURE__ */ jsxDEV("button", {
+												}), /* @__PURE__ */ jsx("button", {
 													type: "button",
 													onClick: () => handleRemoveHighlight(h),
 													className: "text-[#8a909a] hover:text-red-400 p-0.5 cursor-pointer",
-													children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 1064,
-														columnNumber: 25
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1059,
-													columnNumber: 23
-												}, void 0)]
-											}, h, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1057,
-												columnNumber: 21
-											}, void 0))
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1055,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+													children: /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+												})]
+											}, h))
+										}),
+										/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center gap-2 pt-1",
-											children: [/* @__PURE__ */ jsxDEV("input", {
+											children: [/* @__PURE__ */ jsx("input", {
 												type: "text",
 												value: newHighlight,
 												onChange: (e) => setNewHighlight(e.target.value),
 												placeholder: "e.g. Unobstructed Himalayan Foothill Views / Rooftop Helipad...",
 												className: "flex-1 bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] focus:outline-none"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1070,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("button", {
+											}), /* @__PURE__ */ jsx("button", {
 												type: "button",
 												onClick: handleAddHighlight,
 												className: "px-4 py-1.5 bg-[#1e2633] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-semibold rounded-sm cursor-pointer transition-colors",
 												children: "Add Highlight"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1077,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1069,
-											columnNumber: 17
-										}, void 0)
+											})]
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 1048,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "space-y-3 pt-3 border-t border-[#202732]",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsxs("span", {
 											className: "font-mono text-[#8a909a] uppercase block",
 											children: [
 												"Estate Amenities Multi-Select (",
 												amenities.length,
 												")"
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1089,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+										}),
+										/* @__PURE__ */ jsx("div", {
 											className: "flex flex-wrap gap-2",
-											children: amenities.map((a) => /* @__PURE__ */ jsxDEV("span", {
+											children: amenities.map((a) => /* @__PURE__ */ jsxs("span", {
 												className: "inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#181f2a] border border-[#263140] rounded-sm text-xs text-[#cbd5e1]",
-												children: [/* @__PURE__ */ jsxDEV("span", { children: a }, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1098,
-													columnNumber: 23
-												}, void 0), /* @__PURE__ */ jsxDEV("button", {
+												children: [/* @__PURE__ */ jsx("span", { children: a }), /* @__PURE__ */ jsx("button", {
 													type: "button",
 													onClick: () => handleRemoveAmenity(a),
 													className: "text-[#8a909a] hover:text-red-400 cursor-pointer",
 													children: "×"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1099,
-													columnNumber: 23
-												}, void 0)]
-											}, a, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1094,
-												columnNumber: 21
-											}, void 0))
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1092,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+												})]
+											}, a))
+										}),
+										/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center gap-2 pt-1",
-											children: [/* @__PURE__ */ jsxDEV("input", {
+											children: [/* @__PURE__ */ jsx("input", {
 												type: "text",
 												value: newAmenity,
 												onChange: (e) => setNewAmenity(e.target.value),
 												placeholder: "Add amenity (e.g. Private Helipad, Wine Cellar...)",
 												className: "flex-1 bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] focus:outline-none"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1110,
-												columnNumber: 19
-											}, void 0), /* @__PURE__ */ jsxDEV("button", {
+											}), /* @__PURE__ */ jsx("button", {
 												type: "button",
 												onClick: handleAddAmenity,
 												className: "px-4 py-1.5 bg-[#1e2633] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-semibold rounded-sm cursor-pointer",
 												children: "Add"
-											}, void 0, false, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1117,
-												columnNumber: 19
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1109,
-											columnNumber: 17
-										}, void 0)
+											})]
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 1088,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "space-y-3 pt-3 border-t border-[#202732]",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsx("span", {
 											className: "font-mono text-[#8a909a] uppercase block",
 											children: "Technical Specifications"
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1129,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+										}),
+										/* @__PURE__ */ jsx("div", {
 											className: "space-y-2",
-											children: specs.map((s, idx) => /* @__PURE__ */ jsxDEV("div", {
+											children: specs.map((s, idx) => /* @__PURE__ */ jsxs("div", {
 												className: "flex items-center gap-2 bg-[#141922] p-2 rounded-sm border border-[#222b37]",
 												children: [
-													/* @__PURE__ */ jsxDEV("span", {
+													/* @__PURE__ */ jsx("span", {
 														className: "font-mono text-[#c5a059] w-1/3 truncate",
 														children: s.key
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 1135,
-														columnNumber: 23
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("span", {
+													}),
+													/* @__PURE__ */ jsx("span", {
 														className: "text-[#f7f5f2] flex-1 truncate",
 														children: s.val
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 1136,
-														columnNumber: 23
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("button", {
+													}),
+													/* @__PURE__ */ jsx("button", {
 														type: "button",
 														onClick: () => handleRemoveSpec(idx),
 														className: "text-[#8a909a] hover:text-red-400 p-1 cursor-pointer",
-														children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-															fileName: _jsxFileName$13,
-															lineNumber: 1142,
-															columnNumber: 25
-														}, void 0)
-													}, void 0, false, {
-														fileName: _jsxFileName$13,
-														lineNumber: 1137,
-														columnNumber: 23
-													}, void 0)
+														children: /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+													})
 												]
-											}, idx, true, {
-												fileName: _jsxFileName$13,
-												lineNumber: 1134,
-												columnNumber: 21
-											}, void 0))
-										}, void 0, false, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1132,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("div", {
+											}, idx))
+										}),
+										/* @__PURE__ */ jsxs("div", {
 											className: "grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1",
 											children: [
-												/* @__PURE__ */ jsxDEV("input", {
+												/* @__PURE__ */ jsx("input", {
 													type: "text",
 													value: newSpecKey,
 													onChange: (e) => setNewSpecKey(e.target.value),
 													placeholder: "Specification Key (e.g. Ceiling Height)",
 													className: "sm:col-span-5 bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] focus:outline-none"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1148,
-													columnNumber: 19
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("input", {
+												}),
+												/* @__PURE__ */ jsx("input", {
 													type: "text",
 													value: newSpecVal,
 													onChange: (e) => setNewSpecVal(e.target.value),
 													placeholder: "Value (e.g. 4.2m Double Height)",
 													className: "sm:col-span-5 bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] focus:outline-none"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1155,
-													columnNumber: 19
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("button", {
+												}),
+												/* @__PURE__ */ jsx("button", {
 													type: "button",
 													onClick: handleAddSpec,
 													className: "sm:col-span-2 py-1.5 bg-[#1e2633] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-semibold rounded-sm cursor-pointer",
 													children: "Add"
-												}, void 0, false, {
-													fileName: _jsxFileName$13,
-													lineNumber: 1162,
-													columnNumber: 19
-												}, void 0)
+												})
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$13,
-											lineNumber: 1147,
-											columnNumber: 17
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$13,
-									lineNumber: 1128,
-									columnNumber: 15
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$13,
-							lineNumber: 987,
-							columnNumber: 13
-						}, void 0),
-						activeTab === "seo" && /* @__PURE__ */ jsxDEV("div", {
+						}),
+						activeTab === "seo" && /* @__PURE__ */ jsxs("div", {
 							className: "space-y-4",
-							children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Meta Title Tag"
-							}, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1179,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								value: metaTitle,
 								onChange: (e) => setMetaTitle(e.target.value),
 								placeholder: "e.g. Villa Sol de Mar – Port d'Andratx Luxury Real Estate",
 								className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm px-3 py-2 text-xs text-[#f7f5f2]"
-							}, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1182,
-								columnNumber: 17
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1178,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Meta Description"
-							}, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1192,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+							}), /* @__PURE__ */ jsx("textarea", {
 								rows: 3,
 								value: metaDescription,
 								onChange: (e) => setMetaDescription(e.target.value),
 								placeholder: "Summarize key architectural features and price for Google search snippets (120-160 chars)...",
 								className: "w-full bg-[#181f2a] border border-[#2a3442] rounded-sm p-3 text-xs text-[#f7f5f2]"
-							}, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1195,
-								columnNumber: 17
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1191,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$13,
-							lineNumber: 1177,
-							columnNumber: 13
-						}, void 0),
-						saveError && /* @__PURE__ */ jsxDEV("div", {
+							})] })]
+						}),
+						saveError && /* @__PURE__ */ jsxs("div", {
 							className: "p-3 bg-red-950/50 border border-red-700/80 rounded-sm text-xs text-red-200 flex items-start gap-2 font-mono",
-							children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1208,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: saveError }, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1209,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$13,
-							lineNumber: 1207,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: saveError })]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center justify-end gap-3 pt-6 border-t border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx("button", {
 								type: "button",
 								onClick: onClose,
 								disabled: saving,
 								className: "px-5 py-2.5 bg-[#161c24] hover:bg-[#202732] disabled:opacity-50 text-[#cbd5e1] text-xs uppercase font-medium rounded-sm cursor-pointer",
 								children: "Cancel"
-							}, void 0, false, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1215,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							}), /* @__PURE__ */ jsxs("button", {
 								type: "submit",
 								disabled: saving,
 								className: "px-6 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] disabled:opacity-60 text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all flex items-center gap-1.5 cursor-pointer shadow-md",
-								children: [/* @__PURE__ */ jsxDEV(Save, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$13,
-									lineNumber: 1228,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: saving ? "Saving..." : isEditing ? "Save Revisions" : "Publish to Registry" }, void 0, false, {
-									fileName: _jsxFileName$13,
-									lineNumber: 1229,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$13,
-								lineNumber: 1223,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$13,
-							lineNumber: 1214,
-							columnNumber: 11
-						}, void 0)
+								children: [/* @__PURE__ */ jsx(Save, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: saving ? "Saving..." : isEditing ? "Save Revisions" : "Publish to Registry" })]
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$13,
-					lineNumber: 414,
-					columnNumber: 9
-				}, void 0)
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$13,
-			lineNumber: 369,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$13,
-		lineNumber: 368,
-		columnNumber: 5
-	}, void 0);
+		})
+	});
 };
 // src/services/wordpressImporter.ts
 /**
@@ -15730,7 +10611,6 @@ async function executeWordPressSync(source, isDryRun = true, onProgress) {
 	return completedJob;
 }
 // src/pages/admin/WordPressSyncHub.tsx
-var _jsxFileName$12 = "/app/applet/src/pages/admin/WordPressSyncHub.tsx";
 var WordPressSyncHub = ({ onRefreshProperties }) => {
 	const [activeTab, setActiveTab] = useState("universal");
 	const [sources, setSources] = useState(() => storage.getWordPressSources());
@@ -15951,49 +10831,29 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 	const partialCount = tasks.filter((t) => t.status === "Partial").length;
 	const reviewCount = tasks.filter((t) => t.status === "Needs Review").length;
 	const failedCount = tasks.filter((t) => t.status === "Failed").length;
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-8",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsx("div", {
 				className: "bg-[#12161d] border border-[#222b37] p-6 rounded-sm",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "flex flex-col md:flex-row items-start md:items-center justify-between gap-4",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "space-y-1",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(Globe, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 374,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("h2", {
+							children: [/* @__PURE__ */ jsx(Globe, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("h2", {
 								className: "font-serif text-xl font-medium text-white",
 								children: "Universal One-Page Property Website Importer & Multi-Site Hub"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 375,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 373,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("p", {
+							})]
+						}), /* @__PURE__ */ jsx("p", {
 							className: "text-xs text-[#8a909a] max-w-2xl leading-relaxed",
 							children: "Consolidate ~60 project & single-page property websites. Features SSRF-protected server crawler, Elementor & HTML section heuristics, currency normalization (INR), RERA verification, gallery extraction, and duplicate-safe central persistence."
-						}, void 0, false, {
-							fileName: _jsxFileName$12,
-							lineNumber: 379,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 372,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-1 bg-[#0c0f12] p-1 rounded-sm border border-[#222b37]",
 						children: [
-							/* @__PURE__ */ jsxDEV("button", {
+							/* @__PURE__ */ jsxs("button", {
 								onClick: () => setActiveTab("universal"),
 								className: `px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-sm transition-all cursor-pointer ${activeTab === "universal" ? "bg-[#c5a059] text-[#0c0f12] font-semibold shadow" : "text-[#8a909a] hover:text-white"}`,
 								children: [
@@ -16001,12 +10861,8 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 									tasks.length,
 									")"
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 388,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("button", {
+							}),
+							/* @__PURE__ */ jsxs("button", {
 								onClick: () => setActiveTab("rest-connectors"),
 								className: `px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-sm transition-all cursor-pointer ${activeTab === "rest-connectors" ? "bg-[#c5a059] text-[#0c0f12] font-semibold shadow" : "text-[#8a909a] hover:text-white"}`,
 								children: [
@@ -16014,287 +10870,131 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 									sources.length,
 									")"
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 398,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("button", {
+							}),
+							/* @__PURE__ */ jsx("button", {
 								onClick: () => setActiveTab("audit-logs"),
 								className: `px-3 py-1.5 text-xs font-mono uppercase tracking-wider rounded-sm transition-all cursor-pointer ${activeTab === "audit-logs" ? "bg-[#c5a059] text-[#0c0f12] font-semibold shadow" : "text-[#8a909a] hover:text-white"}`,
 								children: "Sync Audit Logs"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 408,
-								columnNumber: 13
-							}, void 0)
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 387,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$12,
-					lineNumber: 371,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$12,
-				lineNumber: 370,
-				columnNumber: 7
-			}, void 0),
-			activeTab === "universal" && /* @__PURE__ */ jsxDEV("div", {
+					})]
+				})
+			}),
+			activeTab === "universal" && /* @__PURE__ */ jsxs("div", {
 				className: "space-y-6",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "grid grid-cols-2 sm:grid-cols-6 gap-3 font-mono text-xs",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#101419] border border-[#202732] rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#8a909a] text-[10px] uppercase block",
 									children: "Total Queue"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 431,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-lg font-semibold text-white",
 									children: [tasks.length, " Sites"]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 432,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 430,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#101419] border border-emerald-900/50 rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-emerald-400 text-[10px] uppercase block",
 									children: "Imported"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 435,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-semibold text-emerald-400",
 									children: importedCount
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 436,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 434,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#101419] border border-purple-900/50 rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-purple-400 text-[10px] uppercase block",
 									children: "Partial"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 439,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-semibold text-purple-400",
 									children: partialCount
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 440,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 438,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#101419] border border-amber-900/50 rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-amber-400 text-[10px] uppercase block",
 									children: "Needs Review"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 443,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-semibold text-amber-400",
 									children: reviewCount
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 444,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 442,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#101419] border border-red-900/50 rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-red-400 text-[10px] uppercase block",
 									children: "Failed / Stale"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 447,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-semibold text-red-400",
 									children: failedCount
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 448,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 446,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#101419] border border-[#c5a059]/40 rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#c5a059] text-[10px] uppercase block",
 									children: "Capacity Target"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 451,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-semibold text-[#c5a059]",
 									children: "60 Websites"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 452,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 450,
-								columnNumber: 13
-							}, void 0)
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 429,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "bg-[#101419] border border-[#202732] p-5 rounded-sm space-y-4",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h3", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("h3", {
 									className: "font-serif text-base font-medium text-white flex items-center gap-2",
-									children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 461,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Bulk Website Input (Paste URLs or Upload CSV)" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 462,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 460,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("p", {
+									children: [/* @__PURE__ */ jsx(Plus, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Bulk Website Input (Paste URLs or Upload CSV)" })]
+								}), /* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#8a909a] mt-0.5",
 									children: "Paste one or more website URLs (separated by newlines or commas), or upload a CSV containing project website URLs."
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 464,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 459,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})] }), /* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-2 shrink-0",
-									children: [/* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsxs("button", {
 										onClick: () => {
 											handleAddUrls(["https://hlppalmgreen.com/"]);
 										},
 										className: "px-3 py-1.5 bg-[#18202b] hover:bg-[#222c3b] border border-[#2e3b4d] text-[#c5a059] text-xs font-mono rounded-sm cursor-pointer flex items-center gap-1.5",
 										title: "Load primary verified test website",
-										children: [/* @__PURE__ */ jsxDEV(Sparkles, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 478,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Add HLP Palm Greens" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 479,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 471,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Add HLP Palm Greens" })]
+									}), /* @__PURE__ */ jsxs("label", {
 										className: "px-3 py-1.5 bg-[#18202b] hover:bg-[#222c3b] border border-[#2e3b4d] text-[#cbd5e1] text-xs font-mono rounded-sm cursor-pointer flex items-center gap-1.5",
 										children: [
-											/* @__PURE__ */ jsxDEV(FileSpreadsheet, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 483,
-												columnNumber: 19
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("span", { children: "Upload CSV" }, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 484,
-												columnNumber: 19
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("input", {
+											/* @__PURE__ */ jsx(FileSpreadsheet, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
+											/* @__PURE__ */ jsx("span", { children: "Upload CSV" }),
+											/* @__PURE__ */ jsx("input", {
 												ref: fileInputRef,
 												type: "file",
 												accept: ".csv,.txt",
 												onChange: handleFileUpload,
 												className: "hidden"
-											}, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 485,
-												columnNumber: 19
-											}, void 0)
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 482,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 470,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 458,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+									})]
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "space-y-3",
-								children: [/* @__PURE__ */ jsxDEV("textarea", {
+								children: [/* @__PURE__ */ jsx("textarea", {
 									value: urlInput,
 									onChange: (e) => setUrlInput(e.target.value),
 									placeholder: "Paste website URLs here, one per line (e.g. https://hlppalmgreen.com/)",
 									rows: 3,
 									className: "w-full bg-[#0c0f12] border border-[#222b37] focus:border-[#c5a059] rounded-sm p-3 text-xs text-white font-mono placeholder:text-[#525a66] outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 498,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								}), /* @__PURE__ */ jsxs("div", {
 									className: "flex flex-wrap items-center justify-between gap-3",
-									children: [/* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx("button", {
 										onClick: () => {
 											if (!urlInput.trim()) return;
 											const lines = urlInput.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
@@ -16303,435 +11003,183 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 										disabled: !urlInput.trim(),
 										className: "px-4 py-2 bg-[#202732] hover:bg-[#2c3746] disabled:opacity-40 text-white text-xs font-mono uppercase tracking-wider rounded-sm cursor-pointer",
 										children: "Add URLs to Scanner Queue"
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 507,
-										columnNumber: 17
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "flex items-center gap-3",
-										children: [/* @__PURE__ */ jsxDEV("button", {
+										children: [/* @__PURE__ */ jsx("button", {
 											onClick: () => handleRunScan(tasks),
 											disabled: isScanning || tasks.length === 0,
 											className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] disabled:opacity-40 text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer shadow-sm",
-											children: isScanning ? /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-4 h-4 animate-spin" }, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 527,
-												columnNumber: 25
-											}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+											children: isScanning ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4 animate-spin" }), /* @__PURE__ */ jsxs("span", { children: [
 												"Inspecting Queue (",
 												scanProgress,
 												"%)..."
-											] }, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 528,
-												columnNumber: 25
-											}, void 0)] }, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 526,
-												columnNumber: 23
-											}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(Play, { className: "w-4 h-4" }, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 532,
-												columnNumber: 25
-											}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+											] })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Play, { className: "w-4 h-4" }), /* @__PURE__ */ jsxs("span", { children: [
 												"Inspect & Scan All (",
 												tasks.length,
 												")"
-											] }, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 533,
-												columnNumber: 25
-											}, void 0)] }, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 531,
-												columnNumber: 23
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 520,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("button", {
+											] })] })
+										}), /* @__PURE__ */ jsxs("button", {
 											onClick: () => setShowPreviewModal(true),
 											disabled: scannedCount === 0 || isScanning,
 											className: "px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer shadow-sm",
-											children: [/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4" }, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 543,
-												columnNumber: 21
-											}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+											children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4" }), /* @__PURE__ */ jsxs("span", { children: [
 												"Preview & Commit (",
 												scannedCount,
 												")"
-											] }, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 544,
-												columnNumber: 21
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 538,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 519,
-										columnNumber: 17
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 506,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 497,
-								columnNumber: 13
-							}, void 0),
-							isScanning && /* @__PURE__ */ jsxDEV("div", {
+											] })]
+										})]
+									})]
+								})]
+							}),
+							isScanning && /* @__PURE__ */ jsxs("div", {
 								className: "space-y-2 pt-2 border-t border-[#1e2530]",
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "flex justify-between text-xs font-mono text-[#cbd5e1]",
-									children: [/* @__PURE__ */ jsxDEV("span", { children: scanStatusMessage }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 554,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", { children: scanStatusMessage }), /* @__PURE__ */ jsxs("span", {
 										className: "text-[#c5a059]",
 										children: [scanProgress, "%"]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 555,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 553,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									})]
+								}), /* @__PURE__ */ jsx("div", {
 									className: "w-full h-1.5 bg-[#0c0f12] rounded-full overflow-hidden",
-									children: /* @__PURE__ */ jsxDEV("div", {
+									children: /* @__PURE__ */ jsx("div", {
 										className: "h-full bg-gradient-to-r from-[#c5a059] to-[#d4af5f] transition-all duration-300",
 										style: { width: `${scanProgress}%` }
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 558,
-										columnNumber: 19
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 557,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 552,
-								columnNumber: 15
-							}, void 0)
+									})
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 457,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "bg-[#101419] border border-[#202732] rounded-sm overflow-hidden shadow-lg",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "p-4 border-b border-[#1f2631] flex items-center justify-between text-xs font-mono text-[#8a909a]",
-							children: [/* @__PURE__ */ jsxDEV("span", { children: [
+							children: [/* @__PURE__ */ jsxs("span", { children: [
 								"Website Inspection Queue (",
 								tasks.length,
 								")"
-							] }, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 570,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							] }), /* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-3",
 								children: [
-									/* @__PURE__ */ jsxDEV("span", {
+									/* @__PURE__ */ jsxs("span", {
 										className: "flex items-center gap-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-emerald-400" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 572,
-											columnNumber: 61
-										}, void 0), " Imported"]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 572,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-emerald-400" }), " Imported"]
+									}),
+									/* @__PURE__ */ jsxs("span", {
 										className: "flex items-center gap-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-purple-400" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 573,
-											columnNumber: 61
-										}, void 0), " Partial"]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 573,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-purple-400" }), " Partial"]
+									}),
+									/* @__PURE__ */ jsxs("span", {
 										className: "flex items-center gap-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-amber-400" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 574,
-											columnNumber: 61
-										}, void 0), " Needs Review"]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 574,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-amber-400" }), " Needs Review"]
+									}),
+									/* @__PURE__ */ jsxs("span", {
 										className: "flex items-center gap-1.5",
-										children: [/* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-red-400" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 575,
-											columnNumber: 61
-										}, void 0), " Failed"]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 575,
-										columnNumber: 17
-									}, void 0)
+										children: [/* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-red-400" }), " Failed"]
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 571,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 569,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}), /* @__PURE__ */ jsx("div", {
 							className: "divide-y divide-[#1b212b]",
-							children: tasks.length === 0 ? /* @__PURE__ */ jsxDEV("div", {
+							children: tasks.length === 0 ? /* @__PURE__ */ jsxs("div", {
 								className: "p-12 text-center space-y-3",
-								children: [/* @__PURE__ */ jsxDEV(Globe, { className: "w-8 h-8 text-[#525a66] mx-auto" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 582,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("p", {
+								children: [/* @__PURE__ */ jsx(Globe, { className: "w-8 h-8 text-[#525a66] mx-auto" }), /* @__PURE__ */ jsx("p", {
 									className: "text-sm text-[#8a909a]",
 									children: "No websites in import queue. Paste URLs above or upload a CSV file."
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 583,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 581,
-								columnNumber: 17
-							}, void 0) : tasks.map((task) => {
+								})]
+							}) : tasks.map((task) => {
 								const data = task.data;
-								return /* @__PURE__ */ jsxDEV("div", {
+								return /* @__PURE__ */ jsxs("div", {
 									className: "p-4 hover:bg-[#131922] transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-4",
-									children: [/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsxs("div", {
 										className: "space-y-1.5 min-w-0 max-w-2xl",
 										children: [
-											/* @__PURE__ */ jsxDEV("div", {
+											/* @__PURE__ */ jsxs("div", {
 												className: "flex items-center gap-2 flex-wrap",
 												children: [
-													/* @__PURE__ */ jsxDEV("span", {
+													/* @__PURE__ */ jsx("span", {
 														className: `text-[10px] font-mono px-2 py-0.5 rounded-sm uppercase tracking-wider font-semibold border ${task.status === "Imported" ? "bg-emerald-950/80 text-emerald-300 border-emerald-800" : task.status === "Partial" ? "bg-purple-950/80 text-purple-300 border-purple-800" : task.status === "Needs Review" ? "bg-amber-950/80 text-amber-300 border-amber-800" : task.status === "Scanning" ? "bg-blue-950/80 text-blue-300 border-blue-800 animate-pulse" : task.status === "Failed" ? "bg-red-950/80 text-red-300 border-red-800" : "bg-[#1b222d] text-[#8a909a] border-[#293444]"}`,
 														children: task.status
-													}, void 0, false, {
-														fileName: _jsxFileName$12,
-														lineNumber: 597,
-														columnNumber: 27
-													}, void 0),
-													data && /* @__PURE__ */ jsxDEV("span", {
+													}),
+													data && /* @__PURE__ */ jsx("span", {
 														className: "text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#161c24] text-[#c5a059] border border-[#2a3442]",
 														children: data.sourceType === "wordpress_elementor_html" ? "WordPress Elementor" : "One-Page HTML Scraper"
-													}, void 0, false, {
-														fileName: _jsxFileName$12,
-														lineNumber: 617,
-														columnNumber: 29
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("a", {
+													}),
+													/* @__PURE__ */ jsxs("a", {
 														href: task.url,
 														target: "_blank",
 														rel: "noopener noreferrer",
 														className: "text-xs text-[#8a909a] hover:text-[#c5a059] font-mono truncate flex items-center gap-1",
-														children: [/* @__PURE__ */ jsxDEV("span", { children: task.url }, void 0, false, {
-															fileName: _jsxFileName$12,
-															lineNumber: 628,
-															columnNumber: 29
-														}, void 0), /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3 h-3 shrink-0" }, void 0, false, {
-															fileName: _jsxFileName$12,
-															lineNumber: 629,
-															columnNumber: 29
-														}, void 0)]
-													}, void 0, true, {
-														fileName: _jsxFileName$12,
-														lineNumber: 622,
-														columnNumber: 27
-													}, void 0)
+														children: [/* @__PURE__ */ jsx("span", { children: task.url }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3 shrink-0" })]
+													})
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 595,
-												columnNumber: 25
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("div", {
+											}),
+											/* @__PURE__ */ jsxs("div", {
 												className: "flex items-baseline gap-2",
-												children: [/* @__PURE__ */ jsxDEV("h4", {
+												children: [/* @__PURE__ */ jsx("h4", {
 													className: "font-serif text-base font-medium text-white truncate",
 													children: data ? data.title : "Pending Initial Scan"
-												}, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 635,
-													columnNumber: 27
-												}, void 0), data?.developer && /* @__PURE__ */ jsxDEV("span", {
+												}), data?.developer && /* @__PURE__ */ jsxs("span", {
 													className: "text-xs font-mono text-[#c5a059] shrink-0",
 													children: ["by ", data.developer]
-												}, void 0, true, {
-													fileName: _jsxFileName$12,
-													lineNumber: 639,
-													columnNumber: 29
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 634,
-												columnNumber: 25
-											}, void 0),
-											data ? /* @__PURE__ */ jsxDEV("div", {
+												})]
+											}),
+											data ? /* @__PURE__ */ jsxs("div", {
 												className: "flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#cbd5e1] font-mono",
 												children: [
-													/* @__PURE__ */ jsxDEV("span", {
+													/* @__PURE__ */ jsxs("span", {
 														className: "text-[#8a909a] flex items-center gap-1",
 														children: [
-															/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-																fileName: _jsxFileName$12,
-																lineNumber: 649,
-																columnNumber: 31
-															}, void 0),
+															/* @__PURE__ */ jsx(MapPin, { className: "w-3 h-3 text-[#c5a059]" }),
 															data.city,
 															", ",
 															data.stateRegion
 														]
-													}, void 0, true, {
-														fileName: _jsxFileName$12,
-														lineNumber: 648,
-														columnNumber: 29
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("span", {
+													}),
+													/* @__PURE__ */ jsxs("span", {
 														className: "text-[#8a909a] flex items-center gap-1",
-														children: [/* @__PURE__ */ jsxDEV(Tag, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-															fileName: _jsxFileName$12,
-															lineNumber: 653,
-															columnNumber: 31
-														}, void 0), data.originalPriceText || `₹ ${(data.priceInInr || 0).toLocaleString()}`]
-													}, void 0, true, {
-														fileName: _jsxFileName$12,
-														lineNumber: 652,
-														columnNumber: 29
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("span", {
+														children: [/* @__PURE__ */ jsx(Tag, { className: "w-3 h-3 text-[#c5a059]" }), data.originalPriceText || `₹ ${(data.priceInInr || 0).toLocaleString()}`]
+													}),
+													/* @__PURE__ */ jsxs("span", {
 														className: "text-[#8a909a] flex items-center gap-1",
 														children: [
-															/* @__PURE__ */ jsxDEV(Image, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-																fileName: _jsxFileName$12,
-																lineNumber: 657,
-																columnNumber: 31
-															}, void 0),
+															/* @__PURE__ */ jsx(Image, { className: "w-3 h-3 text-[#c5a059]" }),
 															data.images.length,
 															" Images"
 														]
-													}, void 0, true, {
-														fileName: _jsxFileName$12,
-														lineNumber: 656,
-														columnNumber: 29
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("span", {
+													}),
+													/* @__PURE__ */ jsxs("span", {
 														className: "text-[#8a909a] flex items-center gap-1",
-														children: [/* @__PURE__ */ jsxDEV(FileCheck2, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-															fileName: _jsxFileName$12,
-															lineNumber: 661,
-															columnNumber: 31
-														}, void 0), data.extractionConfidence.rera ? "RERA Verified" : "RERA: Review"]
-													}, void 0, true, {
-														fileName: _jsxFileName$12,
-														lineNumber: 660,
-														columnNumber: 29
-													}, void 0),
+														children: [/* @__PURE__ */ jsx(FileCheck2, { className: "w-3 h-3 text-[#c5a059]" }), data.extractionConfidence.rera ? "RERA Verified" : "RERA: Review"]
+													}),
 													(() => {
 														const match = storage.findMatchingLocation(data.city, data.address);
-														return match ? /* @__PURE__ */ jsxDEV("span", {
+														return match ? /* @__PURE__ */ jsxs("span", {
 															className: "px-1.5 py-0.5 rounded text-[10px] bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 font-mono",
 															children: ["Location: ", match.name]
-														}, void 0, true, {
-															fileName: _jsxFileName$12,
-															lineNumber: 667,
-															columnNumber: 33
-														}, void 0) : /* @__PURE__ */ jsxDEV("span", {
+														}) : /* @__PURE__ */ jsx("span", {
 															className: "px-1.5 py-0.5 rounded text-[10px] bg-amber-950/80 text-amber-300 border border-amber-800/60 font-mono",
 															children: "Location: Review"
-														}, void 0, false, {
-															fileName: _jsxFileName$12,
-															lineNumber: 671,
-															columnNumber: 33
-														}, void 0);
+														});
 													})()
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 647,
-												columnNumber: 27
-											}, void 0) : /* @__PURE__ */ jsxDEV("p", {
+											}) : /* @__PURE__ */ jsx("p", {
 												className: "text-xs text-[#737a85] font-mono",
 												children: task.statusMessage || "Click Inspect to run server-side scraper"
-											}, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 678,
-												columnNumber: 27
-											}, void 0),
-											task.error && /* @__PURE__ */ jsxDEV("p", {
+											}),
+											task.error && /* @__PURE__ */ jsxs("p", {
 												className: "text-xs text-red-400 font-mono flex items-center gap-1 mt-1",
-												children: [/* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-3 h-3 shrink-0" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 686,
-													columnNumber: 29
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: task.error }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 687,
-													columnNumber: 29
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 685,
-												columnNumber: 27
-											}, void 0)
+												children: [/* @__PURE__ */ jsx(AlertTriangle, { className: "w-3 h-3 shrink-0" }), /* @__PURE__ */ jsx("span", { children: task.error })]
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 594,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "flex items-center gap-2 shrink-0 self-end lg:self-center",
 										children: [
-											data && /* @__PURE__ */ jsxDEV("button", {
+											data && /* @__PURE__ */ jsxs("button", {
 												onClick: () => setSelectedTaskForDetail(task),
 												className: "px-3 py-1.5 bg-[#18202b] hover:bg-[#232d3d] border border-[#2e3b4d] text-[#cbd5e1] hover:text-white text-xs font-mono rounded-sm cursor-pointer flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsxDEV(Eye, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 699,
-													columnNumber: 29
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Field Summary" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 700,
-													columnNumber: 29
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 695,
-												columnNumber: 27
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("button", {
+												children: [/* @__PURE__ */ jsx(Eye, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Field Summary" })]
+											}),
+											/* @__PURE__ */ jsxs("button", {
 												onClick: async () => {
 													const updated = await inspectSingleTask(task);
 													setTasks((prev) => prev.map((t) => t.id === task.id ? updated : t));
@@ -16739,79 +11187,35 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 												disabled: task.status === "Scanning",
 												className: "px-3 py-1.5 bg-[#18202b] hover:bg-[#232d3d] border border-[#2e3b4d] text-[#cbd5e1] hover:text-white text-xs font-mono rounded-sm cursor-pointer flex items-center gap-1.5",
 												title: "Retry or re-scan this specific URL",
-												children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 713,
-													columnNumber: 27
-												}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Re-Scan" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 714,
-													columnNumber: 27
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 704,
-												columnNumber: 25
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("button", {
+												children: [/* @__PURE__ */ jsx(RefreshCw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Re-Scan" })]
+											}),
+											/* @__PURE__ */ jsx("button", {
 												onClick: () => {
 													setTasks((prev) => prev.filter((t) => t.id !== task.id));
 												},
 												className: "p-1.5 text-[#737a85] hover:text-red-400 cursor-pointer",
 												title: "Remove from queue",
-												children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-4 h-4" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 724,
-													columnNumber: 27
-												}, void 0)
-											}, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 717,
-												columnNumber: 25
-											}, void 0)
+												children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" })
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 693,
-										columnNumber: 23
-									}, void 0)]
-								}, task.id, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 589,
-									columnNumber: 21
-								}, void 0);
+									})]
+								}, task.id);
 							})
-						}, void 0, false, {
-							fileName: _jsxFileName$12,
-							lineNumber: 579,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 568,
-						columnNumber: 11
-					}, void 0)
+						})]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$12,
-				lineNumber: 426,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "rest-connectors" && /* @__PURE__ */ jsxDEV("div", {
+			}),
+			activeTab === "rest-connectors" && /* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 lg:grid-cols-12 gap-8 items-start",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-5 space-y-4",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between text-xs font-mono text-[#8a909a] uppercase",
-						children: [/* @__PURE__ */ jsxDEV("span", { children: [
+						children: [/* @__PURE__ */ jsxs("span", { children: [
 							"Configured REST Connectors (",
 							sources.length,
 							")"
-						] }, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 746,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("button", {
+						] }), /* @__PURE__ */ jsxs("button", {
 							onClick: () => {
 								const newSrc = {
 									id: `wp-src-${Date.now()}`,
@@ -16843,141 +11247,69 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 								setIsAddingNew(true);
 							},
 							className: "px-2.5 py-1 bg-[#c5a059] text-[#0c0f12] text-[10px] font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1 cursor-pointer",
-							children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-3 h-3" }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 780,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Add Connector" }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 781,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 747,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 745,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(Plus, { className: "w-3 h-3" }), /* @__PURE__ */ jsx("span", { children: "Add Connector" })]
+						})]
+					}), /* @__PURE__ */ jsx("div", {
 						className: "space-y-2.5",
 						children: sources.map((src) => {
 							const isSelected = selectedSource?.id === src.id;
-							return /* @__PURE__ */ jsxDEV("div", {
+							return /* @__PURE__ */ jsxs("div", {
 								onClick: () => setSelectedSource(src),
 								className: `p-4 rounded-sm border transition-all cursor-pointer ${isSelected ? "bg-[#18202b] border-[#c5a059] shadow-md" : "bg-[#101419] border-[#202732] hover:border-[#333f52]"}`,
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "flex items-start justify-between gap-3",
-									children: [/* @__PURE__ */ jsxDEV("div", { children: [
-										/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsxs("div", { children: [
+										/* @__PURE__ */ jsxs("span", {
 											className: "text-[10px] font-mono uppercase tracking-wider text-[#c5a059] block",
 											children: [
 												src.postType,
 												" · ",
 												src.syncPolicy === "preserve_central" ? "Preserve Local" : "Auto-Update"
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 800,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("h4", {
+										}),
+										/* @__PURE__ */ jsx("h4", {
 											className: "font-serif text-base font-medium text-white mt-0.5",
 											children: src.name
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 803,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("p", {
+										}),
+										/* @__PURE__ */ jsx("p", {
 											className: "text-[11px] text-[#8a909a] font-mono truncate max-w-xs mt-0.5",
 											children: src.siteUrl
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 806,
-											columnNumber: 25
-										}, void 0)
-									] }, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 799,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										})
+									] }), /* @__PURE__ */ jsx("span", {
 										className: `text-[10px] px-2 py-0.5 rounded-sm font-mono uppercase ${src.status === "Active" ? "bg-emerald-950 text-emerald-300 border border-emerald-800" : "bg-[#1f2732] text-[#9ca3af]"}`,
 										children: src.status
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 811,
-										columnNumber: 23
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 798,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									})]
+								}), /* @__PURE__ */ jsxs("div", {
 									className: "mt-3 pt-2.5 border-t border-[#1e2530] flex items-center justify-between text-[11px] text-[#737a85] font-mono",
-									children: [/* @__PURE__ */ jsxDEV("span", { children: [
+									children: [/* @__PURE__ */ jsxs("span", { children: [
 										"Synchronized: ",
 										src.propertyCount || 0,
 										" Assets"
-									] }, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 819,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									] }), /* @__PURE__ */ jsx("span", {
 										className: "truncate max-w-[130px]",
 										children: src.lastSyncAt ? new Date(src.lastSyncAt).toLocaleDateString() : "Pending"
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 820,
-										columnNumber: 23
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 818,
-									columnNumber: 21
-								}, void 0)]
-							}, src.id, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 789,
-								columnNumber: 19
-							}, void 0);
+									})]
+								})]
+							}, src.id);
 						})
-					}, void 0, false, {
-						fileName: _jsxFileName$12,
-						lineNumber: 785,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$12,
-					lineNumber: 744,
-					columnNumber: 11
-				}, void 0), selectedSource && /* @__PURE__ */ jsxDEV("div", {
+					})]
+				}), selectedSource && /* @__PURE__ */ jsx("div", {
 					className: "lg:col-span-7 space-y-6",
-					children: /* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsxs("div", {
 						className: "bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-6 shadow-xl",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-start justify-between gap-4 pb-4 border-b border-[#1f2631]",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [
-									/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [
+									/* @__PURE__ */ jsx("span", {
 										className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 										children: "REST Endpoint Configuration"
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 836,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("h3", {
+									}),
+									/* @__PURE__ */ jsx("h3", {
 										className: "font-serif text-2xl font-normal text-white",
 										children: selectedSource.name
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 839,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("p", {
+									}),
+									/* @__PURE__ */ jsxs("p", {
 										className: "text-xs text-[#8a909a] font-mono mt-0.5",
 										children: [
 											"Endpoint: ",
@@ -16986,1069 +11318,453 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 											selectedSource.postType,
 											")"
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 842,
-										columnNumber: 21
-									}, void 0)
-								] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 835,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									})
+								] }), /* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-2",
-									children: [/* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx("button", {
 										onClick: () => setEditingSource(selectedSource),
 										className: "p-2 bg-[#161c24] border border-[#2a3442] hover:border-[#c5a059] text-[#cbd5e1] rounded-sm cursor-pointer",
 										title: "Edit Mappings",
-										children: /* @__PURE__ */ jsxDEV(Settings, { className: "w-4 h-4" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 853,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 848,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("button", {
+										children: /* @__PURE__ */ jsx(Settings, { className: "w-4 h-4" })
+									}), /* @__PURE__ */ jsx("button", {
 										onClick: () => handleDeleteSource(selectedSource.id),
 										className: "p-2 bg-[#161c24] border border-[#2a3442] hover:border-red-600 text-[#cbd5e1] hover:text-red-400 rounded-sm cursor-pointer",
 										title: "Remove Source",
-										children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-4 h-4" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 860,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 855,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 847,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 834,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+										children: /* @__PURE__ */ jsx(Trash2, { className: "w-4 h-4" })
+									})]
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-3 pt-2",
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsxs("button", {
 									onClick: () => handleRunRestSync(selectedSource, true),
 									disabled: isRestRunning,
 									className: "px-4 py-2 bg-[#1c232d] hover:bg-[#252f3d] disabled:opacity-50 text-[#cbd5e1] text-xs font-mono uppercase tracking-wider rounded-sm cursor-pointer flex items-center gap-2",
-									children: [/* @__PURE__ */ jsxDEV(Play, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 872,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Run Dry-Run Audit" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 873,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 867,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx(Play, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Run Dry-Run Audit" })]
+								}), /* @__PURE__ */ jsxs("button", {
 									onClick: () => handleRunRestSync(selectedSource, false),
 									disabled: isRestRunning,
 									className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] disabled:opacity-50 text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer flex items-center gap-2",
-									children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: `w-3.5 h-3.5 ${isRestRunning ? "animate-spin" : ""}` }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 881,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Synchronize Live" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 882,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 876,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 866,
-								columnNumber: 17
-							}, void 0),
-							isRestRunning && /* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsx(RefreshCw, { className: `w-3.5 h-3.5 ${isRestRunning ? "animate-spin" : ""}` }), /* @__PURE__ */ jsx("span", { children: "Synchronize Live" })]
+								})]
+							}),
+							isRestRunning && /* @__PURE__ */ jsxs("div", {
 								className: "space-y-1 pt-2",
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "flex justify-between text-xs font-mono text-[#8a909a]",
-									children: [/* @__PURE__ */ jsxDEV("span", { children: restProgressMsg }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 890,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [restProgress, "%"] }, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 891,
-										columnNumber: 23
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 889,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsx("span", { children: restProgressMsg }), /* @__PURE__ */ jsxs("span", { children: [restProgress, "%"] })]
+								}), /* @__PURE__ */ jsx("div", {
 									className: "w-full h-1 bg-[#18202a] rounded-full overflow-hidden",
-									children: /* @__PURE__ */ jsxDEV("div", {
+									children: /* @__PURE__ */ jsx("div", {
 										className: "h-full bg-[#c5a059] transition-all",
 										style: { width: `${restProgress}%` }
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 894,
-										columnNumber: 23
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 893,
-									columnNumber: 21
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 888,
-								columnNumber: 19
-							}, void 0),
-							restError && /* @__PURE__ */ jsxDEV("div", {
+									})
+								})]
+							}),
+							restError && /* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-red-950/60 border border-red-700/80 rounded-sm text-xs font-mono text-red-200 flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 901,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: restError }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 902,
-									columnNumber: 21
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 900,
-								columnNumber: 19
-							}, void 0)
+								children: [/* @__PURE__ */ jsx(AlertTriangle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: restError })]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 833,
-						columnNumber: 15
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$12,
-					lineNumber: 832,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$12,
-				lineNumber: 741,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "audit-logs" && /* @__PURE__ */ jsxDEV("div", {
+					})
+				})]
+			}),
+			activeTab === "audit-logs" && /* @__PURE__ */ jsxs("div", {
 				className: "bg-[#101419] border border-[#202732] rounded-sm p-6 space-y-4",
 				children: [
-					/* @__PURE__ */ jsxDEV("h3", {
+					/* @__PURE__ */ jsxs("h3", {
 						className: "font-serif text-lg font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV(Clock, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$12,
-							lineNumber: 917,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Synchronization Audit & Execution History" }, void 0, false, {
-							fileName: _jsxFileName$12,
-							lineNumber: 918,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$12,
-						lineNumber: 916,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+						children: [/* @__PURE__ */ jsx(Clock, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Synchronization Audit & Execution History" })]
+					}),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-xs text-[#8a909a]",
 						children: "Central audit log tracking all live scans, change detection diffs, and catalog synchronization events."
-					}, void 0, false, {
-						fileName: _jsxFileName$12,
-						lineNumber: 920,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsx("div", {
 						className: "space-y-3 pt-2",
-						children: storage.getImportJobs().map((job) => /* @__PURE__ */ jsxDEV("div", {
+						children: storage.getImportJobs().map((job) => /* @__PURE__ */ jsxs("div", {
 							className: "p-4 bg-[#141922] border border-[#202732] rounded-sm space-y-2",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center justify-between text-xs font-mono",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: "text-[#c5a059] font-medium",
 										children: job.sourceName
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 928,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-[#737a85]",
 										children: new Date(job.startedAt).toLocaleString()
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 929,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 927,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+									})]
+								}),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#cbd5e1] font-mono leading-relaxed",
 									children: job.reportSummary || "Job completed successfully"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 931,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-3 text-[11px] font-mono text-[#8a909a] pt-1",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", { children: ["Processed: ", job.processedRecords] }, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 935,
-											columnNumber: 19
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsxs("span", { children: ["Processed: ", job.processedRecords] }),
+										/* @__PURE__ */ jsxs("span", {
 											className: "text-emerald-400",
 											children: ["New: ", job.newRecords]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 936,
-											columnNumber: 19
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsxs("span", {
 											className: "text-purple-400",
 											children: ["Updated: ", job.updatedRecords]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 937,
-											columnNumber: 19
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsxs("span", {
 											className: "text-[#cbd5e1]",
 											children: ["Duplicates: ", job.duplicateRecords]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 938,
-											columnNumber: 19
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 934,
-									columnNumber: 17
-								}, void 0)
+								})
 							]
-						}, job.id, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 926,
-							columnNumber: 15
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$12,
-						lineNumber: 924,
-						columnNumber: 11
-					}, void 0)
+						}, job.id))
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$12,
-				lineNumber: 915,
-				columnNumber: 9
-			}, void 0),
-			selectedTaskForDetail && selectedTaskForDetail.data && /* @__PURE__ */ jsxDEV("div", {
+			}),
+			selectedTaskForDetail && selectedTaskForDetail.data && /* @__PURE__ */ jsx("div", {
 				className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "bg-[#101419] border border-[#2a3442] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-sm p-6 space-y-6 shadow-2xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-start justify-between gap-4 pb-4 border-b border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("div", { children: [
-								/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsxs("div", { children: [
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 									children: "Field-by-Field Extraction Summary"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 955,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h3", {
+								}),
+								/* @__PURE__ */ jsx("h3", {
 									className: "font-serif text-2xl font-normal text-white",
 									children: selectedTaskForDetail.data.title
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 958,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsxs("p", {
 									className: "text-xs text-[#8a909a] font-mono mt-0.5",
 									children: ["Source: ", selectedTaskForDetail.data.sourceUrl]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 961,
-									columnNumber: 17
-								}, void 0)
-							] }, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 954,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								})
+							] }), /* @__PURE__ */ jsx("button", {
 								onClick: () => setSelectedTaskForDetail(null),
 								className: "p-1.5 text-[#8a909a] hover:text-white rounded-sm cursor-pointer",
-								children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 970,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 966,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 953,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-2",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "text-xs font-mono uppercase text-[#8a909a] block",
 								children: "Extraction Confidence Checklist"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 976,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsx("div", {
 								className: "grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono",
-								children: Object.entries(selectedTaskForDetail.data.extractionConfidence).map(([key, ok]) => /* @__PURE__ */ jsxDEV("div", {
+								children: Object.entries(selectedTaskForDetail.data.extractionConfidence).map(([key, ok]) => /* @__PURE__ */ jsxs("div", {
 									className: `p-2 rounded-sm border flex items-center justify-between ${ok ? "bg-emerald-950/40 border-emerald-800 text-emerald-300" : "bg-amber-950/40 border-amber-800 text-amber-300"}`,
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: "capitalize",
 										children: key
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 989,
-										columnNumber: 21
-									}, void 0), ok ? /* @__PURE__ */ jsxDEV(Check, { className: "w-3.5 h-3.5 text-emerald-400" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 990,
-										columnNumber: 27
-									}, void 0) : /* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-3.5 h-3.5 text-amber-400" }, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 990,
-										columnNumber: 80
-									}, void 0)]
-								}, key, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 981,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 979,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 975,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+									}), ok ? /* @__PURE__ */ jsx(Check, { className: "w-3.5 h-3.5 text-emerald-400" }) : /* @__PURE__ */ jsx(AlertTriangle, { className: "w-3.5 h-3.5 text-amber-400" })]
+								}, key))
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-2",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "text-xs font-mono uppercase text-[#8a909a] block",
 								children: "Extracted Values & Normalization"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 998,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "bg-[#141922] border border-[#202732] rounded-sm divide-y divide-[#1e2530] text-xs font-mono",
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Project Title:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1003,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-white font-medium text-right",
 											children: selectedTaskForDetail.data.title
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1004,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1002,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Developer / Builder:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1007,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-[#c5a059] font-medium text-right",
 											children: selectedTaskForDetail.data.developer || "HLP Group"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1008,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1006,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Location Corridor:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1011,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsxs("span", {
 											className: "text-white text-right",
 											children: [
 												selectedTaskForDetail.data.address,
 												", ",
 												selectedTaskForDetail.data.city
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1012,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1010,
-										columnNumber: 17
-									}, void 0),
+										})]
+									}),
 									(() => {
 										const match = storage.findMatchingLocation(selectedTaskForDetail.data.city, selectedTaskForDetail.data.address);
-										return /* @__PURE__ */ jsxDEV("div", {
+										return /* @__PURE__ */ jsxs("div", {
 											className: "p-3 flex justify-between items-center",
-											children: [/* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsx("span", {
 												className: "text-[#8a909a]",
 												children: "Admin Location Match:"
-											}, void 0, false, {
-												fileName: _jsxFileName$12,
-												lineNumber: 1021,
-												columnNumber: 23
-											}, void 0), match ? /* @__PURE__ */ jsxDEV("span", {
+											}), match ? /* @__PURE__ */ jsxs("span", {
 												className: "px-2 py-0.5 rounded text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1 font-mono",
-												children: [/* @__PURE__ */ jsxDEV(Check, { className: "w-3 h-3" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 1024,
-													columnNumber: 27
-												}, void 0), match.name]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 1023,
-												columnNumber: 25
-											}, void 0) : /* @__PURE__ */ jsxDEV("span", {
+												children: [/* @__PURE__ */ jsx(Check, { className: "w-3 h-3" }), match.name]
+											}) : /* @__PURE__ */ jsxs("span", {
 												className: "px-2 py-0.5 rounded text-[11px] bg-amber-950 text-amber-400 border border-amber-800 flex items-center gap-1 font-mono",
-												children: [/* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-3 h-3" }, void 0, false, {
-													fileName: _jsxFileName$12,
-													lineNumber: 1029,
-													columnNumber: 27
-												}, void 0), "Needs Admin Review"]
-											}, void 0, true, {
-												fileName: _jsxFileName$12,
-												lineNumber: 1028,
-												columnNumber: 25
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1020,
-											columnNumber: 21
-										}, void 0);
+												children: [/* @__PURE__ */ jsx(AlertTriangle, { className: "w-3 h-3" }), "Needs Admin Review"]
+											})]
+										});
 									})(),
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Original Price Text:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1037,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-[#c5a059] text-right",
 											children: selectedTaskForDetail.data.originalPriceText || "Price on Request"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1038,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1036,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Catalog Price (INR):"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1041,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsxs("span", {
 											className: "text-emerald-400 text-right",
 											children: ["₹ ", (selectedTaskForDetail.data.priceInInr || 0).toLocaleString()]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1042,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1040,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "RERA Registration:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1045,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-white text-right",
 											children: selectedTaskForDetail.data.reraNumber
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1046,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1044,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Direct Contact Phone:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1049,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-white text-right",
 											children: selectedTaskForDetail.data.phone || "977-987-8303"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1050,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1048,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+										})]
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "p-3 flex justify-between",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#8a909a]",
 											children: "Direct Contact Email:"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1053,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsx("span", {
 											className: "text-white text-right",
 											children: selectedTaskForDetail.data.email || "info@buildsmoremohali.com"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1054,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1052,
-										columnNumber: 17
-									}, void 0)
+										})]
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1001,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 997,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-2",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsxs("span", {
 								className: "text-xs font-mono uppercase text-[#8a909a] block",
 								children: [
 									"Amenities Discovered (",
 									selectedTaskForDetail.data.amenities.length,
 									")"
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1061,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsx("div", {
 								className: "flex flex-wrap gap-2",
-								children: selectedTaskForDetail.data.amenities.map((am, i) => /* @__PURE__ */ jsxDEV("span", {
+								children: selectedTaskForDetail.data.amenities.map((am, i) => /* @__PURE__ */ jsx("span", {
 									className: "px-2.5 py-1 bg-[#141922] border border-[#202732] text-xs text-[#cbd5e1] rounded-sm",
 									children: am
-								}, i, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1066,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1064,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1060,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								}, i))
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-2",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsxs("span", {
 								className: "text-xs font-mono uppercase text-[#8a909a] block",
 								children: [
 									"Extracted Gallery Images (",
 									selectedTaskForDetail.data.images.length,
 									")"
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1075,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsx("div", {
 								className: "grid grid-cols-4 sm:grid-cols-6 gap-2",
-								children: selectedTaskForDetail.data.images.slice(0, 12).map((img, i) => /* @__PURE__ */ jsxDEV("div", {
+								children: selectedTaskForDetail.data.images.slice(0, 12).map((img, i) => /* @__PURE__ */ jsx("div", {
 									className: "aspect-[4/3] rounded-sm overflow-hidden border border-[#202732] bg-[#0c0f12]",
-									children: /* @__PURE__ */ jsxDEV("img", {
+									children: /* @__PURE__ */ jsx("img", {
 										src: img.url,
 										alt: `Preview ${i}`,
 										className: "w-full h-full object-cover"
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1081,
-										columnNumber: 21
-									}, void 0)
-								}, i, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1080,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1078,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1074,
-							columnNumber: 13
-						}, void 0),
-						selectedTaskForDetail.data.warnings.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+									})
+								}, i))
+							})]
+						}),
+						selectedTaskForDetail.data.warnings.length > 0 && /* @__PURE__ */ jsxs("div", {
 							className: "p-3 bg-amber-950/40 border border-amber-800 rounded-sm space-y-1",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "text-xs font-mono uppercase text-amber-400 block font-semibold",
 								children: "Administrative Review Notes:"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1090,
-								columnNumber: 17
-							}, void 0), selectedTaskForDetail.data.warnings.map((w, i) => /* @__PURE__ */ jsxDEV("p", {
+							}), selectedTaskForDetail.data.warnings.map((w, i) => /* @__PURE__ */ jsxs("p", {
 								className: "text-xs text-amber-200 font-mono",
 								children: ["• ", w]
-							}, i, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1094,
-								columnNumber: 19
-							}, void 0))]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1089,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							}, i))]
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "flex justify-end pt-4 border-t border-[#202732]",
-							children: /* @__PURE__ */ jsxDEV("button", {
+							children: /* @__PURE__ */ jsx("button", {
 								onClick: () => setSelectedTaskForDetail(null),
 								className: "px-5 py-2 bg-[#c5a059] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer",
 								children: "Close Summary"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1100,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1099,
-							columnNumber: 13
-						}, void 0)
+							})
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$12,
-					lineNumber: 951,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$12,
-				lineNumber: 950,
-				columnNumber: 9
-			}, void 0),
-			showPreviewModal && /* @__PURE__ */ jsxDEV("div", {
+				})
+			}),
+			showPreviewModal && /* @__PURE__ */ jsx("div", {
 				className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "bg-[#101419] border border-[#2a3442] w-full max-w-2xl rounded-sm p-6 space-y-6 shadow-2xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-start justify-between gap-4 pb-4 border-b border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 								children: "Preview & Confirmation Before Bulk Import"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1121,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+							}), /* @__PURE__ */ jsxs("h3", {
 								className: "font-serif text-xl font-normal text-white",
 								children: [
 									"Commit ",
 									scannedCount,
 									" Properties to Buildsmore Catalog"
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1124,
-								columnNumber: 17
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1120,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							})] }), /* @__PURE__ */ jsx("button", {
 								onClick: () => setShowPreviewModal(false),
 								className: "p-1.5 text-[#8a909a] hover:text-white rounded-sm cursor-pointer",
-								children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1133,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1129,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1119,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-4",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "p-4 bg-[#141922] border border-[#202732] rounded-sm space-y-2 text-xs font-mono",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#c5a059] font-medium block",
 									children: "Sync Preservation Policy:"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1139,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								}), /* @__PURE__ */ jsxs("div", {
 									className: "grid grid-cols-2 gap-3 pt-1",
-									children: [/* @__PURE__ */ jsxDEV("label", {
+									children: [/* @__PURE__ */ jsxs("label", {
 										className: "flex items-center gap-2 text-white cursor-pointer",
-										children: [/* @__PURE__ */ jsxDEV("input", {
+										children: [/* @__PURE__ */ jsx("input", {
 											type: "radio",
 											name: "syncPolicy",
 											checked: bulkSyncPolicy === "preserve_central",
 											onChange: () => setBulkSyncPolicy("preserve_central"),
 											className: "text-[#c5a059]"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1142,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Preserve Central (Safe: Never overwrite local edits)" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1149,
-											columnNumber: 21
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1141,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("label", {
+										}), /* @__PURE__ */ jsx("span", { children: "Preserve Central (Safe: Never overwrite local edits)" })]
+									}), /* @__PURE__ */ jsxs("label", {
 										className: "flex items-center gap-2 text-white cursor-pointer",
-										children: [/* @__PURE__ */ jsxDEV("input", {
+										children: [/* @__PURE__ */ jsx("input", {
 											type: "radio",
 											name: "syncPolicy",
 											checked: bulkSyncPolicy === "update_existing",
 											onChange: () => setBulkSyncPolicy("update_existing"),
 											className: "text-[#c5a059]"
-										}, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1152,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Update Existing on Change" }, void 0, false, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1159,
-											columnNumber: 21
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1151,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1140,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1138,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+										}), /* @__PURE__ */ jsx("span", { children: "Update Existing on Change" })]
+									})]
+								})]
+							}), /* @__PURE__ */ jsx("div", {
 								className: "max-h-60 overflow-y-auto space-y-2",
-								children: tasks.filter((t) => t.data).map((t) => /* @__PURE__ */ jsxDEV("div", {
+								children: tasks.filter((t) => t.data).map((t) => /* @__PURE__ */ jsxs("div", {
 									className: "p-3 bg-[#131822] border border-[#1e2530] rounded-sm flex items-center justify-between text-xs font-mono",
-									children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 										className: "text-white font-medium block",
 										children: t.data.title
-									}, void 0, false, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1171,
-										columnNumber: 25
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsxs("span", {
 										className: "text-[#8a909a]",
 										children: [
 											t.data.city,
 											" · ",
 											t.data.developer || "HLP Group"
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1172,
-										columnNumber: 25
-									}, void 0)] }, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1170,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									})] }), /* @__PURE__ */ jsxs("div", {
 										className: "text-right",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsxs("span", {
 											className: "text-[#c5a059] block",
 											children: ["₹ ", (t.data.priceInInr || 0).toLocaleString()]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1175,
-											columnNumber: 25
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsxs("span", {
 											className: "text-[10px] text-[#737a85]",
 											children: [t.data.images.length, " images"]
-										}, void 0, true, {
-											fileName: _jsxFileName$12,
-											lineNumber: 1176,
-											columnNumber: 25
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$12,
-										lineNumber: 1174,
-										columnNumber: 23
-									}, void 0)]
-								}, t.id, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1169,
-									columnNumber: 21
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1165,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1137,
-							columnNumber: 13
-						}, void 0),
-						isCommitting && /* @__PURE__ */ jsxDEV("div", {
+										})]
+									})]
+								}, t.id))
+							})]
+						}),
+						isCommitting && /* @__PURE__ */ jsxs("div", {
 							className: "p-3 bg-[#161c24] border border-[#2a3442] rounded-sm text-xs font-mono text-[#c5a059] flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-4 h-4 animate-spin shrink-0" }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1185,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: commitMessage }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1186,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1184,
-							columnNumber: 15
-						}, void 0),
-						commitError && /* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4 animate-spin shrink-0" }), /* @__PURE__ */ jsx("span", { children: commitMessage })]
+						}),
+						commitError && /* @__PURE__ */ jsxs("div", {
 							className: "p-3 bg-red-950/60 border border-red-700/80 rounded-sm text-xs font-mono text-red-200 flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1192,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: commitError }, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1193,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1191,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(AlertTriangle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: commitError })]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center justify-end gap-3 pt-4 border-t border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx("button", {
 								onClick: () => setShowPreviewModal(false),
 								disabled: isCommitting,
 								className: "px-4 py-2 bg-[#161c24] text-[#cbd5e1] rounded-sm text-xs cursor-pointer font-mono",
 								children: "Cancel"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1198,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							}), /* @__PURE__ */ jsx("button", {
 								onClick: handleCommitBulkImport,
 								disabled: isCommitting,
 								className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] disabled:opacity-40 text-[#0c0f12] font-semibold uppercase tracking-wider rounded-sm text-xs cursor-pointer flex items-center gap-2 shadow",
-								children: isCommitting ? /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-4 h-4 animate-spin" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1212,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Committing..." }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1213,
-									columnNumber: 21
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1211,
-									columnNumber: 19
-								}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1217,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Confirm & Import to Portfolio" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1218,
-									columnNumber: 21
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1216,
-									columnNumber: 19
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1205,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1197,
-							columnNumber: 13
-						}, void 0)
+								children: isCommitting ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(RefreshCw, { className: "w-4 h-4 animate-spin" }), /* @__PURE__ */ jsx("span", { children: "Committing..." })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Confirm & Import to Portfolio" })] })
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$12,
-					lineNumber: 1117,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$12,
-				lineNumber: 1116,
-				columnNumber: 9
-			}, void 0),
-			editingSource && /* @__PURE__ */ jsxDEV("div", {
+				})
+			}),
+			editingSource && /* @__PURE__ */ jsx("div", {
 				className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "bg-[#101419] border border-[#2a3442] w-full max-w-2xl rounded-sm p-6 space-y-6 shadow-2xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-start justify-between gap-4 pb-4 border-b border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 								children: "Connector Setup"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1236,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+							}), /* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-xl font-normal text-white",
 								children: isAddingNew ? "Connect Remote Partner Site" : `Edit ${editingSource.name}`
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1239,
-								columnNumber: 17
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1235,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							})] }), /* @__PURE__ */ jsx("button", {
 								onClick: () => setEditingSource(null),
 								className: "p-1.5 text-[#8a909a] hover:text-white rounded-sm cursor-pointer",
-								children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1244,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1243,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1234,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "space-y-4 text-xs",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-2 gap-4",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Source Name"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1251,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: editingSource.name,
 									onChange: (e) => setEditingSource({
@@ -18056,22 +11772,10 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 										name: e.target.value
 									}),
 									className: "w-full bg-[#161b22] border border-[#2a3442] rounded-sm px-3 py-2 text-white font-mono"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1252,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1250,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Website URL"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1260,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: editingSource.siteUrl,
 									onChange: (e) => setEditingSource({
@@ -18079,29 +11783,13 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 										siteUrl: e.target.value
 									}),
 									className: "w-full bg-[#161b22] border border-[#2a3442] rounded-sm px-3 py-2 text-white font-mono"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1261,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1259,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1249,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})] })]
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-2 gap-4",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "REST Endpoint"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1272,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: editingSource.restApiEndpoint,
 									onChange: (e) => setEditingSource({
@@ -18109,22 +11797,10 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 										restApiEndpoint: e.target.value
 									}),
 									className: "w-full bg-[#161b22] border border-[#2a3442] rounded-sm px-3 py-2 text-white font-mono"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1273,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1271,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Post Type"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1281,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: editingSource.postType,
 									onChange: (e) => setEditingSource({
@@ -18132,66 +11808,26 @@ var WordPressSyncHub = ({ onRefreshProperties }) => {
 										postType: e.target.value
 									}),
 									className: "w-full bg-[#161b22] border border-[#2a3442] rounded-sm px-3 py-2 text-white font-mono"
-								}, void 0, false, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1282,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$12,
-									lineNumber: 1280,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1270,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1248,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								})] })]
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex justify-end gap-3 pt-4 border-t border-[#202732]",
-							children: [/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx("button", {
 								onClick: () => setEditingSource(null),
 								className: "px-4 py-2 bg-[#161c24] text-[#cbd5e1] rounded-sm text-xs cursor-pointer",
 								children: "Cancel"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1293,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							}), /* @__PURE__ */ jsx("button", {
 								onClick: () => handleSaveSource(editingSource),
 								className: "px-5 py-2 bg-[#c5a059] text-[#0c0f12] font-semibold uppercase tracking-wider rounded-sm text-xs cursor-pointer",
 								children: "Save Connector"
-							}, void 0, false, {
-								fileName: _jsxFileName$12,
-								lineNumber: 1296,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$12,
-							lineNumber: 1292,
-							columnNumber: 13
-						}, void 0)
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$12,
-					lineNumber: 1233,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$12,
-				lineNumber: 1232,
-				columnNumber: 9
-			}, void 0)
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$12,
-		lineNumber: 367,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/services/csvService.ts
 /**
@@ -18525,7 +12161,6 @@ function getSampleCsvTemplate() {
 	return "﻿" + [CSV_COLUMNS.join(","), sampleRow].join("\r\n");
 }
 // src/pages/admin/CsvTransferView.tsx
-var _jsxFileName$11 = "/app/applet/src/pages/admin/CsvTransferView.tsx";
 var CsvTransferView = ({ properties, onRefreshProperties }) => {
 	const fileInputRef = useRef(null);
 	const [csvContent, setCsvContent] = useState("");
@@ -18571,128 +12206,68 @@ var CsvTransferView = ({ properties, onRefreshProperties }) => {
 			if (!isDryRun) onRefreshProperties();
 		}, 400);
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-8",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 md:grid-cols-2 gap-8",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-4 shadow-xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(Download, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 91,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx(Download, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-xl font-medium text-white",
 								children: "Export Portfolio to CSV"
-							}, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 92,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 90,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("p", {
 							className: "text-xs text-[#8a909a] leading-relaxed",
 							children: [
 								"Generate an RFC 4180, Excel-compatible CSV export containing all ",
 								properties.length,
 								" active property records, specifications, pricing, and coordinates with UTF-8 Byte Order Mark."
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 96,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "pt-2 flex items-center gap-3",
-							children: [/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsxs("button", {
 								onClick: handleExportAll,
 								className: "px-5 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer shadow-sm",
-								children: [/* @__PURE__ */ jsxDEV(Download, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 105,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+								children: [/* @__PURE__ */ jsx(Download, { className: "w-4 h-4" }), /* @__PURE__ */ jsxs("span", { children: [
 									"Export ",
 									properties.length,
 									" Records"
-								] }, void 0, true, {
-									fileName: _jsxFileName$11,
-									lineNumber: 106,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$11,
-								lineNumber: 101,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								] })]
+							}), /* @__PURE__ */ jsx("button", {
 								onClick: handleDownloadSample,
 								className: "px-4 py-2.5 bg-[#161c24] border border-[#263140] hover:border-[#c5a059] text-xs font-medium text-[#cbd5e1] rounded-sm cursor-pointer",
 								children: "Download Sample Template"
-							}, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 109,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 100,
-							columnNumber: 11
-						}, void 0)
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$11,
-					lineNumber: 89,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-4 shadow-xl",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(Upload, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 121,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx(Upload, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-xl font-medium text-white",
 								children: "Import Property Records"
-							}, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 122,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 120,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+							})]
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-xs text-[#8a909a] leading-relaxed",
 							children: "Upload CSV data files. Supports dry-run validation, duplicate detection, and schema reconciliation."
-						}, void 0, false, {
-							fileName: _jsxFileName$11,
-							lineNumber: 126,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("input", {
+						}),
+						/* @__PURE__ */ jsx("input", {
 							ref: fileInputRef,
 							type: "file",
 							accept: ".csv",
 							onChange: handleFileChange,
 							className: "hidden"
-						}, void 0, false, {
-							fileName: _jsxFileName$11,
-							lineNumber: 130,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							onDragOver: (e) => {
 								e.preventDefault();
 								setDragActive(true);
@@ -18702,418 +12277,193 @@ var CsvTransferView = ({ properties, onRefreshProperties }) => {
 							onClick: () => fileInputRef.current?.click(),
 							className: `border-2 border-dashed rounded-sm p-6 text-center cursor-pointer transition-colors ${dragActive ? "border-[#c5a059] bg-[#161e29]" : "border-[#263140] hover:border-[#c5a059]/60 bg-[#12161d]"}`,
 							children: [
-								/* @__PURE__ */ jsxDEV(FileText, { className: "w-8 h-8 text-[#8a909a] mx-auto mb-2" }, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 147,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								/* @__PURE__ */ jsx(FileText, { className: "w-8 h-8 text-[#8a909a] mx-auto mb-2" }),
+								/* @__PURE__ */ jsx("p", {
 									className: "text-xs text-[#cbd5e1] font-medium",
 									children: fileName ? fileName : "Click to select CSV or drag and drop file"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 148,
-									columnNumber: 13
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] text-[#6b7280] font-mono mt-1 block",
 									children: "RFC 4180 or Microsoft Excel UTF-8 CSV"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 151,
-									columnNumber: 13
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 138,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$11,
-					lineNumber: 119,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$11,
-				lineNumber: 86,
-				columnNumber: 7
-			}, void 0),
-			parsedRows.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			parsedRows.length > 0 && /* @__PURE__ */ jsxs("div", {
 				className: "bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-6 shadow-xl",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#1f2631]",
-					children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("span", {
 						className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
 						children: ["File Parsed: ", fileName]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 165,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("h4", {
+					}), /* @__PURE__ */ jsxs("h4", {
 						className: "font-serif text-xl font-medium text-white",
 						children: [
 							"Detected ",
 							parsedRows.length,
 							" Property Rows"
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 168,
-						columnNumber: 15
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 164,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					})] }), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-4",
-						children: [/* @__PURE__ */ jsxDEV("label", {
+						children: [/* @__PURE__ */ jsxs("label", {
 							className: "flex items-center gap-2 text-xs font-mono text-[#cbd5e1] cursor-pointer",
-							children: [/* @__PURE__ */ jsxDEV("input", {
+							children: [/* @__PURE__ */ jsx("input", {
 								type: "checkbox",
 								checked: isDryRun,
 								onChange: (e) => setIsDryRun(e.target.checked),
 								className: "accent-[#c5a059]"
-							}, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 175,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Dry-Run Validation Only (No DB Writes)" }, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 181,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 174,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							}), /* @__PURE__ */ jsx("span", { children: "Dry-Run Validation Only (No DB Writes)" })]
+						}), /* @__PURE__ */ jsxs("button", {
 							disabled: isProcessing,
 							onClick: handleExecuteImport,
 							className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50",
-							children: [/* @__PURE__ */ jsxDEV(RefreshCw, { className: `w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}` }, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 189,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: isProcessing ? "Processing..." : isDryRun ? "Run Dry-Run Analysis" : "Import to Central Database" }, void 0, false, {
-								fileName: _jsxFileName$11,
-								lineNumber: 190,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 184,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 173,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$11,
-					lineNumber: 163,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(RefreshCw, { className: `w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}` }), /* @__PURE__ */ jsx("span", { children: isProcessing ? "Processing..." : isDryRun ? "Run Dry-Run Analysis" : "Import to Central Database" })]
+						})]
+					})]
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "overflow-x-auto",
-					children: [/* @__PURE__ */ jsxDEV("table", {
+					children: [/* @__PURE__ */ jsxs("table", {
 						className: "w-full text-left text-xs font-mono",
-						children: [/* @__PURE__ */ jsxDEV("thead", { children: /* @__PURE__ */ jsxDEV("tr", {
+						children: [/* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", {
 							className: "border-b border-[#202732] text-[#8a909a] uppercase text-[10px]",
 							children: [
-								/* @__PURE__ */ jsxDEV("th", {
+								/* @__PURE__ */ jsx("th", {
 									className: "py-2 px-3",
 									children: "Title"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 200,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-2 px-3",
 									children: "Price"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 201,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-2 px-3",
 									children: "Category"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 202,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-2 px-3",
 									children: "City"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 203,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-2 px-3",
 									children: "Beds"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 204,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-2 px-3",
 									children: "Area"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 205,
-									columnNumber: 19
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 199,
-							columnNumber: 17
-						}, void 0) }, void 0, false, {
-							fileName: _jsxFileName$11,
-							lineNumber: 198,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("tbody", {
+						}) }), /* @__PURE__ */ jsx("tbody", {
 							className: "divide-y divide-[#18202b] text-[#cbd5e1]",
-							children: parsedRows.slice(0, 5).map((r, i) => /* @__PURE__ */ jsxDEV("tr", {
+							children: parsedRows.slice(0, 5).map((r, i) => /* @__PURE__ */ jsxs("tr", {
 								className: "hover:bg-[#141922]",
 								children: [
-									/* @__PURE__ */ jsxDEV("td", {
+									/* @__PURE__ */ jsx("td", {
 										className: "py-2 px-3 text-white font-serif text-sm",
 										children: r["title"] || r["name"] || "—"
-									}, void 0, false, {
-										fileName: _jsxFileName$11,
-										lineNumber: 211,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-2 px-3 text-[#c5a059] tabular-nums",
 										children: r["price"] || "—"
-									}, void 0, false, {
-										fileName: _jsxFileName$11,
-										lineNumber: 212,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-2 px-3",
 										children: r["category"] || "Residential"
-									}, void 0, false, {
-										fileName: _jsxFileName$11,
-										lineNumber: 213,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-2 px-3",
 										children: r["city"] || "—"
-									}, void 0, false, {
-										fileName: _jsxFileName$11,
-										lineNumber: 214,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-2 px-3",
 										children: r["bedrooms"] || "—"
-									}, void 0, false, {
-										fileName: _jsxFileName$11,
-										lineNumber: 215,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-2 px-3",
 										children: r["interiorareasqft"] || "—"
-									}, void 0, false, {
-										fileName: _jsxFileName$11,
-										lineNumber: 216,
-										columnNumber: 21
-									}, void 0)
+									})
 								]
-							}, i, true, {
-								fileName: _jsxFileName$11,
-								lineNumber: 210,
-								columnNumber: 19
-							}, void 0))
-						}, void 0, false, {
-							fileName: _jsxFileName$11,
-							lineNumber: 208,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 197,
-						columnNumber: 13
-					}, void 0), parsedRows.length > 5 && /* @__PURE__ */ jsxDEV("p", {
+							}, i))
+						})]
+					}), parsedRows.length > 5 && /* @__PURE__ */ jsxs("p", {
 						className: "text-[11px] text-[#737a85] font-mono mt-2 text-right",
 						children: [
 							"+ ",
 							parsedRows.length - 5,
 							" more rows parsed"
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 222,
-						columnNumber: 15
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$11,
-					lineNumber: 196,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$11,
-				lineNumber: 161,
-				columnNumber: 9
-			}, void 0),
-			importResult && /* @__PURE__ */ jsxDEV("div", {
+					})]
+				})]
+			}),
+			importResult && /* @__PURE__ */ jsxs("div", {
 				className: "bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-4 shadow-xl",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between pb-3 border-b border-[#1f2631]",
-						children: [/* @__PURE__ */ jsxDEV("h4", {
+						children: [/* @__PURE__ */ jsx("h4", {
 							className: "font-serif text-lg font-medium text-white",
 							children: importResult.isDryRun ? "CSV Dry-Run Validation Summary" : "CSV Import Execution Complete"
-						}, void 0, false, {
-							fileName: _jsxFileName$11,
-							lineNumber: 235,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", {
+						}), /* @__PURE__ */ jsxs("span", {
 							className: "text-xs font-mono px-2 py-0.5 bg-emerald-950 text-emerald-300 rounded-sm",
 							children: ["Status: ", importResult.status]
-						}, void 0, true, {
-							fileName: _jsxFileName$11,
-							lineNumber: 238,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 234,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono text-center",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#141922] rounded-sm border border-[#202732]",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] text-[#737a85] uppercase block",
 									children: "Total Rows"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 245,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-bold text-white",
 									children: importResult.totalRecords
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 246,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$11,
-								lineNumber: 244,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#141922] rounded-sm border border-[#202732]",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] text-emerald-400 uppercase block",
 									children: "New Properties"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 249,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-lg font-bold text-emerald-300",
 									children: ["+", importResult.newRecords]
-								}, void 0, true, {
-									fileName: _jsxFileName$11,
-									lineNumber: 250,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$11,
-								lineNumber: 248,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#141922] rounded-sm border border-[#202732]",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] text-amber-400 uppercase block",
 									children: "Existing Updates"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 253,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsxs("span", {
 									className: "text-lg font-bold text-amber-300",
 									children: ["~", importResult.updatedRecords]
-								}, void 0, true, {
-									fileName: _jsxFileName$11,
-									lineNumber: 254,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$11,
-								lineNumber: 252,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-[#141922] rounded-sm border border-[#202732]",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] text-red-400 uppercase block",
 									children: "Errors / Invalid"
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 257,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-lg font-bold text-red-300",
 									children: importResult.failedRecords
-								}, void 0, false, {
-									fileName: _jsxFileName$11,
-									lineNumber: 258,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$11,
-								lineNumber: 256,
-								columnNumber: 13
-							}, void 0)
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$11,
-						lineNumber: 243,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+					}),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-xs font-mono text-[#cbd5e1] bg-[#141922] p-3 rounded-sm border border-[#202732]",
 						children: importResult.reportSummary
-					}, void 0, false, {
-						fileName: _jsxFileName$11,
-						lineNumber: 262,
-						columnNumber: 11
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$11,
-				lineNumber: 233,
-				columnNumber: 9
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$11,
-		lineNumber: 83,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/admin/TrophyHoldingsManager.tsx
-var _jsxFileName$10 = "/app/applet/src/pages/admin/TrophyHoldingsManager.tsx";
 var TrophyHoldingsManager = ({ properties, onRefreshProperties, onViewProperty }) => {
 	const { formatPrice } = useCurrency();
 	const [searchQuery, setSearchQuery] = useState("");
@@ -19168,429 +12518,192 @@ var TrophyHoldingsManager = ({ properties, onRefreshProperties, onViewProperty }
 		setStatusMessage(msg);
 		setTimeout(() => setStatusMessage(""), 3e3);
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-8 animate-in fade-in duration-200",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "bg-[#141922] border border-[#242c38] p-6 rounded-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4",
-				children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV(Trophy, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 109,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsx(Trophy, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-2xl font-normal text-white",
 						children: "Trophy Holdings of the Season"
-					}, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 110,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$10,
-					lineNumber: 108,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("p", {
+					})]
+				}), /* @__PURE__ */ jsx("p", {
 					className: "text-xs text-[#8a909a] mt-1 max-w-xl",
 					children: "Control the marquee properties showcased prominently on the homepage. Drag, rearrange, add, or remove assets. Changes update instantly across all guest viewports."
-				}, void 0, false, {
-					fileName: _jsxFileName$10,
-					lineNumber: 114,
-					columnNumber: 11
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$10,
-					lineNumber: 107,
-					columnNumber: 9
-				}, void 0), statusMessage && /* @__PURE__ */ jsxDEV("div", {
+				})] }), statusMessage && /* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2 px-3 py-1.5 bg-emerald-950/60 border border-emerald-700 rounded-sm text-xs text-emerald-300 font-mono",
-					children: [/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-emerald-400" }, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 121,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: statusMessage }, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 122,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$10,
-					lineNumber: 120,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$10,
-				lineNumber: 106,
-				columnNumber: 7
-			}, void 0),
-			errorMessage && /* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4 text-emerald-400" }), /* @__PURE__ */ jsx("span", { children: statusMessage })]
+				})]
+			}),
+			errorMessage && /* @__PURE__ */ jsxs("div", {
 				className: "p-3.5 bg-red-950/60 border border-red-700/80 text-red-100 text-xs font-mono rounded-sm flex items-center justify-between gap-3",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 130,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: errorMessage }, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 131,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$10,
-					lineNumber: 129,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: errorMessage })]
+				}), /* @__PURE__ */ jsx("button", {
 					type: "button",
 					onClick: () => setErrorMessage(""),
 					className: "text-red-300 hover:text-white uppercase cursor-pointer",
 					children: "Dismiss"
-				}, void 0, false, {
-					fileName: _jsxFileName$10,
-					lineNumber: 133,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$10,
-				lineNumber: 128,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 lg:grid-cols-12 gap-8",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-7 space-y-4",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between border-b border-[#202732] pb-3",
-						children: [/* @__PURE__ */ jsxDEV("h3", {
+						children: [/* @__PURE__ */ jsxs("h3", {
 							className: "font-mono text-xs uppercase text-[#c5a059] tracking-wider flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(Sparkles, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$10,
-								lineNumber: 149,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: [
+							children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsxs("span", { children: [
 								"Active Marquee Showcase (",
 								trophyProperties.length,
 								")"
-							] }, void 0, true, {
-								fileName: _jsxFileName$10,
-								lineNumber: 150,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$10,
-							lineNumber: 148,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							] })]
+						}), /* @__PURE__ */ jsx("span", {
 							className: "text-[11px] text-[#8a909a] font-mono",
 							children: "Displayed on Homepage in Top-to-Bottom Order"
-						}, void 0, false, {
-							fileName: _jsxFileName$10,
-							lineNumber: 152,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$10,
-						lineNumber: 147,
-						columnNumber: 11
-					}, void 0), trophyProperties.length === 0 ? /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), trophyProperties.length === 0 ? /* @__PURE__ */ jsx("div", {
 						className: "p-8 text-center bg-[#101419] border border-[#202732] rounded-sm text-xs text-[#8a909a]",
 						children: "No properties selected for Trophy Holdings yet. Add properties from the list on the right."
-					}, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 158,
-						columnNumber: 13
-					}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+					}) : /* @__PURE__ */ jsx("div", {
 						className: "space-y-3",
-						children: trophyProperties.map((prop, idx) => /* @__PURE__ */ jsxDEV("div", {
+						children: trophyProperties.map((prop, idx) => /* @__PURE__ */ jsxs("div", {
 							className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 p-3.5 rounded-sm flex items-center justify-between gap-4 transition-all group",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-3 min-w-0",
 								children: [
-									/* @__PURE__ */ jsxDEV("span", {
+									/* @__PURE__ */ jsx("span", {
 										className: "w-6 h-6 flex items-center justify-center bg-[#181f2a] border border-[#2a3442] rounded-sm text-xs font-mono font-bold text-[#c5a059] shrink-0",
 										children: idx + 1
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 169,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("img", {
+									}),
+									/* @__PURE__ */ jsx("img", {
 										src: getPrimaryPropertyImage(prop).url,
 										alt: prop.title,
 										className: "w-16 h-12 rounded-sm object-cover bg-[#181f2a] shrink-0"
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 173,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "min-w-0",
 										children: [
-											/* @__PURE__ */ jsxDEV("span", {
+											/* @__PURE__ */ jsxs("span", {
 												className: "text-[10px] font-mono uppercase text-[#c5a059] block",
 												children: [
 													prop.category,
 													" · ",
 													prop.city
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$10,
-												lineNumber: 180,
-												columnNumber: 23
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("h4", {
+											}),
+											/* @__PURE__ */ jsx("h4", {
 												className: "font-serif text-sm font-medium text-white truncate group-hover:text-[#c5a059] transition-colors",
 												children: prop.title
-											}, void 0, false, {
-												fileName: _jsxFileName$10,
-												lineNumber: 183,
-												columnNumber: 23
-											}, void 0),
-											/* @__PURE__ */ jsxDEV("span", {
+											}),
+											/* @__PURE__ */ jsx("span", {
 												className: "text-xs font-mono text-[#cbd5e1] font-bold",
 												children: formatPrice(prop.price, prop.currency)
-											}, void 0, false, {
-												fileName: _jsxFileName$10,
-												lineNumber: 186,
-												columnNumber: 23
-											}, void 0)
+											})
 										]
-									}, void 0, true, {
-										fileName: _jsxFileName$10,
-										lineNumber: 179,
-										columnNumber: 21
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$10,
-								lineNumber: 168,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-1 shrink-0",
 								children: [
-									/* @__PURE__ */ jsxDEV("button", {
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => handleMove(idx, "up"),
 										disabled: idx === 0,
 										className: "p-1.5 bg-[#14181d] border border-[#262f3d] text-[#9ca3af] hover:text-white disabled:opacity-30 rounded-sm cursor-pointer disabled:cursor-not-allowed",
 										title: "Move Up",
-										children: /* @__PURE__ */ jsxDEV(ArrowUp, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$10,
-											lineNumber: 199,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 193,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+										children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-3.5 h-3.5" })
+									}),
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => handleMove(idx, "down"),
 										disabled: idx === trophyProperties.length - 1,
 										className: "p-1.5 bg-[#14181d] border border-[#262f3d] text-[#9ca3af] hover:text-white disabled:opacity-30 rounded-sm cursor-pointer disabled:cursor-not-allowed",
 										title: "Move Down",
-										children: /* @__PURE__ */ jsxDEV(ArrowDown, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$10,
-											lineNumber: 208,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 202,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+										children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-3.5 h-3.5" })
+									}),
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => onViewProperty(prop),
 										className: "p-1.5 bg-[#14181d] border border-[#262f3d] text-[#9ca3af] hover:text-[#c5a059] rounded-sm cursor-pointer ml-1",
 										title: "View Detail Page",
-										children: /* @__PURE__ */ jsxDEV(Eye, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$10,
-											lineNumber: 216,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 211,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+										children: /* @__PURE__ */ jsx(Eye, { className: "w-3.5 h-3.5" })
+									}),
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => handleRemove(prop.id),
 										className: "p-1.5 bg-[#14181d] border border-[#262f3d] text-[#9ca3af] hover:text-red-400 hover:border-red-900/50 rounded-sm cursor-pointer",
 										title: "Remove from Trophy Holdings",
-										children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$10,
-											lineNumber: 224,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 219,
-										columnNumber: 21
-									}, void 0)
+										children: /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$10,
-								lineNumber: 192,
-								columnNumber: 19
-							}, void 0)]
-						}, prop.id, true, {
-							fileName: _jsxFileName$10,
-							lineNumber: 164,
-							columnNumber: 17
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$10,
-						lineNumber: 162,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$10,
-					lineNumber: 146,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}, prop.id))
+					})]
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-5 space-y-4",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center justify-between border-b border-[#202732] pb-3",
-							children: [/* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx("h3", {
 								className: "font-mono text-xs uppercase text-[#8a909a] tracking-wider",
 								children: "Add Published Property"
-							}, void 0, false, {
-								fileName: _jsxFileName$10,
-								lineNumber: 236,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsxs("span", {
 								className: "text-[11px] font-mono text-[#8a909a]",
 								children: [availableProperties.length, " Available"]
-							}, void 0, true, {
-								fileName: _jsxFileName$10,
-								lineNumber: 239,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$10,
-							lineNumber: 235,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "relative",
-							children: [/* @__PURE__ */ jsxDEV(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }, void 0, false, {
-								fileName: _jsxFileName$10,
-								lineNumber: 246,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							children: [/* @__PURE__ */ jsx(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								value: searchQuery,
 								onChange: (e) => setSearchQuery(e.target.value),
 								placeholder: "Filter by title, city, category...",
 								className: "w-full bg-[#141922] border border-[#242c38] focus:border-[#c5a059] rounded-sm pl-8 pr-3 py-2 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none"
-							}, void 0, false, {
-								fileName: _jsxFileName$10,
-								lineNumber: 247,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$10,
-							lineNumber: 245,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "space-y-2 max-h-[500px] overflow-y-auto pr-1",
-							children: availableProperties.length === 0 ? /* @__PURE__ */ jsxDEV("div", {
+							children: availableProperties.length === 0 ? /* @__PURE__ */ jsx("div", {
 								className: "p-6 text-center bg-[#101419] border border-[#202732] rounded-sm text-xs text-[#8a909a]",
 								children: "No additional published properties match criteria."
-							}, void 0, false, {
-								fileName: _jsxFileName$10,
-								lineNumber: 258,
-								columnNumber: 15
-							}, void 0) : availableProperties.map((prop) => /* @__PURE__ */ jsxDEV("div", {
+							}) : availableProperties.map((prop) => /* @__PURE__ */ jsxs("div", {
 								className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/40 p-2.5 rounded-sm flex items-center justify-between gap-3",
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-2.5 min-w-0",
-									children: [/* @__PURE__ */ jsxDEV("img", {
+									children: [/* @__PURE__ */ jsx("img", {
 										src: getPrimaryPropertyImage(prop).url,
 										alt: prop.title,
 										className: "w-12 h-10 rounded-sm object-cover bg-[#181f2a] shrink-0"
-									}, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 268,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									}), /* @__PURE__ */ jsxs("div", {
 										className: "min-w-0",
-										children: [/* @__PURE__ */ jsxDEV("h5", {
+										children: [/* @__PURE__ */ jsx("h5", {
 											className: "font-serif text-xs font-medium text-white truncate",
 											children: prop.title
-										}, void 0, false, {
-											fileName: _jsxFileName$10,
-											lineNumber: 274,
-											columnNumber: 23
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsxs("span", {
 											className: "text-[10px] text-[#8a909a] font-mono block",
 											children: [
 												prop.city,
 												" · ",
 												formatPrice(prop.price, prop.currency)
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$10,
-											lineNumber: 277,
-											columnNumber: 23
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$10,
-										lineNumber: 273,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$10,
-									lineNumber: 267,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("button", {
+										})]
+									})]
+								}), /* @__PURE__ */ jsxs("button", {
 									onClick: () => handleAdd(prop.id),
 									className: "px-2.5 py-1 bg-[#18202b] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono font-semibold rounded-sm transition-colors text-[#c5a059] flex items-center gap-1 cursor-pointer shrink-0",
-									children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-3.5 h-3.5" }, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 287,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Add" }, void 0, false, {
-										fileName: _jsxFileName$10,
-										lineNumber: 288,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$10,
-									lineNumber: 283,
-									columnNumber: 19
-								}, void 0)]
-							}, prop.id, true, {
-								fileName: _jsxFileName$10,
-								lineNumber: 263,
-								columnNumber: 17
-							}, void 0))
-						}, void 0, false, {
-							fileName: _jsxFileName$10,
-							lineNumber: 256,
-							columnNumber: 11
-						}, void 0)
+									children: [/* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Add" })]
+								})]
+							}, prop.id))
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$10,
-					lineNumber: 234,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$10,
-				lineNumber: 143,
-				columnNumber: 7
-			}, void 0)
+				})]
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$10,
-		lineNumber: 103,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/admin/CuratedCollectionsManager.tsx
-var _jsxFileName$9 = "/app/applet/src/pages/admin/CuratedCollectionsManager.tsx";
 var CuratedCollectionsManager = ({ properties, onRefreshProperties, onViewCollection }) => {
 	const { formatPrice } = useCurrency();
 	const [collections, setCollections] = useState(() => storage.getCollections(true));
@@ -19771,829 +12884,369 @@ var CuratedCollectionsManager = ({ properties, onRefreshProperties, onViewCollec
 		}
 	};
 	const propertyMap = new Map(properties.map((p) => [p.id, p]));
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-8 animate-in fade-in duration-200",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "bg-[#141922] border border-[#242c38] p-6 rounded-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4",
-				children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV(Layers, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-						fileName: _jsxFileName$9,
-						lineNumber: 240,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("h2", {
+					children: [/* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("h2", {
 						className: "font-serif text-2xl font-normal text-white",
 						children: "Curated Investment Collections"
-					}, void 0, false, {
-						fileName: _jsxFileName$9,
-						lineNumber: 241,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$9,
-					lineNumber: 239,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("p", {
+					})]
+				}), /* @__PURE__ */ jsx("p", {
 					className: "text-xs text-[#8a909a] mt-1 max-w-xl",
 					children: "Create and organize dynamic theme-based investment collections (e.g. Ultra Luxury Homes, Chandigarh Tricity, Luxury Sea Villas). Select properties, order them, and publish to the live site."
-				}, void 0, false, {
-					fileName: _jsxFileName$9,
-					lineNumber: 245,
-					columnNumber: 11
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$9,
-					lineNumber: 238,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				})] }), /* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-3",
-					children: [statusMessage && /* @__PURE__ */ jsxDEV("div", {
+					children: [statusMessage && /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-2 px-3 py-1.5 bg-emerald-950/60 border border-emerald-700 rounded-sm text-xs text-emerald-300 font-mono",
-						children: [/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-emerald-400" }, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 253,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: statusMessage }, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 254,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$9,
-						lineNumber: 252,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("button", {
+						children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4 text-emerald-400" }), /* @__PURE__ */ jsx("span", { children: statusMessage })]
+					}), /* @__PURE__ */ jsxs("button", {
 						onClick: handleOpenCreate,
 						className: "px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase font-semibold tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer shadow-md shrink-0",
-						children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 262,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Create New Collection" }, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 263,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$9,
-						lineNumber: 258,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$9,
-					lineNumber: 250,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$9,
-				lineNumber: 237,
-				columnNumber: 7
-			}, void 0),
-			errorMessage && /* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Create New Collection" })]
+					})]
+				})]
+			}),
+			errorMessage && /* @__PURE__ */ jsxs("div", {
 				className: "p-3.5 bg-red-950/60 border border-red-700/80 text-red-100 text-xs font-mono rounded-sm flex items-center justify-between gap-3",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-						fileName: _jsxFileName$9,
-						lineNumber: 271,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: errorMessage }, void 0, false, {
-						fileName: _jsxFileName$9,
-						lineNumber: 272,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$9,
-					lineNumber: 270,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: errorMessage })]
+				}), /* @__PURE__ */ jsx("button", {
 					type: "button",
 					onClick: () => setErrorMessage(""),
 					className: "text-red-300 hover:text-white uppercase cursor-pointer",
 					children: "Dismiss"
-				}, void 0, false, {
-					fileName: _jsxFileName$9,
-					lineNumber: 274,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$9,
-				lineNumber: 269,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsx("div", {
 				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
 				children: collections.map((col, idx) => {
 					const isPublished = col.status === "Published";
-					return /* @__PURE__ */ jsxDEV("div", {
+					return /* @__PURE__ */ jsxs("div", {
 						className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 rounded-sm overflow-hidden flex flex-col justify-between transition-all group",
-						children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("div", {
 							className: "relative h-44 w-full bg-[#181f2a] overflow-hidden",
 							children: [
-								/* @__PURE__ */ jsxDEV("img", {
+								/* @__PURE__ */ jsx("img", {
 									src: col.coverImageUrl,
 									alt: col.title,
 									className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-[0.7]"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 296,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-gradient-to-t from-[#101419] via-transparent to-transparent" }, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 301,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#101419] via-transparent to-transparent" }),
+								/* @__PURE__ */ jsxs("div", {
 									className: "absolute top-3 left-3 flex items-center gap-2",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsx("span", {
 										className: `px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-sm font-semibold border ${isPublished ? "bg-emerald-950/80 text-emerald-300 border-emerald-700" : "bg-amber-950/80 text-amber-300 border-amber-700"}`,
 										children: col.status
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 304,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+									}), /* @__PURE__ */ jsxs("span", {
 										className: "px-2 py-0.5 text-[10px] font-mono bg-black/60 text-[#cbd5e1] border border-white/10 rounded-sm",
 										children: ["Order: #", col.displayOrder || idx + 1]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 311,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 303,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "absolute bottom-3 left-3 right-3",
-									children: [/* @__PURE__ */ jsxDEV("span", {
+									children: [/* @__PURE__ */ jsxs("span", {
 										className: "text-[10px] font-mono uppercase text-[#c5a059] tracking-wider block",
 										children: ["/", col.slug]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 317,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+									}), /* @__PURE__ */ jsx("h3", {
 										className: "font-serif text-lg font-medium text-white group-hover:text-[#c5a059] transition-colors truncate",
 										children: col.title
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 320,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 316,
-									columnNumber: 19
-								}, void 0)
+									})]
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$9,
-							lineNumber: 295,
-							columnNumber: 17
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "p-4 space-y-3",
-							children: [/* @__PURE__ */ jsxDEV("p", {
+							children: [/* @__PURE__ */ jsx("p", {
 								className: "text-xs text-[#8a909a] line-clamp-2 leading-relaxed",
 								children: col.description
-							}, void 0, false, {
-								fileName: _jsxFileName$9,
-								lineNumber: 328,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "flex items-center justify-between pt-2 border-t border-[#1c232d] text-xs font-mono",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsxs("span", {
 									className: "text-[#a0a8b4]",
-									children: ["Selected Holdings: ", /* @__PURE__ */ jsxDEV("strong", {
+									children: ["Selected Holdings: ", /* @__PURE__ */ jsx("strong", {
 										className: "text-white",
 										children: col.propertyIds.length
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 334,
-										columnNumber: 42
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 333,
-									columnNumber: 21
-								}, void 0), onViewCollection && isPublished && /* @__PURE__ */ jsxDEV("button", {
+									})]
+								}), onViewCollection && isPublished && /* @__PURE__ */ jsxs("button", {
 									onClick: () => onViewCollection(col.slug),
 									className: "text-[#c5a059] hover:underline flex items-center gap-1 cursor-pointer",
-									children: [/* @__PURE__ */ jsxDEV("span", { children: "View Live" }, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 341,
-										columnNumber: 25
-									}, void 0), /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3 h-3" }, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 342,
-										columnNumber: 25
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 337,
-									columnNumber: 23
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 332,
-								columnNumber: 19
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$9,
-							lineNumber: 327,
-							columnNumber: 17
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$9,
-							lineNumber: 293,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsx("span", { children: "View Live" }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3" })]
+								})]
+							})]
+						})] }), /* @__PURE__ */ jsxs("div", {
 							className: "px-4 py-3 bg-[#141922] border-t border-[#202732] flex items-center justify-between gap-2",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-1",
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsx("button", {
 									onClick: () => handleMoveCollection(idx, "up"),
 									disabled: idx === 0,
 									className: "p-1.5 bg-[#18202b] text-[#9ca3af] hover:text-white disabled:opacity-30 rounded-sm cursor-pointer",
 									title: "Move Collection Up",
-									children: /* @__PURE__ */ jsxDEV(ArrowUp, { className: "w-3.5 h-3.5" }, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 358,
-										columnNumber: 21
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 352,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("button", {
+									children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-3.5 h-3.5" })
+								}), /* @__PURE__ */ jsx("button", {
 									onClick: () => handleMoveCollection(idx, "down"),
 									disabled: idx === collections.length - 1,
 									className: "p-1.5 bg-[#18202b] text-[#9ca3af] hover:text-white disabled:opacity-30 rounded-sm cursor-pointer",
 									title: "Move Collection Down",
-									children: /* @__PURE__ */ jsxDEV(ArrowDown, { className: "w-3.5 h-3.5" }, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 366,
-										columnNumber: 21
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 360,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 351,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+									children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-3.5 h-3.5" })
+								})]
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2",
 								children: [
-									/* @__PURE__ */ jsxDEV("button", {
+									/* @__PURE__ */ jsxs("button", {
 										onClick: () => handleTogglePublish(col),
 										className: "px-2.5 py-1 text-xs font-mono bg-[#18202b] hover:bg-[#202a38] text-[#d1d5db] rounded-sm transition-colors cursor-pointer flex items-center gap-1",
 										title: isPublished ? "Unpublish Collection" : "Publish Collection",
-										children: [isPublished ? /* @__PURE__ */ jsxDEV(EyeOff, { className: "w-3 h-3" }, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 376,
-											columnNumber: 36
-										}, void 0) : /* @__PURE__ */ jsxDEV(Eye, { className: "w-3 h-3 text-[#c5a059]" }, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 376,
-											columnNumber: 69
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: isPublished ? "Unpublish" : "Publish" }, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 377,
-											columnNumber: 21
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 371,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+										children: [isPublished ? /* @__PURE__ */ jsx(EyeOff, { className: "w-3 h-3" }) : /* @__PURE__ */ jsx(Eye, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: isPublished ? "Unpublish" : "Publish" })]
+									}),
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => handleOpenEdit(col),
 										className: "p-1.5 bg-[#18202b] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#c5a059] rounded-sm transition-colors cursor-pointer",
 										title: "Edit Collection & Properties",
-										children: /* @__PURE__ */ jsxDEV(Edit3, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 385,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 380,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("button", {
+										children: /* @__PURE__ */ jsx(Edit3, { className: "w-3.5 h-3.5" })
+									}),
+									/* @__PURE__ */ jsx("button", {
 										onClick: () => handleDeleteCollection(col.id, col.title),
 										className: "p-1.5 bg-[#18202b] hover:bg-red-950/80 hover:text-red-400 text-[#9ca3af] rounded-sm transition-colors cursor-pointer",
 										title: "Delete Collection",
-										children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 393,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 388,
-										columnNumber: 19
-									}, void 0)
+										children: /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 370,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$9,
-							lineNumber: 350,
-							columnNumber: 15
-						}, void 0)]
-					}, col.id, true, {
-						fileName: _jsxFileName$9,
-						lineNumber: 289,
-						columnNumber: 13
-					}, void 0);
+							})]
+						})]
+					}, col.id);
 				})
-			}, void 0, false, {
-				fileName: _jsxFileName$9,
-				lineNumber: 285,
-				columnNumber: 7
-			}, void 0),
-			isCreating && /* @__PURE__ */ jsxDEV("div", {
+			}),
+			isCreating && /* @__PURE__ */ jsx("div", {
 				className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "relative w-full max-w-4xl bg-[#101419] border border-[#2b3543] text-[#f7f5f2] rounded-sm shadow-2xl flex flex-col max-h-[90vh] my-6",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between px-6 py-4 bg-[#141a22] border-b border-[#242c38]",
-						children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 							className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
 							children: "Collection Management"
-						}, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 410,
-							columnNumber: 17
-						}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+						}), /* @__PURE__ */ jsx("h3", {
 							className: "font-serif text-xl font-medium text-white",
 							children: editingCollection ? `Edit Collection: ${editingCollection.title}` : "Create New Curated Collection"
-						}, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 413,
-							columnNumber: 17
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$9,
-							lineNumber: 409,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("button", {
+						})] }), /* @__PURE__ */ jsx("button", {
 							onClick: () => setIsCreating(false),
 							className: "text-[#8a909a] hover:text-white cursor-pointer",
-							children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-								fileName: _jsxFileName$9,
-								lineNumber: 421,
-								columnNumber: 17
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$9,
-							lineNumber: 417,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$9,
-						lineNumber: 408,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("form", {
+							children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+						})]
+					}), /* @__PURE__ */ jsxs("form", {
 						onSubmit: handleSaveCollection,
 						className: "p-6 overflow-y-auto flex-1 space-y-6 text-xs",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Collection Title *"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 431,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									required: true,
 									value: formTitle,
 									onChange: (e) => handleTitleChange(e.target.value),
 									placeholder: "e.g. Ultra Luxury Homes",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-sm text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 434,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 430,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "URL Slug * (Unique)"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 445,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									required: true,
 									value: formSlug,
 									onChange: (e) => setFormSlug(e.target.value),
 									placeholder: "e.g. ultra-luxury-homes",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs font-mono text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 448,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 444,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 429,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})] })]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-1 sm:grid-cols-3 gap-4",
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "sm:col-span-2",
-									children: [/* @__PURE__ */ jsxDEV("label", {
+									children: [/* @__PURE__ */ jsx("label", {
 										className: "font-mono text-[#8a909a] uppercase block mb-1",
 										children: "Subtitle / Kicker"
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 462,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("input", {
+									}), /* @__PURE__ */ jsx("input", {
 										type: "text",
 										value: formSubtitle,
 										onChange: (e) => setFormSubtitle(e.target.value),
 										placeholder: "e.g. High-Growth Luxury Living in Mohali, Chandigarh & Zirakpur",
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 465,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 461,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})]
+								}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Publication Status"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 475,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("select", {
+								}), /* @__PURE__ */ jsxs("select", {
 									value: formStatus,
 									onChange: (e) => setFormStatus(e.target.value),
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-									children: [/* @__PURE__ */ jsxDEV("option", {
+									children: [/* @__PURE__ */ jsx("option", {
 										value: "Published",
 										children: "Published (Public)"
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 483,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("option", {
+									}), /* @__PURE__ */ jsx("option", {
 										value: "Draft",
 										children: "Draft (Hidden)"
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 484,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 478,
-									columnNumber: 19
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$9,
-									lineNumber: 474,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 460,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+									})]
+								})] })]
+							}),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Collection Editorial Description *"
-							}, void 0, false, {
-								fileName: _jsxFileName$9,
-								lineNumber: 491,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+							}), /* @__PURE__ */ jsx("textarea", {
 								rows: 3,
 								required: true,
 								value: formDescription,
 								onChange: (e) => setFormDescription(e.target.value),
 								placeholder: "Provide an editorial overview of why these properties were curated together...",
 								className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none leading-relaxed"
-							}, void 0, false, {
-								fileName: _jsxFileName$9,
-								lineNumber: 494,
-								columnNumber: 17
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 490,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", {
 								className: "p-4 bg-[#141922] border border-[#242c38] rounded-sm space-y-3",
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "flex items-center justify-between",
-										children: [/* @__PURE__ */ jsxDEV("label", {
+										children: [/* @__PURE__ */ jsx("label", {
 											className: "font-mono text-[#c5a059] uppercase block font-semibold",
 											children: "Collection Hero Cover Image"
-										}, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 507,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("label", {
+										}), /* @__PURE__ */ jsxs("label", {
 											className: "px-3 py-1 bg-[#18202b] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono text-[#c5a059] rounded-sm transition-colors cursor-pointer flex items-center gap-1.5",
 											children: [
-												/* @__PURE__ */ jsxDEV(Upload, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$9,
-													lineNumber: 511,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("span", { children: uploadingCover ? "Uploading..." : "Upload Cover Photo" }, void 0, false, {
-													fileName: _jsxFileName$9,
-													lineNumber: 512,
-													columnNumber: 21
-												}, void 0),
-												/* @__PURE__ */ jsxDEV("input", {
+												/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5" }),
+												/* @__PURE__ */ jsx("span", { children: uploadingCover ? "Uploading..." : "Upload Cover Photo" }),
+												/* @__PURE__ */ jsx("input", {
 													type: "file",
 													accept: "image/*",
 													onChange: handleCoverUpload,
 													className: "hidden",
 													disabled: uploadingCover
-												}, void 0, false, {
-													fileName: _jsxFileName$9,
-													lineNumber: 513,
-													columnNumber: 21
-												}, void 0)
+												})
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$9,
-											lineNumber: 510,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 506,
-										columnNumber: 17
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("input", {
+										})]
+									}),
+									/* @__PURE__ */ jsx("input", {
 										type: "url",
 										value: formCoverImage,
 										onChange: (e) => setFormCoverImage(e.target.value),
 										placeholder: "https://... image URL",
 										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 523,
-										columnNumber: 17
-									}, void 0),
-									formCoverImage && /* @__PURE__ */ jsxDEV("div", {
+									}),
+									formCoverImage && /* @__PURE__ */ jsx("div", {
 										className: "h-32 w-full rounded-sm overflow-hidden bg-[#181f2a] border border-[#262f3d]",
-										children: /* @__PURE__ */ jsxDEV("img", {
+										children: /* @__PURE__ */ jsx("img", {
 											src: formCoverImage,
 											alt: "Cover Preview",
 											className: "w-full h-full object-cover"
-										}, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 533,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$9,
-										lineNumber: 532,
-										columnNumber: 19
-									}, void 0)
+										})
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 505,
-								columnNumber: 15
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "space-y-4 pt-2 border-t border-[#1f2732]",
 								children: [
-									/* @__PURE__ */ jsxDEV("div", {
+									/* @__PURE__ */ jsxs("div", {
 										className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2",
-										children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h4", {
+										children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
 											className: "font-mono text-xs uppercase text-[#c5a059] tracking-wider font-semibold",
 											children: "Curated Property Selection & Display Order"
-										}, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 546,
-											columnNumber: 21
-										}, void 0), /* @__PURE__ */ jsxDEV("p", {
+										}), /* @__PURE__ */ jsx("p", {
 											className: "text-[11px] text-[#8a909a]",
 											children: "Select properties from the database to include. Rearrange their sequence using the arrows."
-										}, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 549,
-											columnNumber: 21
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$9,
-											lineNumber: 545,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										})] }), /* @__PURE__ */ jsxs("span", {
 											className: "font-mono text-xs text-[#cbd5e1] bg-[#181f2a] px-2.5 py-1 rounded-sm border border-[#262f3d]",
-											children: ["Selected: ", /* @__PURE__ */ jsxDEV("strong", { children: formPropertyIds.length }, void 0, false, {
-												fileName: _jsxFileName$9,
-												lineNumber: 554,
-												columnNumber: 31
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$9,
-											lineNumber: 553,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 544,
-										columnNumber: 17
-									}, void 0),
-									formPropertyIds.length > 0 && /* @__PURE__ */ jsxDEV("div", {
+											children: ["Selected: ", /* @__PURE__ */ jsx("strong", { children: formPropertyIds.length })]
+										})]
+									}),
+									formPropertyIds.length > 0 && /* @__PURE__ */ jsxs("div", {
 										className: "space-y-2 bg-[#12161d] p-3 rounded-sm border border-[#202732]",
-										children: [/* @__PURE__ */ jsxDEV("span", {
+										children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[10px] font-mono uppercase text-[#a0a8b4] block mb-1",
 											children: "Current Collection Sequence (Top to Bottom)"
-										}, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 561,
-											columnNumber: 21
-										}, void 0), formPropertyIds.map((propId, idx) => {
+										}), formPropertyIds.map((propId, idx) => {
 											const prop = propertyMap.get(propId);
 											if (!prop) return null;
-											return /* @__PURE__ */ jsxDEV("div", {
+											return /* @__PURE__ */ jsxs("div", {
 												className: "bg-[#181f2a] border border-[#2b3543] p-2 rounded-sm flex items-center justify-between gap-3 text-xs",
-												children: [/* @__PURE__ */ jsxDEV("div", {
+												children: [/* @__PURE__ */ jsxs("div", {
 													className: "flex items-center gap-2.5 min-w-0",
 													children: [
-														/* @__PURE__ */ jsxDEV("span", {
+														/* @__PURE__ */ jsx("span", {
 															className: "w-5 h-5 flex items-center justify-center bg-[#101419] text-[#c5a059] font-mono text-[10px] rounded font-bold",
 															children: idx + 1
-														}, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 573,
-															columnNumber: 29
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("img", {
+														}),
+														/* @__PURE__ */ jsx("img", {
 															src: getPrimaryPropertyImage(prop).url,
 															alt: prop.title,
 															className: "w-10 h-8 rounded-sm object-cover bg-black"
-														}, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 576,
-															columnNumber: 29
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("div", {
+														}),
+														/* @__PURE__ */ jsxs("div", {
 															className: "min-w-0",
-															children: [/* @__PURE__ */ jsxDEV("span", {
+															children: [/* @__PURE__ */ jsx("span", {
 																className: "font-medium text-white block truncate",
 																children: prop.title
-															}, void 0, false, {
-																fileName: _jsxFileName$9,
-																lineNumber: 582,
-																columnNumber: 31
-															}, void 0), /* @__PURE__ */ jsxDEV("span", {
+															}), /* @__PURE__ */ jsxs("span", {
 																className: "text-[10px] font-mono text-[#8a909a]",
 																children: [
 																	prop.city,
 																	" · ",
 																	formatPrice(prop.price, prop.currency)
 																]
-															}, void 0, true, {
-																fileName: _jsxFileName$9,
-																lineNumber: 585,
-																columnNumber: 31
-															}, void 0)]
-														}, void 0, true, {
-															fileName: _jsxFileName$9,
-															lineNumber: 581,
-															columnNumber: 29
-														}, void 0)
+															})]
+														})
 													]
-												}, void 0, true, {
-													fileName: _jsxFileName$9,
-													lineNumber: 572,
-													columnNumber: 27
-												}, void 0), /* @__PURE__ */ jsxDEV("div", {
+												}), /* @__PURE__ */ jsxs("div", {
 													className: "flex items-center gap-1 shrink-0",
 													children: [
-														/* @__PURE__ */ jsxDEV("button", {
+														/* @__PURE__ */ jsx("button", {
 															type: "button",
 															onClick: () => handleMovePropertyInCollection(idx, "up"),
 															disabled: idx === 0,
 															className: "p-1 bg-[#101419] text-[#9ca3af] hover:text-white disabled:opacity-30 rounded cursor-pointer",
-															children: /* @__PURE__ */ jsxDEV(ArrowUp, { className: "w-3 h-3" }, void 0, false, {
-																fileName: _jsxFileName$9,
-																lineNumber: 598,
-																columnNumber: 31
-															}, void 0)
-														}, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 592,
-															columnNumber: 29
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("button", {
+															children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-3 h-3" })
+														}),
+														/* @__PURE__ */ jsx("button", {
 															type: "button",
 															onClick: () => handleMovePropertyInCollection(idx, "down"),
 															disabled: idx === formPropertyIds.length - 1,
 															className: "p-1 bg-[#101419] text-[#9ca3af] hover:text-white disabled:opacity-30 rounded cursor-pointer",
-															children: /* @__PURE__ */ jsxDEV(ArrowDown, { className: "w-3 h-3" }, void 0, false, {
-																fileName: _jsxFileName$9,
-																lineNumber: 606,
-																columnNumber: 31
-															}, void 0)
-														}, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 600,
-															columnNumber: 29
-														}, void 0),
-														/* @__PURE__ */ jsxDEV("button", {
+															children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-3 h-3" })
+														}),
+														/* @__PURE__ */ jsx("button", {
 															type: "button",
 															onClick: () => handleTogglePropertySelection(prop.id),
 															className: "p-1 bg-[#101419] text-red-400 hover:text-red-300 rounded cursor-pointer ml-1",
 															title: "Remove from collection",
-															children: /* @__PURE__ */ jsxDEV(X, { className: "w-3 h-3" }, void 0, false, {
-																fileName: _jsxFileName$9,
-																lineNumber: 614,
-																columnNumber: 31
-															}, void 0)
-														}, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 608,
-															columnNumber: 29
-														}, void 0)
+															children: /* @__PURE__ */ jsx(X, { className: "w-3 h-3" })
+														})
 													]
-												}, void 0, true, {
-													fileName: _jsxFileName$9,
-													lineNumber: 591,
-													columnNumber: 27
-												}, void 0)]
-											}, prop.id, true, {
-												fileName: _jsxFileName$9,
-												lineNumber: 568,
-												columnNumber: 25
-											}, void 0);
+												})]
+											}, prop.id);
 										})]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 560,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("div", {
+									}),
+									/* @__PURE__ */ jsxs("div", {
 										className: "space-y-2",
-										children: [/* @__PURE__ */ jsxDEV("div", {
+										children: [/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center justify-between",
-											children: [/* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsx("span", {
 												className: "text-[10px] font-mono uppercase text-[#8a909a]",
 												children: "Add Properties from Database:"
-											}, void 0, false, {
-												fileName: _jsxFileName$9,
-												lineNumber: 626,
-												columnNumber: 21
-											}, void 0), /* @__PURE__ */ jsxDEV("div", {
+											}), /* @__PURE__ */ jsxs("div", {
 												className: "relative w-64",
-												children: [/* @__PURE__ */ jsxDEV(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" }, void 0, false, {
-													fileName: _jsxFileName$9,
-													lineNumber: 630,
-													columnNumber: 23
-												}, void 0), /* @__PURE__ */ jsxDEV("input", {
+												children: [/* @__PURE__ */ jsx(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
 													type: "text",
 													value: propertySearch,
 													onChange: (e) => setPropertySearch(e.target.value),
 													placeholder: "Search properties...",
 													className: "w-full bg-[#181f2a] border border-[#262f3d] rounded-sm pl-7 pr-2 py-1 text-xs text-white placeholder-[#6b7280] focus:outline-none"
-												}, void 0, false, {
-													fileName: _jsxFileName$9,
-													lineNumber: 631,
-													columnNumber: 23
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$9,
-												lineNumber: 629,
-												columnNumber: 21
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$9,
-											lineNumber: 625,
-											columnNumber: 19
-										}, void 0), /* @__PURE__ */ jsxDEV("div", {
+												})]
+											})]
+										}), /* @__PURE__ */ jsx("div", {
 											className: "grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto p-1 bg-[#12161d] rounded-sm border border-[#202732]",
 											children: properties.filter((p) => {
 												if (!propertySearch.trim()) return true;
@@ -20601,155 +13254,66 @@ var CuratedCollectionsManager = ({ properties, onRefreshProperties, onViewCollec
 												return p.title.toLowerCase().includes(q) || p.city.toLowerCase().includes(q);
 											}).map((prop) => {
 												const isSelected = formPropertyIds.includes(prop.id);
-												return /* @__PURE__ */ jsxDEV("div", {
+												return /* @__PURE__ */ jsxs("div", {
 													onClick: () => handleTogglePropertySelection(prop.id),
 													className: `p-2 rounded-sm border cursor-pointer transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-[#c5a059]/15 border-[#c5a059] text-white" : "bg-[#181f2a] border-[#262f3d] text-[#cbd5e1] hover:border-[#c5a059]/50"}`,
-													children: [/* @__PURE__ */ jsxDEV("div", {
+													children: [/* @__PURE__ */ jsxs("div", {
 														className: "flex items-center gap-2 min-w-0",
-														children: [/* @__PURE__ */ jsxDEV("img", {
+														children: [/* @__PURE__ */ jsx("img", {
 															src: getPrimaryPropertyImage(prop).url,
 															alt: prop.title,
 															className: "w-8 h-8 rounded-sm object-cover bg-black shrink-0"
-														}, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 661,
-															columnNumber: 31
-														}, void 0), /* @__PURE__ */ jsxDEV("div", {
+														}), /* @__PURE__ */ jsxs("div", {
 															className: "min-w-0",
-															children: [/* @__PURE__ */ jsxDEV("h6", {
+															children: [/* @__PURE__ */ jsx("h6", {
 																className: "font-serif text-xs font-medium truncate",
 																children: prop.title
-															}, void 0, false, {
-																fileName: _jsxFileName$9,
-																lineNumber: 667,
-																columnNumber: 33
-															}, void 0), /* @__PURE__ */ jsxDEV("span", {
+															}), /* @__PURE__ */ jsxs("span", {
 																className: "text-[10px] font-mono text-[#8a909a] block",
 																children: [
 																	prop.city,
 																	" · ",
 																	formatPrice(prop.price, prop.currency)
 																]
-															}, void 0, true, {
-																fileName: _jsxFileName$9,
-																lineNumber: 670,
-																columnNumber: 33
-															}, void 0)]
-														}, void 0, true, {
-															fileName: _jsxFileName$9,
-															lineNumber: 666,
-															columnNumber: 31
-														}, void 0)]
-													}, void 0, true, {
-														fileName: _jsxFileName$9,
-														lineNumber: 660,
-														columnNumber: 29
-													}, void 0), /* @__PURE__ */ jsxDEV("span", {
+															})]
+														})]
+													}), /* @__PURE__ */ jsx("span", {
 														className: `w-5 h-5 flex items-center justify-center rounded text-xs shrink-0 ${isSelected ? "bg-[#c5a059] text-[#0c0f12] font-bold" : "border border-[#343e4f] text-[#6b7280]"}`,
-														children: isSelected ? /* @__PURE__ */ jsxDEV(Check, { className: "w-3 h-3" }, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 679,
-															columnNumber: 45
-														}, void 0) : /* @__PURE__ */ jsxDEV(Plus, { className: "w-3 h-3" }, void 0, false, {
-															fileName: _jsxFileName$9,
-															lineNumber: 679,
-															columnNumber: 77
-														}, void 0)
-													}, void 0, false, {
-														fileName: _jsxFileName$9,
-														lineNumber: 676,
-														columnNumber: 29
-													}, void 0)]
-												}, prop.id, true, {
-													fileName: _jsxFileName$9,
-													lineNumber: 651,
-													columnNumber: 27
-												}, void 0);
+														children: isSelected ? /* @__PURE__ */ jsx(Check, { className: "w-3 h-3" }) : /* @__PURE__ */ jsx(Plus, { className: "w-3 h-3" })
+													})]
+												}, prop.id);
 											})
-										}, void 0, false, {
-											fileName: _jsxFileName$9,
-											lineNumber: 641,
-											columnNumber: 19
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$9,
-										lineNumber: 624,
-										columnNumber: 17
-									}, void 0)
+										})]
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 543,
-								columnNumber: 15
-							}, void 0),
-							modalError && /* @__PURE__ */ jsxDEV("div", {
+							}),
+							modalError && /* @__PURE__ */ jsxs("div", {
 								className: "p-3 bg-red-950/50 border border-red-700/80 rounded-sm text-xs text-red-200 flex items-start gap-2 font-mono",
-								children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 690,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: modalError }, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 691,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 689,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: modalError })]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "pt-4 border-t border-[#1f2732] flex items-center justify-end gap-3",
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: () => setIsCreating(false),
 									disabled: saving,
 									className: "px-4 py-2 bg-[#18202b] hover:bg-[#202a38] disabled:opacity-50 text-[#cbd5e1] text-xs font-mono uppercase tracking-wider rounded-sm cursor-pointer",
 									children: "Cancel"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 697,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								}), /* @__PURE__ */ jsx("button", {
 									type: "submit",
 									disabled: saving,
 									className: "px-6 py-2 bg-[#c5a059] hover:bg-[#d4af5f] disabled:opacity-60 text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer shadow-md",
 									children: saving ? "Saving..." : "Save Collection"
-								}, void 0, false, {
-									fileName: _jsxFileName$9,
-									lineNumber: 705,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$9,
-								lineNumber: 696,
-								columnNumber: 15
-							}, void 0)
+								})]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$9,
-						lineNumber: 426,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$9,
-					lineNumber: 405,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$9,
-				lineNumber: 404,
-				columnNumber: 9
-			}, void 0)
+					})]
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$9,
-		lineNumber: 234,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/admin/LocationManager.tsx
-var _jsxFileName$8 = "/app/applet/src/pages/admin/LocationManager.tsx";
 var LocationManager = ({ properties, onRefreshProperties }) => {
 	const [locations, setLocations] = useState(() => storage.getLocations(false));
 	const [searchQuery, setSearchQuery] = useState("");
@@ -20889,823 +13453,366 @@ var LocationManager = ({ properties, onRefreshProperties }) => {
 		const q = searchQuery.toLowerCase().trim();
 		return loc.name.toLowerCase().includes(q) || loc.slug.toLowerCase().includes(q) || loc.stateRegion && loc.stateRegion.toLowerCase().includes(q) || loc.country && loc.country.toLowerCase().includes(q) || loc.aliases && loc.aliases.some((a) => a.includes(q));
 	});
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-6",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-[#12161d] border border-[#202732] rounded-sm",
-				children: [/* @__PURE__ */ jsxDEV("div", { children: [
-					/* @__PURE__ */ jsxDEV("span", {
+				children: [/* @__PURE__ */ jsxs("div", { children: [
+					/* @__PURE__ */ jsx("span", {
 						className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
 						children: "Global Geographic Master"
-					}, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 205,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("h2", {
+					}),
+					/* @__PURE__ */ jsxs("h2", {
 						className: "font-serif text-2xl font-normal text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 209,
-							columnNumber: 13
-						}, void 0), "Dynamic Location Management"]
-					}, void 0, true, {
-						fileName: _jsxFileName$8,
-						lineNumber: 208,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+						children: [/* @__PURE__ */ jsx(MapPin, { className: "w-5 h-5 text-[#c5a059]" }), "Dynamic Location Management"]
+					}),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-xs text-[#8a909a] mt-1 max-w-xl",
 						children: "Create, edit, and organize unlimited locations and micro-markets without hardcoded limits. Locations automatically populate property dropdowns, public navigation tabs, and WordPress matching."
-					}, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 212,
-						columnNumber: 11
-					}, void 0)
-				] }, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 204,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+					})
+				] }), /* @__PURE__ */ jsxs("button", {
 					onClick: handleStartCreate,
 					className: "px-4 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer shadow-md transition-colors shrink-0",
-					children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-4 h-4" }, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 222,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Add New Location" }, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 223,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 218,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$8,
-				lineNumber: 203,
-				columnNumber: 7
-			}, void 0),
-			errorMessage && /* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Add New Location" })]
+				})]
+			}),
+			errorMessage && /* @__PURE__ */ jsxs("div", {
 				className: "p-3.5 bg-red-950/60 border border-red-700/80 text-red-100 text-xs font-mono rounded-sm flex items-center justify-between gap-3",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 230,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: errorMessage }, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 231,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 229,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: errorMessage })]
+				}), /* @__PURE__ */ jsx("button", {
 					type: "button",
 					onClick: () => setErrorMessage(""),
 					className: "text-red-300 hover:text-white uppercase cursor-pointer",
 					children: "Dismiss"
-				}, void 0, false, {
-					fileName: _jsxFileName$8,
-					lineNumber: 233,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$8,
-				lineNumber: 228,
-				columnNumber: 9
-			}, void 0),
-			statusMessage && /* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			statusMessage && /* @__PURE__ */ jsxs("div", {
 				className: "p-3 bg-[#172218] border border-emerald-500/40 text-emerald-300 text-xs rounded-sm flex items-center gap-2",
-				children: [/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-emerald-400 shrink-0" }, void 0, false, {
-					fileName: _jsxFileName$8,
-					lineNumber: 245,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("span", { children: statusMessage }, void 0, false, {
-					fileName: _jsxFileName$8,
-					lineNumber: 246,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$8,
-				lineNumber: 244,
-				columnNumber: 9
-			}, void 0),
-			(isCreating || editingLocation) && /* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4 text-emerald-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: statusMessage })]
+			}),
+			(isCreating || editingLocation) && /* @__PURE__ */ jsxs("div", {
 				className: "p-6 bg-[#141922] border border-[#c5a059]/40 rounded-sm shadow-xl space-y-4",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center justify-between border-b border-[#242e3d] pb-3",
-					children: [/* @__PURE__ */ jsxDEV("h3", {
+					children: [/* @__PURE__ */ jsxs("h3", {
 						className: "font-serif text-lg font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 255,
-							columnNumber: 15
-						}, void 0), isCreating ? "Register New Location" : `Edit Location: ${editingLocation?.name}`]
-					}, void 0, true, {
-						fileName: _jsxFileName$8,
-						lineNumber: 254,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("button", {
+						children: [/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#c5a059]" }), isCreating ? "Register New Location" : `Edit Location: ${editingLocation?.name}`]
+					}), /* @__PURE__ */ jsx("button", {
 						onClick: handleCancelForm,
 						className: "text-[#8a909a] hover:text-white p-1 cursor-pointer",
-						children: /* @__PURE__ */ jsxDEV(X, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 262,
-							columnNumber: 15
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 258,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 253,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("form", {
+						children: /* @__PURE__ */ jsx(X, { className: "w-4 h-4" })
+					})]
+				}), /* @__PURE__ */ jsxs("form", {
 					onSubmit: handleSaveForm,
 					className: "space-y-4 text-xs",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "grid grid-cols-1 sm:grid-cols-12 gap-3",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "sm:col-span-6",
-								children: [/* @__PURE__ */ jsxDEV("label", {
+								children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Location / City Name *"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 269,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									required: true,
 									value: formName,
 									onChange: (e) => setFormName(e.target.value),
 									placeholder: "e.g. Chandigarh / Mohali / New Chandigarh",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-sm text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 272,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$8,
-								lineNumber: 268,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})]
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "sm:col-span-6",
-								children: [/* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center justify-between mb-1",
-									children: [/* @__PURE__ */ jsxDEV("label", {
+									children: [/* @__PURE__ */ jsx("label", {
 										className: "font-mono text-[#8a909a] uppercase block",
 										children: "URL Slug *"
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 284,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("button", {
+									}), /* @__PURE__ */ jsxs("button", {
 										type: "button",
 										onClick: handleGenerateSlug,
 										className: "text-[10px] text-[#c5a059] hover:underline flex items-center gap-1 cursor-pointer font-mono",
-										children: [/* @__PURE__ */ jsxDEV(Sparkles, { className: "w-2.5 h-2.5" }, void 0, false, {
-											fileName: _jsxFileName$8,
-											lineNumber: 292,
-											columnNumber: 21
-										}, void 0), " Auto-Fill"]
-									}, void 0, true, {
-										fileName: _jsxFileName$8,
-										lineNumber: 287,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$8,
-									lineNumber: 283,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+										children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-2.5 h-2.5" }), " Auto-Fill"]
+									})]
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									required: true,
 									value: formSlug,
 									onChange: (e) => setFormSlug(e.target.value),
 									placeholder: "chandigarh",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 295,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$8,
-								lineNumber: 282,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$8,
-							lineNumber: 267,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+								})]
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "grid grid-cols-1 sm:grid-cols-3 gap-3",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "State / Region"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 308,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: formStateRegion,
 									onChange: (e) => setFormStateRegion(e.target.value),
 									placeholder: "e.g. Punjab / Tricity",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 311,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$8,
-									lineNumber: 307,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								})] }),
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Country"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 321,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: formCountry,
 									onChange: (e) => setFormCountry(e.target.value),
 									placeholder: "India",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 324,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$8,
-									lineNumber: 320,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								})] }),
+								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 									className: "font-mono text-[#8a909a] uppercase block mb-1",
 									children: "Display Order"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 334,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "number",
 									value: formDisplayOrder,
 									onChange: (e) => setFormDisplayOrder(Number(e.target.value)),
 									placeholder: "1",
 									className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 337,
-									columnNumber: 17
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$8,
-									lineNumber: 333,
-									columnNumber: 15
-								}, void 0)
+								})] })
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$8,
-							lineNumber: 306,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center justify-between mb-1",
-							children: [/* @__PURE__ */ jsxDEV("label", {
+							children: [/* @__PURE__ */ jsx("label", {
 								className: "font-mono text-[#8a909a] uppercase block",
 								children: "Aliases & Key Sub-Localities (Comma Separated)"
-							}, void 0, false, {
-								fileName: _jsxFileName$8,
-								lineNumber: 349,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[10px] text-[#737a85] font-mono",
 								children: "Used for smart auto-matching WordPress & listings"
-							}, void 0, false, {
-								fileName: _jsxFileName$8,
-								lineNumber: 352,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$8,
-							lineNumber: 348,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							})]
+						}), /* @__PURE__ */ jsx("input", {
 							type: "text",
 							value: formAliasesText,
 							onChange: (e) => setFormAliasesText(e.target.value),
 							placeholder: "e.g. chd, sukhna, sector 8, sector 9, sector 5, tricity",
 							className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-						}, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 356,
-							columnNumber: 15
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$8,
-							lineNumber: 347,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						})] }),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center justify-between pt-2",
-							children: [/* @__PURE__ */ jsxDEV("label", {
+							children: [/* @__PURE__ */ jsxs("label", {
 								className: "flex items-center gap-2 cursor-pointer",
-								children: [/* @__PURE__ */ jsxDEV("input", {
+								children: [/* @__PURE__ */ jsx("input", {
 									type: "checkbox",
 									checked: formIsActive,
 									onChange: (e) => setFormIsActive(e.target.checked),
 									className: "accent-[#c5a059] rounded"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 367,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-white text-xs",
 									children: "Active (Show as tab on Homepage and Catalog pages)"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 373,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$8,
-								lineNumber: 366,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								})]
+							}), /* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: handleCancelForm,
 									className: "px-4 py-2 bg-[#1b222d] hover:bg-[#252f3f] text-[#cbd5e1] text-xs font-semibold rounded-sm cursor-pointer",
 									children: "Cancel"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 377,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								}), /* @__PURE__ */ jsx("button", {
 									type: "submit",
 									disabled: saving,
 									className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] disabled:opacity-60 text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer",
 									children: saving ? "Saving..." : isCreating ? "Create Location" : "Save Changes"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 384,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$8,
-								lineNumber: 376,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$8,
-							lineNumber: 365,
-							columnNumber: 13
-						}, void 0)
+								})]
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 266,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$8,
-				lineNumber: 252,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-[#101419] border border-[#202732] rounded-sm",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "relative w-full sm:w-80",
-					children: [/* @__PURE__ */ jsxDEV(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-3 top-1/2 -translate-y-1/2" }, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 400,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					children: [/* @__PURE__ */ jsx(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-3 top-1/2 -translate-y-1/2" }), /* @__PURE__ */ jsx("input", {
 						type: "text",
 						value: searchQuery,
 						onChange: (e) => setSearchQuery(e.target.value),
 						placeholder: "Search managed locations, aliases, regions...",
 						className: "w-full bg-[#161c24] border border-[#242c38] focus:border-[#c5a059] rounded-sm pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none placeholder-[#6b7280]"
-					}, void 0, false, {
-						fileName: _jsxFileName$8,
-						lineNumber: 401,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 399,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					})]
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2 text-xs font-mono text-[#8a909a]",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", { children: "Total Locations:" }, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 411,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", { children: "Total Locations:" }),
+						/* @__PURE__ */ jsx("span", {
 							className: "text-white font-bold",
 							children: locations.length
-						}, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 412,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", {
+						}),
+						/* @__PURE__ */ jsx("span", {
 							className: "text-[#4b5563]",
 							children: "|"
-						}, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 413,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", { children: "Active Tabs:" }, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 414,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", {
+						}),
+						/* @__PURE__ */ jsx("span", { children: "Active Tabs:" }),
+						/* @__PURE__ */ jsx("span", {
 							className: "text-[#c5a059] font-bold",
 							children: locations.filter((l) => l.isActive).length
-						}, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 415,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$8,
-					lineNumber: 410,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$8,
-				lineNumber: 398,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			/* @__PURE__ */ jsx("div", {
 				className: "bg-[#101419] border border-[#202732] rounded-sm overflow-hidden shadow-sm",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsx("div", {
 					className: "overflow-x-auto",
-					children: /* @__PURE__ */ jsxDEV("table", {
+					children: /* @__PURE__ */ jsxs("table", {
 						className: "w-full text-left text-xs",
-						children: [/* @__PURE__ */ jsxDEV("thead", {
+						children: [/* @__PURE__ */ jsx("thead", {
 							className: "bg-[#141922] border-b border-[#242e3d] text-[10px] font-mono uppercase tracking-wider text-[#8a909a]",
-							children: /* @__PURE__ */ jsxDEV("tr", { children: [
-								/* @__PURE__ */ jsxDEV("th", {
+							children: /* @__PURE__ */ jsxs("tr", { children: [
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4",
 									children: "Order"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 425,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4",
 									children: "Location Name"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 426,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4",
 									children: "Slug"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 427,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4",
 									children: "State / Country"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 428,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4",
 									children: "Aliases / Sub-localities"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 429,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4 text-center",
 									children: "Properties"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 430,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4 text-center",
 									children: "Tab Status"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 431,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("th", {
+								}),
+								/* @__PURE__ */ jsx("th", {
 									className: "py-3 px-4 text-right",
 									children: "Actions"
-								}, void 0, false, {
-									fileName: _jsxFileName$8,
-									lineNumber: 432,
-									columnNumber: 17
-								}, void 0)
-							] }, void 0, true, {
-								fileName: _jsxFileName$8,
-								lineNumber: 424,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$8,
-							lineNumber: 423,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("tbody", {
+								})
+							] })
+						}), /* @__PURE__ */ jsxs("tbody", {
 							className: "divide-y divide-[#1b222d]",
-							children: [filteredLocations.map((loc, idx) => /* @__PURE__ */ jsxDEV("tr", {
+							children: [filteredLocations.map((loc, idx) => /* @__PURE__ */ jsxs("tr", {
 								className: "hover:bg-[#141a23] transition-colors",
 								children: [
-									/* @__PURE__ */ jsxDEV("td", {
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4 font-mono text-[#c5a059] font-semibold whitespace-nowrap",
-										children: /* @__PURE__ */ jsxDEV("div", {
+										children: /* @__PURE__ */ jsxs("div", {
 											className: "flex items-center gap-1.5",
-											children: [/* @__PURE__ */ jsxDEV("span", { children: ["#", loc.displayOrder || idx + 1] }, void 0, true, {
-												fileName: _jsxFileName$8,
-												lineNumber: 442,
-												columnNumber: 23
-											}, void 0), /* @__PURE__ */ jsxDEV("div", {
+											children: [/* @__PURE__ */ jsxs("span", { children: ["#", loc.displayOrder || idx + 1] }), /* @__PURE__ */ jsxs("div", {
 												className: "flex flex-col",
-												children: [/* @__PURE__ */ jsxDEV("button", {
+												children: [/* @__PURE__ */ jsx("button", {
 													onClick: () => handleMoveOrder(loc, "up"),
 													disabled: idx === 0,
 													className: "text-[#64748b] hover:text-[#c5a059] disabled:opacity-30 disabled:pointer-events-none cursor-pointer p-0.5",
 													title: "Move Up",
-													children: /* @__PURE__ */ jsxDEV(ArrowUp, { className: "w-2.5 h-2.5" }, void 0, false, {
-														fileName: _jsxFileName$8,
-														lineNumber: 450,
-														columnNumber: 27
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$8,
-													lineNumber: 444,
-													columnNumber: 25
-												}, void 0), /* @__PURE__ */ jsxDEV("button", {
+													children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-2.5 h-2.5" })
+												}), /* @__PURE__ */ jsx("button", {
 													onClick: () => handleMoveOrder(loc, "down"),
 													disabled: idx === filteredLocations.length - 1,
 													className: "text-[#64748b] hover:text-[#c5a059] disabled:opacity-30 disabled:pointer-events-none cursor-pointer p-0.5",
 													title: "Move Down",
-													children: /* @__PURE__ */ jsxDEV(ArrowDown, { className: "w-2.5 h-2.5" }, void 0, false, {
-														fileName: _jsxFileName$8,
-														lineNumber: 458,
-														columnNumber: 27
-													}, void 0)
-												}, void 0, false, {
-													fileName: _jsxFileName$8,
-													lineNumber: 452,
-													columnNumber: 25
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$8,
-												lineNumber: 443,
-												columnNumber: 23
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$8,
-											lineNumber: 441,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 440,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+													children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-2.5 h-2.5" })
+												})]
+											})]
+										})
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4",
-										children: /* @__PURE__ */ jsxDEV("div", {
+										children: /* @__PURE__ */ jsxs("div", {
 											className: "flex items-center gap-2",
-											children: [/* @__PURE__ */ jsxDEV(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }, void 0, false, {
-												fileName: _jsxFileName$8,
-												lineNumber: 467,
-												columnNumber: 23
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", {
 												className: "font-serif text-sm font-medium text-white",
 												children: loc.name
-											}, void 0, false, {
-												fileName: _jsxFileName$8,
-												lineNumber: 468,
-												columnNumber: 23
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$8,
-											lineNumber: 466,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 465,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+											})]
+										})
+									}),
+									/* @__PURE__ */ jsxs("td", {
 										className: "py-3 px-4 font-mono text-[#9ca3af]",
 										children: ["/", loc.slug]
-									}, void 0, true, {
-										fileName: _jsxFileName$8,
-										lineNumber: 473,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4 text-[#cbd5e1]",
-										children: /* @__PURE__ */ jsxDEV("span", { children: [loc.stateRegion ? `${loc.stateRegion}, ` : "", loc.country || "India"] }, void 0, true, {
-											fileName: _jsxFileName$8,
-											lineNumber: 479,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 478,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+										children: /* @__PURE__ */ jsxs("span", { children: [loc.stateRegion ? `${loc.stateRegion}, ` : "", loc.country || "India"] })
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4",
-										children: loc.aliases && loc.aliases.length > 0 ? /* @__PURE__ */ jsxDEV("div", {
+										children: loc.aliases && loc.aliases.length > 0 ? /* @__PURE__ */ jsxs("div", {
 											className: "flex flex-wrap gap-1 max-w-xs",
-											children: [loc.aliases.slice(0, 3).map((a) => /* @__PURE__ */ jsxDEV("span", {
+											children: [loc.aliases.slice(0, 3).map((a) => /* @__PURE__ */ jsx("span", {
 												className: "px-1.5 py-0.5 bg-[#18202b] border border-[#253040] rounded text-[10px] font-mono text-[#94a3b8]",
 												children: a
-											}, a, false, {
-												fileName: _jsxFileName$8,
-												lineNumber: 487,
-												columnNumber: 27
-											}, void 0)), loc.aliases.length > 3 && /* @__PURE__ */ jsxDEV("span", {
+											}, a)), loc.aliases.length > 3 && /* @__PURE__ */ jsxs("span", {
 												className: "text-[10px] text-[#64748b] font-mono",
 												children: [
 													"+",
 													loc.aliases.length - 3,
 													" more"
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$8,
-												lineNumber: 492,
-												columnNumber: 27
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$8,
-											lineNumber: 485,
-											columnNumber: 23
-										}, void 0) : /* @__PURE__ */ jsxDEV("span", {
+											})]
+										}) : /* @__PURE__ */ jsx("span", {
 											className: "text-[#525f72] italic text-[11px]",
 											children: "—"
-										}, void 0, false, {
-											fileName: _jsxFileName$8,
-											lineNumber: 498,
-											columnNumber: 23
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 483,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+										})
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4 text-center font-mono",
-										children: /* @__PURE__ */ jsxDEV("span", {
+										children: /* @__PURE__ */ jsx("span", {
 											className: "px-2 py-0.5 bg-[#18202c] border border-[#273549] rounded-sm text-xs text-[#c5a059] font-bold",
 											children: loc.propertyCount || 0
-										}, void 0, false, {
-											fileName: _jsxFileName$8,
-											lineNumber: 504,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 503,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+										})
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4 text-center",
-										children: /* @__PURE__ */ jsxDEV("button", {
+										children: /* @__PURE__ */ jsx("button", {
 											onClick: () => handleToggleActive(loc),
 											className: `px-2.5 py-1 rounded-sm text-[10px] font-mono uppercase tracking-wider cursor-pointer border transition-colors ${loc.isActive ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60" : "bg-zinc-800/40 border-zinc-700/50 text-zinc-400 hover:bg-zinc-700/50"}`,
 											children: loc.isActive ? "Active Tab" : "Hidden"
-										}, void 0, false, {
-											fileName: _jsxFileName$8,
-											lineNumber: 511,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 510,
-										columnNumber: 19
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("td", {
+										})
+									}),
+									/* @__PURE__ */ jsx("td", {
 										className: "py-3 px-4 text-right whitespace-nowrap",
-										children: /* @__PURE__ */ jsxDEV("div", {
+										children: /* @__PURE__ */ jsxs("div", {
 											className: "flex items-center justify-end gap-1.5",
-											children: [/* @__PURE__ */ jsxDEV("button", {
+											children: [/* @__PURE__ */ jsx("button", {
 												onClick: () => handleStartEdit(loc),
 												className: "p-1.5 text-[#9ca3af] hover:text-[#c5a059] hover:bg-[#18202b] rounded-sm cursor-pointer transition-colors",
 												title: "Edit Location",
-												children: /* @__PURE__ */ jsxDEV(Edit3, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$8,
-													lineNumber: 531,
-													columnNumber: 25
-												}, void 0)
-											}, void 0, false, {
-												fileName: _jsxFileName$8,
-												lineNumber: 526,
-												columnNumber: 23
-											}, void 0), /* @__PURE__ */ jsxDEV("button", {
+												children: /* @__PURE__ */ jsx(Edit3, { className: "w-3.5 h-3.5" })
+											}), /* @__PURE__ */ jsx("button", {
 												onClick: () => handleDeleteLocation(loc),
 												className: "p-1.5 text-[#9ca3af] hover:text-red-400 hover:bg-red-950/30 rounded-sm cursor-pointer transition-colors",
 												title: "Delete Location",
-												children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-													fileName: _jsxFileName$8,
-													lineNumber: 538,
-													columnNumber: 25
-												}, void 0)
-											}, void 0, false, {
-												fileName: _jsxFileName$8,
-												lineNumber: 533,
-												columnNumber: 23
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$8,
-											lineNumber: 525,
-											columnNumber: 21
-										}, void 0)
-									}, void 0, false, {
-										fileName: _jsxFileName$8,
-										lineNumber: 524,
-										columnNumber: 19
-									}, void 0)
+												children: /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+											})]
+										})
+									})
 								]
-							}, loc.id, true, {
-								fileName: _jsxFileName$8,
-								lineNumber: 437,
-								columnNumber: 17
-							}, void 0)), filteredLocations.length === 0 && /* @__PURE__ */ jsxDEV("tr", { children: /* @__PURE__ */ jsxDEV("td", {
+							}, loc.id)), filteredLocations.length === 0 && /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", {
 								colSpan: 8,
 								className: "py-8 text-center text-[#8a909a] italic",
 								children: "No locations found matching your search. Click \"Add New Location\" above to create one."
-							}, void 0, false, {
-								fileName: _jsxFileName$8,
-								lineNumber: 548,
-								columnNumber: 19
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$8,
-								lineNumber: 547,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$8,
-							lineNumber: 435,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$8,
-						lineNumber: 422,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$8,
-					lineNumber: 421,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$8,
-				lineNumber: 420,
-				columnNumber: 7
-			}, void 0)
+							}) })]
+						})]
+					})
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$8,
-		lineNumber: 200,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/admin/BlogManager.tsx
-var _jsxFileName$7 = "/app/applet/src/pages/admin/BlogManager.tsx";
 var BLOG_CATEGORIES = [
 	"Market Intelligence",
 	"Investment Advisory",
@@ -21885,106 +13992,42 @@ var BlogManager = ({ blogs, onRefreshBlogs }) => {
 		statusFilter,
 		searchQuery
 	]);
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "space-y-6",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4",
-				children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("h2", {
+				children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("h2", {
 					className: "font-serif text-2xl font-normal text-white flex items-center gap-2.5",
-					children: [/* @__PURE__ */ jsxDEV(BookOpen, { className: "w-5 h-5 text-[#c5a059]" }, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 244,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Editorial Journal & Blog Publishing" }, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 245,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$7,
-					lineNumber: 243,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("p", {
+					children: [/* @__PURE__ */ jsx(BookOpen, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Editorial Journal & Blog Publishing" })]
+				}), /* @__PURE__ */ jsx("p", {
 					className: "text-xs text-[#8a909a] mt-1",
 					children: "Create, edit, publish, and manage BUILDsmore architectural insights with SEO metadata."
-				}, void 0, false, {
-					fileName: _jsxFileName$7,
-					lineNumber: 247,
-					columnNumber: 11
-				}, void 0)] }, void 0, true, {
-					fileName: _jsxFileName$7,
-					lineNumber: 242,
-					columnNumber: 9
-				}, void 0), !isEditing && /* @__PURE__ */ jsxDEV("button", {
+				})] }), !isEditing && /* @__PURE__ */ jsxs("button", {
 					type: "button",
 					onClick: handleOpenCreate,
 					className: "inline-flex items-center gap-2 px-4 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm cursor-pointer transition-colors self-start sm:self-auto",
-					children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-4 h-4" }, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 258,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "New Article" }, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 259,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$7,
-					lineNumber: 253,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 241,
-				columnNumber: 7
-			}, void 0),
-			errorMsg && /* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "New Article" })]
+				})]
+			}),
+			errorMsg && /* @__PURE__ */ jsxs("div", {
 				className: "p-3.5 bg-red-950/60 border border-red-700/70 rounded-sm text-xs text-red-200 flex items-center gap-2",
-				children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-					fileName: _jsxFileName$7,
-					lineNumber: 266,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("span", { children: errorMsg }, void 0, false, {
-					fileName: _jsxFileName$7,
-					lineNumber: 267,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 265,
-				columnNumber: 9
-			}, void 0),
-			successMsg && /* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: errorMsg })]
+			}),
+			successMsg && /* @__PURE__ */ jsxs("div", {
 				className: "p-3.5 bg-emerald-950/60 border border-emerald-700/70 rounded-sm text-xs text-emerald-200 flex items-center gap-2",
-				children: [/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-emerald-400 shrink-0" }, void 0, false, {
-					fileName: _jsxFileName$7,
-					lineNumber: 273,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("span", { children: successMsg }, void 0, false, {
-					fileName: _jsxFileName$7,
-					lineNumber: 274,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 272,
-				columnNumber: 9
-			}, void 0),
-			isEditing ? /* @__PURE__ */ jsxDEV("form", {
+				children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4 text-emerald-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: successMsg })]
+			}),
+			isEditing ? /* @__PURE__ */ jsxs("form", {
 				onSubmit: handleSave,
 				className: "bg-[#101419] border border-[#222a36] rounded-sm p-6 space-y-6",
 				children: [
-					/* @__PURE__ */ jsxDEV("div", {
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between border-b border-[#1f2632] pb-4",
-						children: [/* @__PURE__ */ jsxDEV("h3", {
+						children: [/* @__PURE__ */ jsx("h3", {
 							className: "font-serif text-xl text-white",
 							children: editingId ? "Edit Editorial Article" : "Compose New Article"
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 284,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("button", {
+						}), /* @__PURE__ */ jsx("button", {
 							type: "button",
 							onClick: () => {
 								setIsEditing(false);
@@ -21992,193 +14035,89 @@ var BlogManager = ({ blogs, onRefreshBlogs }) => {
 							},
 							className: "p-1.5 text-[#8a909a] hover:text-white cursor-pointer",
 							"aria-label": "Close editor",
-							children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 296,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 287,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 283,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+							children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "grid grid-cols-1 md:grid-cols-2 gap-4",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Headline *"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 302,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								required: true,
 								value: title,
 								onChange: (e) => setTitle(e.target.value),
 								placeholder: "e.g. Mohali IT City Commercial Corridor Outlook 2026",
 								className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-xs text-[#f7f5f2] focus:outline-none"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 305,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 301,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 								children: "URL Slug (optional)"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 316,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								value: slug,
 								onChange: (e) => setSlug(e.target.value),
 								placeholder: "Auto-generated from headline if blank",
 								className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 319,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 315,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Category"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 329,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("select", {
+							}), /* @__PURE__ */ jsx("select", {
 								value: category,
 								onChange: (e) => setCategory(e.target.value),
 								className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-xs text-[#f7f5f2] focus:outline-none",
-								children: BLOG_CATEGORIES.map((cat) => /* @__PURE__ */ jsxDEV("option", {
+								children: BLOG_CATEGORIES.map((cat) => /* @__PURE__ */ jsx("option", {
 									value: cat,
 									children: cat
-								}, cat, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 338,
-									columnNumber: 19
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 332,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 328,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								}, cat))
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Tags (comma separated)"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 346,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								value: tagsInput,
 								onChange: (e) => setTagsInput(e.target.value),
 								placeholder: "Mohali, RERA, Commercial, NRI",
 								className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-xs text-[#f7f5f2] focus:outline-none"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 349,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 345,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Author Name"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 359,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								value: authorName,
 								onChange: (e) => setAuthorName(e.target.value),
 								className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-xs text-[#f7f5f2] focus:outline-none"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 362,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 358,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 								children: "Author Role"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 371,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								value: authorRole,
 								onChange: (e) => setAuthorRole(e.target.value),
 								className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-xs text-[#f7f5f2] focus:outline-none"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 374,
-								columnNumber: 15
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 370,
-								columnNumber: 13
-							}, void 0)
+							})] })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 300,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "space-y-3 p-4 bg-[#131820] border border-[#222a36] rounded-sm",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", {
+							/* @__PURE__ */ jsxs("div", {
 								className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2",
-								children: [/* @__PURE__ */ jsxDEV("label", {
+								children: [/* @__PURE__ */ jsx("label", {
 									className: "text-[11px] font-mono text-[#c5a059] uppercase",
 									children: "Featured Image"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 386,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("label", {
+								}), /* @__PURE__ */ jsxs("label", {
 									className: "inline-flex items-center gap-2 px-3 py-1.5 bg-[#1a222d] hover:border-[#c5a059] border border-[#2c3747] rounded-sm text-xs text-[#f7f5f2] cursor-pointer transition-colors self-start",
 									children: [
-										/* @__PURE__ */ jsxDEV(Upload, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 390,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", { children: uploadingImage ? "Uploading..." : "Upload Image File" }, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 391,
-											columnNumber: 17
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("input", {
+										/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
+										/* @__PURE__ */ jsx("span", { children: uploadingImage ? "Uploading..." : "Upload Image File" }),
+										/* @__PURE__ */ jsx("input", {
 											type: "file",
 											accept: "image/jpeg,image/png,image/webp,image/avif",
 											className: "hidden",
@@ -22188,236 +14127,112 @@ var BlogManager = ({ blogs, onRefreshBlogs }) => {
 												if (file) handleUploadImage(file);
 												e.target.value = "";
 											}
-										}, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 392,
-											columnNumber: 17
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$7,
-									lineNumber: 389,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 385,
-								columnNumber: 13
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-1 md:grid-cols-2 gap-3",
-								children: [/* @__PURE__ */ jsxDEV("input", {
+								children: [/* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: featuredImage,
 									onChange: (e) => setFeaturedImage(e.target.value),
 									placeholder: "/uploads/... or https://...",
 									className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2 text-xs text-[#f7f5f2] font-mono focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 407,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								}), /* @__PURE__ */ jsx("input", {
 									type: "text",
 									value: featuredImageAlt,
 									onChange: (e) => setFeaturedImageAlt(e.target.value),
 									placeholder: "Image alt description",
 									className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 414,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 406,
-								columnNumber: 13
-							}, void 0),
-							featuredImage && /* @__PURE__ */ jsxDEV("div", {
+								})]
+							}),
+							featuredImage && /* @__PURE__ */ jsx("div", {
 								className: "mt-2",
-								children: /* @__PURE__ */ jsxDEV("img", {
+								children: /* @__PURE__ */ jsx("img", {
 									src: featuredImage,
 									alt: featuredImageAlt || "Preview",
 									className: "h-32 w-56 object-cover rounded-sm border border-[#2a3444]"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 425,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 424,
-								columnNumber: 15
-							}, void 0)
+								})
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 384,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+					}),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 						className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 						children: "Excerpt / Summary"
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 435,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+					}), /* @__PURE__ */ jsx("textarea", {
 						rows: 2,
 						value: excerpt,
 						onChange: (e) => setExcerpt(e.target.value),
 						placeholder: "Concise summary for article cards and meta description",
 						className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm p-3 text-xs text-[#f7f5f2] focus:outline-none"
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 438,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 434,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+					})] }),
+					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 						className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 						children: "Article Content * (Supports ## headings and - bullet lists)"
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 448,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("textarea", {
+					}), /* @__PURE__ */ jsx("textarea", {
 						rows: 10,
 						required: true,
 						value: content,
 						onChange: (e) => setContent(e.target.value),
 						placeholder: "Write full editorial article content...",
 						className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm p-3.5 text-xs text-[#f7f5f2] leading-relaxed focus:outline-none"
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 451,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 447,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+					})] }),
+					/* @__PURE__ */ jsxs("div", {
 						className: "grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-[#1e2632]",
-						children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 							className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 							children: "SEO Meta Title"
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 463,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("input", {
+						}), /* @__PURE__ */ jsx("input", {
 							type: "text",
 							value: metaTitle,
 							onChange: (e) => setMetaTitle(e.target.value),
 							placeholder: "Defaults to Headline – BUILDsmore Journal",
 							className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 466,
-							columnNumber: 15
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$7,
-							lineNumber: 462,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+						})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 							className: "text-[11px] font-mono text-[#8a909a] uppercase block mb-1",
 							children: "SEO Meta Description"
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 476,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("input", {
+						}), /* @__PURE__ */ jsx("input", {
 							type: "text",
 							value: metaDescription,
 							onChange: (e) => setMetaDescription(e.target.value),
 							placeholder: "Defaults to excerpt if blank",
 							className: "w-full bg-[#161b22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-3.5 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 479,
-							columnNumber: 15
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$7,
-							lineNumber: 475,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 461,
-						columnNumber: 11
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("div", {
+						})] })]
+					}),
+					/* @__PURE__ */ jsxs("div", {
 						className: "flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#1e2632]",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-wrap items-center gap-6",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2",
-								children: [/* @__PURE__ */ jsxDEV("label", {
+								children: [/* @__PURE__ */ jsx("label", {
 									className: "text-xs text-[#cbd5e1]",
 									children: "Status:"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 492,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("select", {
+								}), /* @__PURE__ */ jsxs("select", {
 									value: status,
 									onChange: (e) => setStatus(e.target.value),
 									className: "bg-[#161b22] border border-[#283242] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2]",
-									children: [/* @__PURE__ */ jsxDEV("option", {
+									children: [/* @__PURE__ */ jsx("option", {
 										value: "Draft",
 										children: "Draft"
-									}, void 0, false, {
-										fileName: _jsxFileName$7,
-										lineNumber: 498,
-										columnNumber: 19
-									}, void 0), /* @__PURE__ */ jsxDEV("option", {
+									}), /* @__PURE__ */ jsx("option", {
 										value: "Published",
 										children: "Published"
-									}, void 0, false, {
-										fileName: _jsxFileName$7,
-										lineNumber: 499,
-										columnNumber: 19
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$7,
-									lineNumber: 493,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 491,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("label", {
+									})]
+								})]
+							}), /* @__PURE__ */ jsxs("label", {
 								className: "inline-flex items-center gap-2 text-xs text-[#cbd5e1] cursor-pointer",
-								children: [/* @__PURE__ */ jsxDEV("input", {
+								children: [/* @__PURE__ */ jsx("input", {
 									type: "checkbox",
 									checked: featured,
 									onChange: (e) => setFeatured(e.target.checked),
 									className: "accent-[#c5a059]"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 504,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Feature as Journal Spotlight" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 510,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 503,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$7,
-							lineNumber: 490,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+								}), /* @__PURE__ */ jsx("span", { children: "Feature as Journal Spotlight" })]
+							})]
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "flex items-center gap-3",
-							children: [/* @__PURE__ */ jsxDEV("button", {
+							children: [/* @__PURE__ */ jsx("button", {
 								type: "button",
 								onClick: () => {
 									setIsEditing(false);
@@ -22425,215 +14240,99 @@ var BlogManager = ({ blogs, onRefreshBlogs }) => {
 								},
 								className: "px-4 py-2 bg-[#161b22] border border-[#283242] text-xs text-[#cbd5e1] hover:text-white rounded-sm cursor-pointer",
 								children: "Cancel"
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 515,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+							}), /* @__PURE__ */ jsxs("button", {
 								type: "submit",
 								disabled: saving,
 								className: "inline-flex items-center gap-2 px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm cursor-pointer disabled:opacity-50",
-								children: [/* @__PURE__ */ jsxDEV(Save, { className: "w-3.5 h-3.5" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 530,
-									columnNumber: 17
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: saving ? "Saving..." : "Save Article" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 531,
-									columnNumber: 17
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 525,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$7,
-							lineNumber: 514,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 489,
-						columnNumber: 11
-					}, void 0)
+								children: [/* @__PURE__ */ jsx(Save, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: saving ? "Saving..." : "Save Article" })]
+							})]
+						})]
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 279,
-				columnNumber: 9
-			}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV("div", {
+			}) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsx("div", {
 					className: "flex items-center gap-2",
 					children: [
 						"All",
 						"Published",
 						"Draft"
-					].map((tab) => /* @__PURE__ */ jsxDEV("button", {
+					].map((tab) => /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: () => setStatusFilter(tab),
 						className: `px-3.5 py-1.5 text-xs font-mono uppercase rounded-sm border cursor-pointer transition-colors ${statusFilter === tab ? "bg-[#c5a059] text-[#0c0f12] border-[#c5a059] font-bold" : "bg-[#101419] text-[#9ca3af] border-[#222a36] hover:text-white"}`,
 						children: tab
-					}, tab, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 541,
-						columnNumber: 17
-					}, void 0))
-				}, void 0, false, {
-					fileName: _jsxFileName$7,
-					lineNumber: 539,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					}, tab))
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "relative w-full sm:w-64",
-					children: [/* @__PURE__ */ jsxDEV(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-3 top-1/2 -translate-y-1/2" }, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 557,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("input", {
+					children: [/* @__PURE__ */ jsx(Search, { className: "w-3.5 h-3.5 text-[#8a909a] absolute left-3 top-1/2 -translate-y-1/2" }), /* @__PURE__ */ jsx("input", {
 						type: "text",
 						value: searchQuery,
 						onChange: (e) => setSearchQuery(e.target.value),
 						placeholder: "Search articles...",
 						className: "w-full bg-[#101419] border border-[#222a36] rounded-sm pl-9 pr-3 py-1.5 text-xs text-[#f7f5f2] focus:border-[#c5a059] focus:outline-none"
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 558,
-						columnNumber: 15
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$7,
-					lineNumber: 556,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 538,
-				columnNumber: 11
-			}, void 0), filteredBlogs.length === 0 ? /* @__PURE__ */ jsxDEV("div", {
+					})]
+				})]
+			}), filteredBlogs.length === 0 ? /* @__PURE__ */ jsxs("div", {
 				className: "p-10 bg-[#101419] border border-[#202732] rounded-sm text-center space-y-3",
 				children: [
-					/* @__PURE__ */ jsxDEV(BookOpen, { className: "w-8 h-8 text-[#c5a059]/60 mx-auto" }, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 570,
-						columnNumber: 15
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("p", {
+					/* @__PURE__ */ jsx(BookOpen, { className: "w-8 h-8 text-[#c5a059]/60 mx-auto" }),
+					/* @__PURE__ */ jsx("p", {
 						className: "text-sm text-[#d1d5db]",
 						children: "No blog articles found."
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 571,
-						columnNumber: 15
-					}, void 0),
-					/* @__PURE__ */ jsxDEV("button", {
+					}),
+					/* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: handleOpenCreate,
 						className: "text-xs text-[#c5a059] underline cursor-pointer",
 						children: "Create your first BUILDsmore Journal article"
-					}, void 0, false, {
-						fileName: _jsxFileName$7,
-						lineNumber: 574,
-						columnNumber: 15
-					}, void 0)
+					})
 				]
-			}, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 569,
-				columnNumber: 13
-			}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+			}) : /* @__PURE__ */ jsx("div", {
 				className: "space-y-3",
-				children: filteredBlogs.map((post) => /* @__PURE__ */ jsxDEV("div", {
+				children: filteredBlogs.map((post) => /* @__PURE__ */ jsxs("div", {
 					className: "p-4 bg-[#101419] border border-[#202732] rounded-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-start gap-4 min-w-0",
-						children: [post.featuredImage ? /* @__PURE__ */ jsxDEV("img", {
+						children: [post.featuredImage ? /* @__PURE__ */ jsx("img", {
 							src: post.featuredImage,
 							alt: post.title,
 							className: "w-20 h-14 object-cover rounded-sm border border-[#26303d] shrink-0"
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 591,
-							columnNumber: 23
-						}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+						}) : /* @__PURE__ */ jsx("div", {
 							className: "w-20 h-14 bg-[#161c24] border border-[#26303d] rounded-sm flex items-center justify-center text-[#c5a059]/40 shrink-0",
-							children: /* @__PURE__ */ jsxDEV(BookOpen, { className: "w-5 h-5" }, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 598,
-								columnNumber: 25
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$7,
-							lineNumber: 597,
-							columnNumber: 23
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							children: /* @__PURE__ */ jsx(BookOpen, { className: "w-5 h-5" })
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "min-w-0 space-y-1",
 							children: [
-								/* @__PURE__ */ jsxDEV("div", {
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex flex-wrap items-center gap-2 text-[11px] font-mono",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsx("span", {
 											className: post.status === "Published" ? "text-emerald-400" : "text-amber-400",
 											children: post.status
-										}, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 604,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsx("span", {
 											className: "text-[#4b5563]",
 											children: "·"
-										}, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 613,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsx("span", {
 											className: "text-[#c5a059]",
 											children: post.category
-										}, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 614,
-											columnNumber: 25
-										}, void 0),
-										post.featured && /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV("span", {
+										}),
+										post.featured && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("span", {
 											className: "text-[#4b5563]",
 											children: "·"
-										}, void 0, false, {
-											fileName: _jsxFileName$7,
-											lineNumber: 617,
-											columnNumber: 29
-										}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										}), /* @__PURE__ */ jsxs("span", {
 											className: "inline-flex items-center gap-1 text-[#c5a059]",
-											children: [/* @__PURE__ */ jsxDEV(Star, { className: "w-3 h-3 fill-current" }, void 0, false, {
-												fileName: _jsxFileName$7,
-												lineNumber: 619,
-												columnNumber: 31
-											}, void 0), "Spotlight"]
-										}, void 0, true, {
-											fileName: _jsxFileName$7,
-											lineNumber: 618,
-											columnNumber: 29
-										}, void 0)] }, void 0, true, {
-											fileName: _jsxFileName$7,
-											lineNumber: 616,
-											columnNumber: 27
-										}, void 0)
+											children: [/* @__PURE__ */ jsx(Star, { className: "w-3 h-3 fill-current" }), "Spotlight"]
+										})] })
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$7,
-									lineNumber: 603,
-									columnNumber: 23
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("h4", {
+								}),
+								/* @__PURE__ */ jsx("h4", {
 									className: "font-serif text-lg text-[#f7f5f2] truncate",
 									children: post.title
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 626,
-									columnNumber: 23
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsxs("p", {
 									className: "text-xs text-[#8a909a] truncate",
 									children: [
 										"/blog/",
@@ -22641,182 +14340,587 @@ var BlogManager = ({ blogs, onRefreshBlogs }) => {
 										" · ",
 										post.authorName
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$7,
-									lineNumber: 630,
-									columnNumber: 23
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$7,
-							lineNumber: 602,
-							columnNumber: 21
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 589,
-						columnNumber: 19
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex flex-wrap items-center gap-2 shrink-0",
 						children: [
-							post.status === "Published" && /* @__PURE__ */ jsxDEV("a", {
+							post.status === "Published" && /* @__PURE__ */ jsxs("a", {
 								href: `/blog/${encodeURIComponent(post.slug)}`,
 								target: "_blank",
 								rel: "noopener noreferrer",
 								className: "inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#151a22] border border-[#26303d] hover:border-[#c5a059] text-xs text-[#cbd5e1] rounded-sm",
-								children: [/* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3.5 h-3.5" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 644,
-									columnNumber: 25
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "View" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 645,
-									columnNumber: 25
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 638,
-								columnNumber: 23
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsx(ExternalLink, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "View" })]
+							}),
+							/* @__PURE__ */ jsx("button", {
 								type: "button",
 								onClick: () => handleTogglePublish(post.id),
 								className: "inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#151a22] border border-[#26303d] hover:border-[#c5a059] text-xs text-[#cbd5e1] rounded-sm cursor-pointer",
-								children: post.status === "Published" ? /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(EyeOff, { className: "w-3.5 h-3.5 text-amber-400" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 656,
-									columnNumber: 27
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Unpublish" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 657,
-									columnNumber: 27
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$7,
-									lineNumber: 655,
-									columnNumber: 25
-								}, void 0) : /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV(Eye, { className: "w-3.5 h-3.5 text-emerald-400" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 661,
-									columnNumber: 27
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Publish" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 662,
-									columnNumber: 27
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$7,
-									lineNumber: 660,
-									columnNumber: 25
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$7,
-								lineNumber: 649,
-								columnNumber: 21
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("button", {
+								children: post.status === "Published" ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(EyeOff, { className: "w-3.5 h-3.5 text-amber-400" }), /* @__PURE__ */ jsx("span", { children: "Unpublish" })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Eye, { className: "w-3.5 h-3.5 text-emerald-400" }), /* @__PURE__ */ jsx("span", { children: "Publish" })] })
+							}),
+							/* @__PURE__ */ jsxs("button", {
 								type: "button",
 								onClick: () => handleOpenEdit(post),
 								className: "inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#151a22] border border-[#26303d] hover:border-[#c5a059] text-xs text-[#cbd5e1] rounded-sm cursor-pointer",
-								children: [/* @__PURE__ */ jsxDEV(Edit, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 672,
-									columnNumber: 23
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Edit" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 673,
-									columnNumber: 23
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 667,
-								columnNumber: 21
-							}, void 0),
-							pendingDeleteId === post.id ? /* @__PURE__ */ jsxDEV("div", {
+								children: [/* @__PURE__ */ jsx(Edit, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Edit" })]
+							}),
+							pendingDeleteId === post.id ? /* @__PURE__ */ jsxs("div", {
 								className: "inline-flex items-center gap-1.5",
-								children: [/* @__PURE__ */ jsxDEV("button", {
+								children: [/* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: () => handleConfirmDelete(post.id),
 									className: "px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs rounded-sm cursor-pointer",
 									children: "Confirm"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 678,
-									columnNumber: 25
-								}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								}), /* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: () => setPendingDeleteId(null),
 									className: "px-2 py-1.5 bg-[#151a22] border border-[#26303d] text-xs text-[#9ca3af] rounded-sm cursor-pointer",
 									children: "Cancel"
-								}, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 685,
-									columnNumber: 25
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 677,
-								columnNumber: 23
-							}, void 0) : /* @__PURE__ */ jsxDEV("button", {
+								})]
+							}) : /* @__PURE__ */ jsxs("button", {
 								type: "button",
 								onClick: () => setPendingDeleteId(post.id),
 								className: "inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#151a22] border border-[#26303d] hover:border-red-500/60 text-xs text-red-400 rounded-sm cursor-pointer",
-								children: [/* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 699,
-									columnNumber: 25
-								}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Delete" }, void 0, false, {
-									fileName: _jsxFileName$7,
-									lineNumber: 700,
-									columnNumber: 25
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$7,
-								lineNumber: 694,
-								columnNumber: 23
-							}, void 0)
+								children: [/* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Delete" })]
+							})
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$7,
-						lineNumber: 636,
-						columnNumber: 19
-					}, void 0)]
-				}, post.id, true, {
-					fileName: _jsxFileName$7,
-					lineNumber: 585,
-					columnNumber: 17
-				}, void 0))
-			}, void 0, false, {
-				fileName: _jsxFileName$7,
-				lineNumber: 583,
-				columnNumber: 13
-			}, void 0)] }, void 0, true, {
-				fileName: _jsxFileName$7,
-				lineNumber: 537,
-				columnNumber: 9
-			}, void 0)
+					})]
+				}, post.id))
+			})] })
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$7,
-		lineNumber: 240,
-		columnNumber: 5
-	}, void 0);
+	});
+};
+// src/pages/admin/HeroSliderManager.tsx
+var HeroSliderManager = ({ slides, onRefreshSlides }) => {
+	const [isFormOpen, setIsFormOpen] = useState(false);
+	const [editingId, setEditingId] = useState(null);
+	const [imageUrl, setImageUrl] = useState("");
+	const [heading, setHeading] = useState("");
+	const [description, setDescription] = useState("");
+	const [uploadingImage, setUploadingImage] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [reordering, setReordering] = useState(false);
+	const [pendingDeleteId, setPendingDeleteId] = useState(null);
+	const [draggedId, setDraggedId] = useState(null);
+	const [dragOverId, setDragOverId] = useState(null);
+	const [errorMsg, setErrorMsg] = useState(null);
+	const [successMsg, setSuccessMsg] = useState(null);
+	const fileInputRef = useRef(null);
+	const orderedSlides = [...slides].sort((a, b) => a.displayOrder - b.displayOrder);
+	const activeCount = orderedSlides.filter((s) => isHeroSlideComplete(s)).length;
+	const showSuccess = (msg) => {
+		setErrorMsg(null);
+		setSuccessMsg(msg);
+		setTimeout(() => setSuccessMsg(null), 3500);
+	};
+	const resetForm = () => {
+		setEditingId(null);
+		setImageUrl("");
+		setHeading("");
+		setDescription("");
+		setErrorMsg(null);
+	};
+	const handleOpenCreate = () => {
+		resetForm();
+		setIsFormOpen(true);
+	};
+	const handleOpenEdit = (slide) => {
+		setEditingId(slide.id);
+		setImageUrl(slide.imageUrl || "");
+		setHeading(slide.heading || "");
+		setDescription(slide.description || "");
+		setErrorMsg(null);
+		setIsFormOpen(true);
+	};
+	const handleUploadImage = async (file) => {
+		const token = storage.getAdminToken();
+		if (!token) {
+			setErrorMsg("Administrator authentication is required to upload banner images.");
+			return;
+		}
+		setUploadingImage(true);
+		setErrorMsg(null);
+		try {
+			const formData = new FormData();
+			formData.append("photo", file);
+			const res = await fetch("/api/upload", {
+				method: "POST",
+				headers: { Authorization: `Bearer ${token}` },
+				body: formData
+			});
+			const data = await res.json().catch(() => null);
+			if (!res.ok || !data?.url) throw new Error(data?.error || data?.message || "Banner image upload failed.");
+			setImageUrl(data.url);
+			showSuccess("Banner image uploaded successfully.");
+		} catch (err) {
+			setErrorMsg(err instanceof Error ? err.message : "Unable to upload banner image.");
+		} finally {
+			setUploadingImage(false);
+			if (fileInputRef.current) fileInputRef.current.value = "";
+		}
+	};
+	const handleSaveSlide = async (e) => {
+		e.preventDefault();
+		if (saving) return;
+		const cleanImage = imageUrl.trim();
+		const cleanHeading = heading.trim();
+		const cleanDesc = description.trim();
+		if (!cleanImage || !cleanHeading || !cleanDesc) {
+			setErrorMsg("Banner Image, Heading, and Content/Description are all required for a slide to display.");
+			return;
+		}
+		setSaving(true);
+		setErrorMsg(null);
+		try {
+			await storage.saveHeroSlideAsync({
+				...editingId ? { id: editingId } : {},
+				imageUrl: cleanImage,
+				heading: cleanHeading,
+				description: cleanDesc
+			});
+			onRefreshSlides();
+			setIsFormOpen(false);
+			resetForm();
+			showSuccess(editingId ? "Hero banner slide updated." : "New hero banner slide added.");
+		} catch (err) {
+			setErrorMsg(err instanceof Error ? err.message : "Failed to save hero banner slide.");
+		} finally {
+			setSaving(false);
+		}
+	};
+	const handleDeleteSlide = async (id) => {
+		setErrorMsg(null);
+		try {
+			await storage.deleteHeroSlideAsync(id);
+			setPendingDeleteId(null);
+			if (editingId === id) {
+				setIsFormOpen(false);
+				resetForm();
+			}
+			onRefreshSlides();
+			showSuccess("Hero banner slide removed.");
+		} catch (err) {
+			setErrorMsg(err instanceof Error ? err.message : "Failed to delete hero banner slide.");
+		}
+	};
+	const commitOrder = async (nextOrdered) => {
+		if (reordering || nextOrdered.length < 2) return;
+		setReordering(true);
+		setErrorMsg(null);
+		try {
+			await storage.reorderHeroSlidesAsync(nextOrdered.map((s) => s.id));
+			onRefreshSlides();
+			showSuccess("Slide order updated.");
+		} catch (err) {
+			setErrorMsg(err instanceof Error ? err.message : "Failed to reorder slides.");
+		} finally {
+			setReordering(false);
+		}
+	};
+	const handleMoveSlide = (index, direction) => {
+		const targetIdx = index + direction;
+		if (targetIdx < 0 || targetIdx >= orderedSlides.length) return;
+		const copy = [...orderedSlides];
+		const [moved] = copy.splice(index, 1);
+		copy.splice(targetIdx, 0, moved);
+		commitOrder(copy);
+	};
+	const handleDropOnSlide = (targetId) => {
+		if (!draggedId || draggedId === targetId) {
+			setDraggedId(null);
+			setDragOverId(null);
+			return;
+		}
+		const fromIdx = orderedSlides.findIndex((s) => s.id === draggedId);
+		const toIdx = orderedSlides.findIndex((s) => s.id === targetId);
+		setDraggedId(null);
+		setDragOverId(null);
+		if (fromIdx === -1 || toIdx === -1) return;
+		const copy = [...orderedSlides];
+		const [moved] = copy.splice(fromIdx, 1);
+		copy.splice(toIdx, 0, moved);
+		commitOrder(copy);
+	};
+	return /* @__PURE__ */ jsxs("div", {
+		className: "space-y-6",
+		children: [
+			/* @__PURE__ */ jsxs("div", {
+				className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202732]",
+				children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("div", {
+					className: "flex items-center gap-2",
+					children: [/* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("h2", {
+						className: "font-serif text-2xl font-normal text-white",
+						children: "Homepage Hero Banner Slider"
+					})]
+				}), /* @__PURE__ */ jsx("p", {
+					className: "text-xs text-[#8a909a] mt-1",
+					children: "Manage dynamic homepage hero slides. Each slide supports Banner Image, Heading, and Content/Description."
+				})] }), /* @__PURE__ */ jsxs("button", {
+					type: "button",
+					onClick: handleOpenCreate,
+					className: "px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0",
+					children: [/* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Add Slide" })]
+				})]
+			}),
+			errorMsg && /* @__PURE__ */ jsxs("div", {
+				className: "p-3.5 bg-red-950/60 border border-red-700/80 text-red-100 text-xs font-mono rounded-sm flex items-center justify-between gap-3",
+				children: [/* @__PURE__ */ jsxs("div", {
+					className: "flex items-center gap-2",
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: errorMsg })]
+				}), /* @__PURE__ */ jsx("button", {
+					type: "button",
+					onClick: () => setErrorMsg(null),
+					className: "text-red-300 hover:text-white uppercase cursor-pointer",
+					children: "Dismiss"
+				})]
+			}),
+			!errorMsg && successMsg && /* @__PURE__ */ jsxs("div", {
+				className: "p-3 bg-emerald-950/50 border border-emerald-700/70 text-emerald-200 text-xs font-mono rounded-sm flex items-center gap-2",
+				children: [/* @__PURE__ */ jsx(CheckCircle2, { className: "w-4 h-4 text-emerald-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: successMsg })]
+			}),
+			/* @__PURE__ */ jsxs("div", {
+				className: "p-4 bg-[#101419] border border-[#242d3a] rounded-sm flex items-start gap-3",
+				children: [/* @__PURE__ */ jsx(Info, { className: "w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("div", {
+					className: "text-xs text-[#a0a8b4] leading-relaxed",
+					children: activeCount === 0 ? /* @__PURE__ */ jsxs(Fragment, { children: [
+						/* @__PURE__ */ jsx("strong", {
+							className: "text-[#f7f5f2]",
+							children: "Default Hero Banner Active:"
+						}),
+						" ",
+						"No complete custom slides are configured yet. The homepage automatically displays the default Buildsmore architectural banner (",
+						DEFAULT_HERO_HEADING,
+						") so the hero is never blank."
+					] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+						/* @__PURE__ */ jsxs("strong", {
+							className: "text-[#f7f5f2]",
+							children: [
+								activeCount,
+								" Active ",
+								activeCount === 1 ? "Slide" : "Slides",
+								" Live on Homepage:"
+							]
+						}),
+						" ",
+						activeCount > 1 ? "Automatic sliding with smooth crossfade transitions is active. Drag slides or use the arrows below to change display order." : "Add a second slide to enable automatic multi-slide transitions. Deleting all slides automatically restores the default Buildsmore hero banner."
+					] })
+				})]
+			}),
+			isFormOpen && /* @__PURE__ */ jsxs("form", {
+				onSubmit: handleSaveSlide,
+				className: "bg-[#101419] border border-[#c5a059]/40 rounded-sm p-6 space-y-5 shadow-xl",
+				children: [
+					/* @__PURE__ */ jsxs("div", {
+						className: "flex items-center justify-between pb-3 border-b border-[#1f2631]",
+						children: [/* @__PURE__ */ jsx("h3", {
+							className: "font-serif text-xl font-normal text-white",
+							children: editingId ? "Edit Hero Slide" : "Add Hero Banner Slide"
+						}), /* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => {
+								setIsFormOpen(false);
+								resetForm();
+							},
+							"aria-label": "Close slide editor",
+							className: "text-[#8a909a] hover:text-white p-1 cursor-pointer",
+							children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "space-y-2.5",
+						children: [/* @__PURE__ */ jsx("label", {
+							className: "text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block",
+							children: "1. Banner Image *"
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "grid grid-cols-1 md:grid-cols-12 gap-4 items-start",
+							children: [/* @__PURE__ */ jsx("div", {
+								className: "md:col-span-5 relative aspect-[16/9] bg-[#161b22] border border-[#2a3442] rounded-sm overflow-hidden flex items-center justify-center",
+								children: imageUrl.trim() ? /* @__PURE__ */ jsx("img", {
+									src: imageUrl.trim(),
+									alt: "Slide banner preview",
+									className: "w-full h-full object-cover filter brightness-[0.65]"
+								}) : /* @__PURE__ */ jsxs("div", {
+									className: "text-center p-4 space-y-1.5 text-[#64748b]",
+									children: [/* @__PURE__ */ jsx(Image, { className: "w-7 h-7 mx-auto opacity-70" }), /* @__PURE__ */ jsx("span", {
+										className: "text-[11px] font-mono block",
+										children: "No banner image selected"
+									})]
+								})
+							}), /* @__PURE__ */ jsxs("div", {
+								className: "md:col-span-7 space-y-3",
+								children: [
+									/* @__PURE__ */ jsxs("div", {
+										className: "flex flex-wrap items-center gap-3",
+										children: [
+											/* @__PURE__ */ jsx("input", {
+												ref: fileInputRef,
+												type: "file",
+												accept: "image/jpeg,image/png,image/webp,image/avif",
+												className: "hidden",
+												onChange: (e) => {
+													const file = e.target.files?.[0];
+													if (file) handleUploadImage(file);
+												}
+											}),
+											/* @__PURE__ */ jsxs("button", {
+												type: "button",
+												disabled: uploadingImage,
+												onClick: () => fileInputRef.current?.click(),
+												className: "px-4 py-2 bg-[#18202b] hover:bg-[#222d3d] border border-[#c5a059]/50 text-[#f7f5f2] text-xs font-mono uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50",
+												children: [/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: uploadingImage ? "Uploading Image..." : imageUrl.trim() ? "Change / Upload Image" : "Upload Banner Image" })]
+											}),
+											imageUrl.trim() && /* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => setImageUrl(""),
+												className: "px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-red-500/50 text-[#8a909a] hover:text-red-300 text-xs font-mono rounded-sm cursor-pointer",
+												children: "Clear Image"
+											})
+										]
+									}),
+									/* @__PURE__ */ jsx("input", {
+										type: "text",
+										value: imageUrl,
+										onChange: (e) => setImageUrl(e.target.value),
+										placeholder: "/uploads/... or https://... (upload above or paste image URL)",
+										className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono"
+									}),
+									/* @__PURE__ */ jsx("p", {
+										className: "text-[11px] text-[#737a85]",
+										children: "Recommended landscape high-resolution image (JPEG, PNG, WebP, or AVIF, max 10MB)."
+									})
+								]
+							})]
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "space-y-1.5",
+						children: [/* @__PURE__ */ jsx("label", {
+							htmlFor: "hero-slide-heading",
+							className: "text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block",
+							children: "2. Heading *"
+						}), /* @__PURE__ */ jsx("input", {
+							id: "hero-slide-heading",
+							type: "text",
+							required: true,
+							maxLength: 200,
+							value: heading,
+							onChange: (e) => setHeading(e.target.value),
+							placeholder: "Architectural Landmarks & Private Havens",
+							className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-sm text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none"
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "space-y-1.5",
+						children: [/* @__PURE__ */ jsx("label", {
+							htmlFor: "hero-slide-description",
+							className: "text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block",
+							children: "3. Content / Description *"
+						}), /* @__PURE__ */ jsx("textarea", {
+							id: "hero-slide-description",
+							required: true,
+							rows: 3,
+							maxLength: 600,
+							value: description,
+							onChange: (e) => setDescription(e.target.value),
+							placeholder: "Representing the world’s most significant residential estates, sky penthouses, and commercial trophy assets with automated multi-registry synchronization.",
+							className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3.5 py-2.5 text-sm text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none resize-y"
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "flex items-center justify-end gap-3 pt-2 border-t border-[#1f2631]",
+						children: [/* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => {
+								setIsFormOpen(false);
+								resetForm();
+							},
+							className: "px-4 py-2 bg-[#14181d] border border-[#2a3442] text-[#9ca3af] hover:text-white text-xs font-mono uppercase rounded-sm cursor-pointer",
+							children: "Cancel"
+						}), /* @__PURE__ */ jsxs("button", {
+							type: "submit",
+							disabled: saving || uploadingImage,
+							className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50",
+							children: [/* @__PURE__ */ jsx(Save, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: saving ? "Saving Slide..." : editingId ? "Save Changes" : "Create Slide" })]
+						})]
+					})
+				]
+			}),
+			orderedSlides.length > 0 ? /* @__PURE__ */ jsx("div", {
+				className: "space-y-3",
+				children: orderedSlides.map((slide, idx) => {
+					const complete = isHeroSlideComplete(slide);
+					const isConfirmingDelete = pendingDeleteId === slide.id;
+					const isDragTarget = dragOverId === slide.id && draggedId !== slide.id;
+					return /* @__PURE__ */ jsx("div", {
+						draggable: true,
+						onDragStart: () => setDraggedId(slide.id),
+						onDragOver: (e) => {
+							e.preventDefault();
+							if (dragOverId !== slide.id) setDragOverId(slide.id);
+						},
+						onDragLeave: () => {
+							if (dragOverId === slide.id) setDragOverId(null);
+						},
+						onDrop: (e) => {
+							e.preventDefault();
+							handleDropOnSlide(slide.id);
+						},
+						onDragEnd: () => {
+							setDraggedId(null);
+							setDragOverId(null);
+						},
+						className: `bg-[#101419] border rounded-sm p-4 transition-colors ${isDragTarget ? "border-[#c5a059] bg-[#151b24]" : "border-[#202732] hover:border-[#2e3847]"}`,
+						children: /* @__PURE__ */ jsxs("div", {
+							className: "flex flex-col md:flex-row gap-4 items-start md:items-center",
+							children: [
+								/* @__PURE__ */ jsxs("div", {
+									className: "flex md:flex-col items-center gap-2 shrink-0 text-[#64748b]",
+									children: [/* @__PURE__ */ jsx(GripVertical, { className: "w-4 h-4 cursor-grab" }), /* @__PURE__ */ jsxs("span", {
+										className: "text-[11px] font-mono px-2 py-0.5 bg-[#161c24] border border-[#263140] text-[#c5a059] rounded-sm",
+										children: ["#", idx + 1]
+									})]
+								}),
+								/* @__PURE__ */ jsx("div", {
+									className: "w-full md:w-44 aspect-[16/9] bg-[#161b22] border border-[#242c38] rounded-sm overflow-hidden shrink-0",
+									children: slide.imageUrl ? /* @__PURE__ */ jsx("img", {
+										src: slide.imageUrl,
+										alt: slide.heading || `Hero slide ${idx + 1}`,
+										className: "w-full h-full object-cover filter brightness-[0.75]"
+									}) : /* @__PURE__ */ jsx("div", {
+										className: "w-full h-full flex items-center justify-center text-[#555f6d]",
+										children: /* @__PURE__ */ jsx(Image, { className: "w-6 h-6" })
+									})
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: "flex-1 min-w-0 space-y-1.5",
+									children: [/* @__PURE__ */ jsxs("div", {
+										className: "flex flex-wrap items-center gap-2",
+										children: [/* @__PURE__ */ jsx("h4", {
+											className: "font-serif text-lg text-white leading-snug",
+											children: slide.heading || "(Missing Heading)"
+										}), /* @__PURE__ */ jsx("span", {
+											className: `text-[10px] font-mono uppercase px-2 py-0.5 rounded-sm border ${complete ? "bg-emerald-950/60 text-emerald-300 border-emerald-700/60" : "bg-amber-950/60 text-amber-300 border-amber-700/60"}`,
+											children: complete ? "Active" : "Incomplete (Skipped)"
+										})]
+									}), /* @__PURE__ */ jsx("p", {
+										className: "text-xs text-[#9ca3af] line-clamp-2 leading-relaxed",
+										children: slide.description || "(Missing Description)"
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: "flex flex-wrap items-center gap-2 shrink-0 self-end md:self-center",
+									children: [
+										/* @__PURE__ */ jsx("button", {
+											type: "button",
+											disabled: idx === 0 || reordering,
+											onClick: () => handleMoveSlide(idx, -1),
+											title: "Move slide up",
+											"aria-label": `Move slide ${idx + 1} up`,
+											className: "p-2 bg-[#161c24] border border-[#263140] hover:border-[#c5a059]/60 text-[#cbd5e1] rounded-sm cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed",
+											children: /* @__PURE__ */ jsx(ArrowUp, { className: "w-3.5 h-3.5" })
+										}),
+										/* @__PURE__ */ jsx("button", {
+											type: "button",
+											disabled: idx === orderedSlides.length - 1 || reordering,
+											onClick: () => handleMoveSlide(idx, 1),
+											title: "Move slide down",
+											"aria-label": `Move slide ${idx + 1} down`,
+											className: "p-2 bg-[#161c24] border border-[#263140] hover:border-[#c5a059]/60 text-[#cbd5e1] rounded-sm cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed",
+											children: /* @__PURE__ */ jsx(ArrowDown, { className: "w-3.5 h-3.5" })
+										}),
+										/* @__PURE__ */ jsxs("button", {
+											type: "button",
+											onClick: () => handleOpenEdit(slide),
+											className: "px-3 py-2 bg-[#161c24] border border-[#263140] hover:border-[#c5a059] text-[#f7f5f2] text-xs font-mono rounded-sm flex items-center gap-1.5 cursor-pointer",
+											children: [/* @__PURE__ */ jsx(Edit, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Edit" })]
+										}),
+										isConfirmingDelete ? /* @__PURE__ */ jsxs("div", {
+											className: "flex items-center gap-1.5",
+											children: [/* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => handleDeleteSlide(slide.id),
+												className: "px-3 py-2 bg-red-700 hover:bg-red-600 text-white text-xs font-mono rounded-sm cursor-pointer",
+												children: "Confirm Delete"
+											}), /* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => setPendingDeleteId(null),
+												className: "px-2.5 py-2 bg-[#161c24] border border-[#263140] text-[#9ca3af] hover:text-white text-xs font-mono rounded-sm cursor-pointer",
+												children: "Cancel"
+											})]
+										}) : /* @__PURE__ */ jsxs("button", {
+											type: "button",
+											onClick: () => setPendingDeleteId(slide.id),
+											className: "px-3 py-2 bg-[#161c24] border border-[#263140] hover:border-red-500/60 text-[#9ca3af] hover:text-red-400 text-xs font-mono rounded-sm flex items-center gap-1.5 cursor-pointer",
+											children: [/* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Delete" })]
+										})
+									]
+								})
+							]
+						})
+					}, slide.id);
+				})
+			}) : /* @__PURE__ */ jsx("div", {
+				className: "bg-[#101419] border border-[#202732] rounded-sm p-6",
+				children: /* @__PURE__ */ jsxs("div", {
+					className: "flex flex-col md:flex-row gap-6 items-center",
+					children: [/* @__PURE__ */ jsx("div", {
+						className: "w-full md:w-64 aspect-[16/9] rounded-sm overflow-hidden border border-[#263140] shrink-0",
+						children: /* @__PURE__ */ jsx("img", {
+							src: DEFAULT_HERO_IMAGE_URL,
+							alt: "Default Buildsmore Hero Banner",
+							className: "w-full h-full object-cover filter brightness-[0.55]"
+						})
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "flex-1 space-y-2",
+						children: [
+							/* @__PURE__ */ jsx("span", {
+								className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059]",
+								children: "Active Default Fallback Banner"
+							}),
+							/* @__PURE__ */ jsx("h3", {
+								className: "font-serif text-xl text-white",
+								children: DEFAULT_HERO_HEADING
+							}),
+							/* @__PURE__ */ jsx("p", {
+								className: "text-xs text-[#9ca3af] leading-relaxed",
+								children: DEFAULT_HERO_DESCRIPTION
+							}),
+							/* @__PURE__ */ jsx("div", {
+								className: "pt-2",
+								children: /* @__PURE__ */ jsxs("button", {
+									type: "button",
+									onClick: handleOpenCreate,
+									className: "px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm inline-flex items-center gap-1.5 cursor-pointer",
+									children: [/* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Add First Custom Slide" })]
+								})
+							})
+						]
+					})]
+				})
+			})
+		]
+	});
 };
 // src/pages/admin/AdminDashboard.tsx
-var _jsxFileName$6 = "/app/applet/src/pages/admin/AdminDashboard.tsx";
 var VALID_ADMIN_TABS = [
 	"properties",
 	"trophy",
 	"collections",
 	"locations",
 	"blogs",
+	"hero-slides",
 	"wordpress",
 	"overview",
 	"inquiries",
 	"csv"
 ];
-var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefreshProperties, blogs, onRefreshBlogs, activeTab: routeActiveTab, onNavigate }) => {
+var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefreshProperties, blogs, onRefreshBlogs, heroSlides, onRefreshHeroSlides, activeTab: routeActiveTab, onNavigate }) => {
 	const { formatPrice } = useCurrency();
 	const effectiveBlogs = blogs ?? storage.getBlogs(true);
 	const refreshBlogs = onRefreshBlogs ?? onRefreshProperties;
+	const effectiveHeroSlides = heroSlides ?? storage.getHeroSlides();
+	const refreshHeroSlides = onRefreshHeroSlides ?? onRefreshProperties;
 	const [localActiveTab, setLocalActiveTab] = useState(routeActiveTab || "properties");
 	const activeTab = routeActiveTab ?? localActiveTab;
 	const navigateToTab = (tab) => {
@@ -22826,6 +14930,86 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 	useEffect(() => {
 		if (routeActiveTab) setLocalActiveTab(routeActiveTab);
 	}, [routeActiveTab]);
+	const tabsScrollRef = useRef(null);
+	const [hasTabOverflow, setHasTabOverflow] = useState(false);
+	const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+	const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+	const updateTabScrollability = useCallback(() => {
+		const el = tabsScrollRef.current;
+		if (!el) return;
+		const { scrollLeft, scrollWidth, clientWidth } = el;
+		setHasTabOverflow(scrollWidth > clientWidth + 2);
+		setCanScrollTabsLeft(scrollLeft > 2);
+		setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 2);
+	}, []);
+	useEffect(() => {
+		updateTabScrollability();
+		const el = tabsScrollRef.current;
+		if (!el) return;
+		let resizeObserver = null;
+		if (typeof ResizeObserver !== "undefined") {
+			resizeObserver = new ResizeObserver(() => updateTabScrollability());
+			resizeObserver.observe(el);
+		}
+		window.addEventListener("resize", updateTabScrollability);
+		return () => {
+			resizeObserver?.disconnect();
+			window.removeEventListener("resize", updateTabScrollability);
+		};
+	}, [
+		updateTabScrollability,
+		properties.length,
+		effectiveBlogs.length,
+		effectiveHeroSlides.length
+	]);
+	useEffect(() => {
+		const el = tabsScrollRef.current;
+		if (!el) return;
+		const handleWheel = (e) => {
+			if (el.scrollWidth <= el.clientWidth) return;
+			if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+				const atStart = el.scrollLeft <= 0 && e.deltaY < 0;
+				const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && e.deltaY > 0;
+				if (!atStart && !atEnd) {
+					e.preventDefault();
+					el.scrollLeft += e.deltaY;
+					updateTabScrollability();
+				}
+			}
+		};
+		el.addEventListener("wheel", handleWheel, { passive: false });
+		return () => el.removeEventListener("wheel", handleWheel);
+	}, [updateTabScrollability]);
+	useEffect(() => {
+		const el = tabsScrollRef.current;
+		if (!el) return;
+		const timer = window.setTimeout(() => {
+			const activeEl = el.querySelector("[data-admin-tab-active=\"true\"]");
+			if (activeEl && el.scrollWidth > el.clientWidth) {
+				const containerRect = el.getBoundingClientRect();
+				const tabRect = activeEl.getBoundingClientRect();
+				if (tabRect.left < containerRect.left + 16) el.scrollBy({
+					left: tabRect.left - containerRect.left - 24,
+					behavior: "smooth"
+				});
+				else if (tabRect.right > containerRect.right - 16) el.scrollBy({
+					left: tabRect.right - containerRect.right + 24,
+					behavior: "smooth"
+				});
+			}
+			updateTabScrollability();
+		}, 50);
+		return () => window.clearTimeout(timer);
+	}, [activeTab, updateTabScrollability]);
+	const scrollTabsBy = (offset) => {
+		const el = tabsScrollRef.current;
+		if (!el) return;
+		el.scrollBy({
+			left: offset,
+			behavior: "smooth"
+		});
+		window.setTimeout(updateTabScrollability, 280);
+	};
 	const [propertySearch, setPropertySearch] = useState("");
 	const [propertyCategoryFilter, setPropertyCategoryFilter] = useState("All");
 	const [propertyStatusFilter, setPropertyStatusFilter] = useState("All");
@@ -22918,43 +15102,27 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 		}
 		return true;
 	});
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs("div", {
 		className: "max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8",
 		children: [
-			/* @__PURE__ */ jsxDEV("div", {
+			/* @__PURE__ */ jsxs("div", {
 				className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[#202732]",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-4",
-					children: [/* @__PURE__ */ jsxDEV("img", {
+					children: [/* @__PURE__ */ jsx("img", {
 						src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 						alt: "BUILDsmore Logo",
 						className: "w-12 h-12 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm shrink-0"
-					}, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 235,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("div", {
+					}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-2",
-						children: [/* @__PURE__ */ jsxDEV("h1", {
+						children: [/* @__PURE__ */ jsx("h1", {
 							className: "font-serif text-2xl font-medium text-white",
 							children: "BUILDsmore Admin Console"
-						}, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 242,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("span", {
+						}), /* @__PURE__ */ jsx("span", {
 							className: "text-[10px] px-2 py-0.5 bg-[#c5a059]/15 text-[#c5a059] border border-[#c5a059]/30 rounded-sm font-mono uppercase",
 							children: adminUser.role
-						}, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 245,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 241,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("p", {
+						})]
+					}), /* @__PURE__ */ jsxs("p", {
 						className: "text-xs text-[#8a909a] font-mono mt-0.5",
 						children: [
 							"Signed in as ",
@@ -22963,234 +15131,165 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 							adminUser.email,
 							") · Concierge Hotline: 9779878303"
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 249,
-						columnNumber: 13
-					}, void 0)] }, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 240,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 234,
-					columnNumber: 9
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+					})] })]
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-3",
-					children: [/* @__PURE__ */ jsxDEV("button", {
+					children: [/* @__PURE__ */ jsxs("button", {
 						onClick: () => setIsCreatingProperty(true),
 						className: "px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase font-semibold tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer shadow-md shrink-0",
-						children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 260,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "New Property" }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 261,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 256,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("button", {
+						children: [/* @__PURE__ */ jsx(Plus, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "New Property" })]
+					}), /* @__PURE__ */ jsxs("button", {
 						onClick: onLogout,
 						className: "px-3 py-2 bg-[#14181d] border border-[#242b35] hover:border-red-500/50 text-[#9ca3af] hover:text-red-400 text-xs font-mono rounded-sm flex items-center gap-1.5 cursor-pointer transition-colors shrink-0",
-						children: [/* @__PURE__ */ jsxDEV(LogOut, { className: "w-3.5 h-3.5" }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 268,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Sign Out" }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 269,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 264,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 255,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 233,
-				columnNumber: 7
-			}, void 0),
-			apiError && /* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Sign Out" })]
+					})]
+				})]
+			}),
+			apiError && /* @__PURE__ */ jsxs("div", {
 				className: "p-3.5 bg-red-950/60 border border-red-700/80 text-red-100 text-xs font-mono rounded-sm flex items-center justify-between gap-3",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 278,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: apiError }, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 279,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 277,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: apiError })]
+				}), /* @__PURE__ */ jsx("button", {
 					type: "button",
 					onClick: () => setApiError(null),
 					className: "text-red-300 hover:text-white uppercase cursor-pointer",
 					children: "Dismiss"
-				}, void 0, false, {
-					fileName: _jsxFileName$6,
-					lineNumber: 281,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 276,
-				columnNumber: 9
-			}, void 0),
-			!apiError && apiSuccess && /* @__PURE__ */ jsxDEV("div", {
+				})]
+			}),
+			!apiError && apiSuccess && /* @__PURE__ */ jsxs("div", {
 				className: "p-3 bg-emerald-950/50 border border-emerald-700/70 text-emerald-200 text-xs font-mono rounded-sm flex items-center gap-2",
-				children: [/* @__PURE__ */ jsxDEV(CheckCircle, { className: "w-4 h-4 text-emerald-400 shrink-0" }, void 0, false, {
-					fileName: _jsxFileName$6,
-					lineNumber: 292,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("span", { children: apiSuccess }, void 0, false, {
-					fileName: _jsxFileName$6,
-					lineNumber: 293,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 291,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("nav", {
+				children: [/* @__PURE__ */ jsx(CheckCircle, { className: "w-4 h-4 text-emerald-400 shrink-0" }), /* @__PURE__ */ jsx("span", { children: apiSuccess })]
+			}),
+			/* @__PURE__ */ jsxs("nav", {
 				"aria-label": "Admin Console Sections",
-				className: "flex items-center gap-2 border-b border-[#202732] overflow-x-auto no-scrollbar text-xs font-mono uppercase",
-				children: [[
-					{
-						id: "properties",
-						label: `1. All Properties (${properties.length})`,
-						icon: Building2
-					},
-					{
-						id: "trophy",
-						label: "2. Trophy Holdings",
-						icon: Trophy
-					},
-					{
-						id: "collections",
-						label: "3. Curated Collections",
-						icon: Layers
-					},
-					{
-						id: "locations",
-						label: "4. Locations",
-						icon: MapPin
-					},
-					{
-						id: "blogs",
-						label: `5. Blog & Journal (${effectiveBlogs.length})`,
-						icon: BookOpen
-					},
-					{
-						id: "wordpress",
-						label: "6. WordPress Import",
-						icon: Globe
-					},
-					{
-						id: "overview",
-						label: "Dashboard & KPI",
-						icon: TrendingUp
-					},
-					{
-						id: "inquiries",
-						label: `Client Inquiries (${inquiries.filter((i) => i.status === "New").length} New)`,
-						icon: MessageSquare
-					},
-					{
-						id: "csv",
-						label: "CSV Tools",
-						icon: FileSpreadsheet
-					}
-				].map((tab) => {
-					const Icon = tab.icon;
-					const isActive = activeTab === tab.id;
-					return /* @__PURE__ */ jsxDEV(AppLink, {
-						href: `/admin/${tab.id}`,
-						onNavigate: (dest) => {
-							setLocalActiveTab(tab.id);
-							onNavigate?.(dest);
-						},
-						onClick: () => setLocalActiveTab(tab.id),
-						"aria-current": isActive ? "page" : void 0,
-						className: `flex items-center gap-2 py-3 px-4 border-b-2 transition-colors cursor-pointer whitespace-nowrap ${isActive ? "border-[#c5a059] text-[#c5a059] font-bold bg-[#141922]" : "border-transparent text-[#8a909a] hover:text-[#f7f5f2]"}`,
-						children: [/* @__PURE__ */ jsxDEV(Icon, { className: "w-4 h-4" }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 330,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("span", { children: tab.label }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 331,
-							columnNumber: 15
-						}, void 0)]
-					}, tab.id, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 315,
-						columnNumber: 13
-					}, void 0);
-				}), /* @__PURE__ */ jsxDEV("button", {
-					onClick: () => setIsCreatingProperty(true),
-					className: "ml-auto my-1.5 px-3.5 py-1.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors shadow-sm",
-					children: [/* @__PURE__ */ jsxDEV(Plus, { className: "w-3.5 h-3.5" }, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 340,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Add New Property" }, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 341,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 336,
-					columnNumber: 9
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 298,
-				columnNumber: 7
-			}, void 0),
-			activeTab === "overview" && /* @__PURE__ */ jsxDEV("div", {
+				className: "relative flex items-center gap-1.5 border-b border-[#202732]",
+				children: [
+					hasTabOverflow && /* @__PURE__ */ jsx("button", {
+						type: "button",
+						onClick: () => scrollTabsBy(-280),
+						"aria-label": "Scroll admin tabs left",
+						disabled: !canScrollTabsLeft,
+						className: `shrink-0 flex items-center justify-center w-8 h-8 mb-1 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollTabsLeft ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-25 pointer-events-none"}`,
+						children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "relative min-w-0 flex-1 overflow-hidden",
+						children: [
+							canScrollTabsLeft && /* @__PURE__ */ jsx("div", {
+								"aria-hidden": "true",
+								className: "pointer-events-none absolute left-0 top-0 bottom-1 w-8 sm:w-12 bg-gradient-to-r from-[#0c0f12] via-[#0c0f12]/85 to-transparent z-[5]"
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								ref: tabsScrollRef,
+								onScroll: updateTabScrollability,
+								className: "flex items-center gap-1.5 overflow-x-auto overflow-y-hidden flex-nowrap scroll-smooth touch-pan-x admin-tabs-scrollbar text-xs font-mono uppercase pb-1",
+								children: [[
+									{
+										id: "properties",
+										label: `1. All Properties (${properties.length})`,
+										icon: Building2
+									},
+									{
+										id: "trophy",
+										label: "2. Trophy Holdings",
+										icon: Trophy
+									},
+									{
+										id: "collections",
+										label: "3. Curated Collections",
+										icon: Layers
+									},
+									{
+										id: "locations",
+										label: "4. Locations",
+										icon: MapPin
+									},
+									{
+										id: "blogs",
+										label: `5. Blog & Journal (${effectiveBlogs.length})`,
+										icon: BookOpen
+									},
+									{
+										id: "hero-slides",
+										label: `6. Hero Slider (${effectiveHeroSlides.length})`,
+										icon: Image
+									},
+									{
+										id: "wordpress",
+										label: "7. WordPress Import",
+										icon: Globe
+									},
+									{
+										id: "overview",
+										label: "Dashboard & KPI",
+										icon: TrendingUp
+									},
+									{
+										id: "inquiries",
+										label: `Client Inquiries (${inquiries.filter((i) => i.status === "New").length} New)`,
+										icon: MessageSquare
+									},
+									{
+										id: "csv",
+										label: "CSV Tools",
+										icon: FileSpreadsheet
+									}
+								].map((tab) => {
+									const Icon = tab.icon;
+									const isActive = activeTab === tab.id;
+									return /* @__PURE__ */ jsxs(AppLink, {
+										href: `/admin/${tab.id}`,
+										"data-admin-tab-active": isActive ? "true" : "false",
+										onNavigate: (dest) => {
+											setLocalActiveTab(tab.id);
+											onNavigate?.(dest);
+										},
+										onClick: () => setLocalActiveTab(tab.id),
+										"aria-current": isActive ? "page" : void 0,
+										className: `flex items-center gap-2 py-3 px-4 border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${isActive ? "border-[#c5a059] text-[#c5a059] font-bold bg-[#141922]" : "border-transparent text-[#8a909a] hover:text-[#f7f5f2]"}`,
+										children: [/* @__PURE__ */ jsx(Icon, { className: "w-4 h-4 shrink-0" }), /* @__PURE__ */ jsx("span", { children: tab.label })]
+									}, tab.id);
+								}), /* @__PURE__ */ jsxs("button", {
+									type: "button",
+									onClick: () => setIsCreatingProperty(true),
+									className: "ml-2 my-1.5 px-3.5 py-1.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors shadow-sm",
+									children: [/* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Add New Property" })]
+								})]
+							}),
+							canScrollTabsRight && /* @__PURE__ */ jsx("div", {
+								"aria-hidden": "true",
+								className: "pointer-events-none absolute right-0 top-0 bottom-1 w-8 sm:w-12 bg-gradient-to-l from-[#0c0f12] via-[#0c0f12]/85 to-transparent z-[5]"
+							})
+						]
+					}),
+					hasTabOverflow && /* @__PURE__ */ jsx("button", {
+						type: "button",
+						onClick: () => scrollTabsBy(280),
+						"aria-label": "Scroll admin tabs right",
+						disabled: !canScrollTabsRight,
+						className: `shrink-0 flex items-center justify-center w-8 h-8 mb-1 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollTabsRight ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-25 pointer-events-none"}`,
+						children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
+					})
+				]
+			}),
+			activeTab === "overview" && /* @__PURE__ */ jsxs("div", {
 				className: "space-y-8",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "grid grid-cols-2 md:grid-cols-4 gap-4 font-mono",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-5 bg-[#101419] border border-[#202732] rounded-sm",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] uppercase tracking-wider text-[#8a909a] block",
 									children: "Total Registry Holdings"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 352,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsx("span", {
 									className: "text-2xl sm:text-3xl font-bold text-white mt-1 block",
 									children: stats.totalProperties
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 355,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsxs("span", {
 									className: "text-[11px] text-[#737a85] mt-1 block",
 									children: [
 										stats.publishedProperties,
@@ -23198,148 +15297,76 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 										stats.draftProperties,
 										" Drafts"
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 358,
-									columnNumber: 15
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 351,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-5 bg-[#101419] border border-[#202732] rounded-sm",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] uppercase tracking-wider text-[#8a909a] block",
 									children: "WordPress Imported"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 364,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsx("span", {
 									className: "text-2xl sm:text-3xl font-bold text-[#c5a059] mt-1 block",
 									children: stats.importedProperties
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 367,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsxs("span", {
 									className: "text-[11px] text-[#737a85] mt-1 block",
 									children: [stats.connectedWordpressSites, " Connected WP Sites"]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 370,
-									columnNumber: 15
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 363,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-5 bg-[#101419] border border-[#202732] rounded-sm",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] uppercase tracking-wider text-[#8a909a] block",
 									children: "Client Inquiries"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 376,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsx("span", {
 									className: "text-2xl sm:text-3xl font-bold text-white mt-1 block",
 									children: stats.totalInquiries
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 379,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsxs("span", {
 									className: "text-[11px] text-emerald-400 mt-1 block",
 									children: [stats.newInquiriesCount, " Actionable New Leads"]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 382,
-									columnNumber: 15
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 375,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "p-5 bg-[#101419] border border-[#202732] rounded-sm",
 							children: [
-								/* @__PURE__ */ jsxDEV("span", {
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[10px] uppercase tracking-wider text-[#8a909a] block",
 									children: "Estimated Portfolio Value"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 388,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsxs("span", {
 									className: "text-xl sm:text-2xl font-bold text-white mt-1 block tabular-nums",
 									children: [
 										"₹",
 										((stats.portfolioValueINR ?? stats.portfolioValueUSD * 86.5) / 1e7).toFixed(1),
 										" Cr"
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 391,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsx("span", {
 									className: "text-[11px] text-[#737a85] mt-1 block",
 									children: "Aggregated Active Valuation"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 394,
-									columnNumber: 15
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 387,
-							columnNumber: 13
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 350,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+				}), /* @__PURE__ */ jsxs("div", {
 					className: "bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-4",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between pb-3 border-b border-[#1f2631]",
-						children: [/* @__PURE__ */ jsxDEV("div", {
+						children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ jsxDEV(MessageSquare, { className: "w-4 h-4 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 404,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("h3", {
+							children: [/* @__PURE__ */ jsx(MessageSquare, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-lg font-medium text-white",
 								children: "Recent High-Value Inquiries"
-							}, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 405,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 403,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV(AppLink, {
+							})]
+						}), /* @__PURE__ */ jsxs(AppLink, {
 							href: "/admin/inquiries",
 							onNavigate: (dest) => {
 								setLocalActiveTab("inquiries");
@@ -23352,70 +15379,42 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 								inquiries.length,
 								")"
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 409,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 402,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsx("div", {
 						className: "divide-y divide-[#1c232d]",
-						children: inquiries.slice(0, 4).map((inq) => /* @__PURE__ */ jsxDEV("div", {
+						children: inquiries.slice(0, 4).map((inq) => /* @__PURE__ */ jsxs("div", {
 							className: "py-3 flex items-start justify-between gap-4 text-xs",
-							children: [/* @__PURE__ */ jsxDEV("div", { children: [
-								/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsxs("div", { children: [
+								/* @__PURE__ */ jsxs("div", {
 									className: "flex items-center gap-2",
 									children: [
-										/* @__PURE__ */ jsxDEV("span", {
+										/* @__PURE__ */ jsx("span", {
 											className: "font-semibold text-white",
 											children: inq.clientName
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 427,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsxs("span", {
 											className: "text-[#8a909a] font-mono",
 											children: [
 												"(",
 												inq.email,
 												")"
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$6,
-											lineNumber: 428,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("span", {
+										}),
+										/* @__PURE__ */ jsx("span", {
 											className: `text-[10px] font-mono px-2 py-0.2 rounded-sm ${inq.status === "New" ? "bg-emerald-950 text-emerald-300" : "bg-[#181f2a] text-[#9ca3af]"}`,
 											children: inq.status
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 429,
-											columnNumber: 23
-										}, void 0)
+										})
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 426,
-									columnNumber: 21
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("p", {
+								}),
+								/* @__PURE__ */ jsxs("p", {
 									className: "text-[#cbd5e1] mt-1 line-clamp-1 italic",
 									children: [
 										"\"",
 										inq.message,
 										"\""
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 435,
-									columnNumber: 21
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("span", {
+								}),
+								/* @__PURE__ */ jsxs("span", {
 									className: "text-[11px] text-[#737a85] font-mono mt-0.5 block",
 									children: [
 										"Target: ",
@@ -23423,16 +15422,8 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 										" · ",
 										new Date(inq.createdAt).toLocaleDateString()
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 438,
-									columnNumber: 21
-								}, void 0)
-							] }, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 425,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("button", {
+								})
+							] }), /* @__PURE__ */ jsx("button", {
 								onClick: () => {
 									setSelectedInquiry(inq);
 									setInquiryNotes(inq.notes || "");
@@ -23440,894 +15431,430 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 								},
 								className: "px-3 py-1 bg-[#161c24] hover:bg-[#c5a059] hover:text-[#0c0f12] text-white rounded-sm font-mono text-[11px] cursor-pointer shrink-0 transition-colors",
 								children: "Manage"
-							}, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 443,
-								columnNumber: 19
-							}, void 0)]
-						}, inq.id, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 424,
-							columnNumber: 17
-						}, void 0))
-					}, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 422,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 401,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 347,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "properties" && /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}, inq.id))
+					})]
+				})]
+			}),
+			activeTab === "properties" && /* @__PURE__ */ jsxs("div", {
 				className: "space-y-6",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#101419] border border-[#202732] p-4 rounded-sm text-xs",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "relative w-full sm:w-80",
-						children: [/* @__PURE__ */ jsxDEV(Search, { className: "w-3.5 h-3.5 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" }, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 468,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("input", {
+						children: [/* @__PURE__ */ jsx(Search, { className: "w-3.5 h-3.5 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2" }), /* @__PURE__ */ jsx("input", {
 							type: "text",
 							value: propertySearch,
 							onChange: (e) => setPropertySearch(e.target.value),
 							placeholder: "Search title, city, ID...",
 							className: "w-full bg-[#161b22] border border-[#283241] rounded-sm pl-9 pr-3 py-1.5 text-white focus:outline-none"
-						}, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 469,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 467,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center gap-3 w-full sm:w-auto",
-						children: [/* @__PURE__ */ jsxDEV("select", {
+						children: [/* @__PURE__ */ jsxs("select", {
 							value: propertyCategoryFilter,
 							onChange: (e) => setPropertyCategoryFilter(e.target.value),
 							className: "bg-[#161b22] border border-[#283241] rounded-sm px-3 py-1.5 text-white focus:outline-none cursor-pointer",
 							children: [
-								/* @__PURE__ */ jsxDEV("option", {
+								/* @__PURE__ */ jsx("option", {
 									value: "All",
 									children: "All Categories"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 484,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Residential",
 									children: "Residential"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 485,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Commercial",
 									children: "Commercial"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 486,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Plots/Land",
 									children: "Plots/Land"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 487,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "New Projects",
 									children: "New Projects"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 488,
-									columnNumber: 17
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 479,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("select", {
+						}), /* @__PURE__ */ jsxs("select", {
 							value: propertyStatusFilter,
 							onChange: (e) => setPropertyStatusFilter(e.target.value),
 							className: "bg-[#161b22] border border-[#283241] rounded-sm px-3 py-1.5 text-white focus:outline-none cursor-pointer",
 							children: [
-								/* @__PURE__ */ jsxDEV("option", {
+								/* @__PURE__ */ jsx("option", {
 									value: "All",
 									children: "All Statuses"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 496,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Published",
 									children: "Published"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 497,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Draft",
 									children: "Draft"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 498,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Under Offer",
 									children: "Under Offer"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 499,
-									columnNumber: 17
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("option", {
+								}),
+								/* @__PURE__ */ jsx("option", {
 									value: "Sold",
 									children: "Sold"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 500,
-									columnNumber: 17
-								}, void 0)
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 491,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 478,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 466,
-					columnNumber: 11
-				}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					})]
+				}), /* @__PURE__ */ jsx("div", {
 					className: "bg-[#101419] border border-[#202732] rounded-sm overflow-hidden shadow-xl",
-					children: /* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsx("div", {
 						className: "overflow-x-auto",
-						children: /* @__PURE__ */ jsxDEV("table", {
+						children: /* @__PURE__ */ jsxs("table", {
 							className: "w-full text-left text-xs font-mono",
-							children: [/* @__PURE__ */ jsxDEV("thead", { children: /* @__PURE__ */ jsxDEV("tr", {
+							children: [/* @__PURE__ */ jsx("thead", { children: /* @__PURE__ */ jsxs("tr", {
 								className: "bg-[#141922] border-b border-[#202732] text-[#8a909a] uppercase text-[10px]",
 								children: [
-									/* @__PURE__ */ jsxDEV("th", {
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-4",
 										children: "Estate"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 511,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("th", {
+									}),
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-3",
 										children: "Category"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 512,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("th", {
+									}),
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-3",
 										children: "Asking Price"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 513,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("th", {
+									}),
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-3",
 										children: "Location"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 514,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("th", {
+									}),
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-3",
 										children: "Source"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 515,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("th", {
+									}),
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-3",
 										children: "Status"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 516,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("th", {
+									}),
+									/* @__PURE__ */ jsx("th", {
 										className: "py-3 px-4 text-right",
 										children: "Actions"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 517,
-										columnNumber: 21
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 510,
-								columnNumber: 19
-							}, void 0) }, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 509,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("tbody", {
+							}) }), /* @__PURE__ */ jsx("tbody", {
 								className: "divide-y divide-[#18202b] text-[#cbd5e1]",
-								children: filteredProperties.map((p) => /* @__PURE__ */ jsxDEV("tr", {
+								children: filteredProperties.map((p) => /* @__PURE__ */ jsxs("tr", {
 									className: "hover:bg-[#141a23] transition-colors",
 									children: [
-										/* @__PURE__ */ jsxDEV("td", {
+										/* @__PURE__ */ jsx("td", {
 											className: "py-3 px-4",
-											children: /* @__PURE__ */ jsxDEV("div", {
+											children: /* @__PURE__ */ jsxs("div", {
 												className: "flex items-center gap-3",
 												children: [(() => {
 													const primaryImg = getPrimaryPropertyImage(p);
-													return primaryImg.url ? /* @__PURE__ */ jsxDEV("img", {
+													return primaryImg.url ? /* @__PURE__ */ jsx("img", {
 														src: primaryImg.url,
 														alt: p.title,
 														className: `w-10 h-10 rounded-sm shrink-0 ${primaryImg.isLogo ? "object-contain p-1 bg-[#0b0f14] border border-[#242c38]" : "object-cover bg-[#161c24]"}`
-													}, void 0, false, {
-														fileName: _jsxFileName$6,
-														lineNumber: 528,
-														columnNumber: 31
-													}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+													}) : /* @__PURE__ */ jsx("div", {
 														className: "w-10 h-10 rounded-sm bg-[#161c24] flex items-center justify-center text-[#c5a059] font-serif text-xs font-bold shrink-0",
 														children: "B"
-													}, void 0, false, {
-														fileName: _jsxFileName$6,
-														lineNumber: 536,
-														columnNumber: 31
-													}, void 0);
-												})(), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+													});
+												})(), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 													className: "font-serif text-sm font-medium text-white block",
 													children: p.title
-												}, void 0, false, {
-													fileName: _jsxFileName$6,
-													lineNumber: 542,
-													columnNumber: 29
-												}, void 0), /* @__PURE__ */ jsxDEV("span", {
+												}), /* @__PURE__ */ jsxs("span", {
 													className: "text-[10px] text-[#737a85] font-mono",
 													children: [p.bedrooms > 0 ? `${p.bedrooms} Beds · ` : "", p.interiorAreaSqFt ? `${p.interiorAreaSqFt.toLocaleString()} sq ft` : ""]
-												}, void 0, true, {
-													fileName: _jsxFileName$6,
-													lineNumber: 545,
-													columnNumber: 29
-												}, void 0)] }, void 0, true, {
-													fileName: _jsxFileName$6,
-													lineNumber: 541,
-													columnNumber: 27
-												}, void 0)]
-											}, void 0, true, {
-												fileName: _jsxFileName$6,
-												lineNumber: 524,
-												columnNumber: 25
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 523,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("td", {
+												})] })]
+											})
+										}),
+										/* @__PURE__ */ jsx("td", {
 											className: "py-3 px-3 text-[#d1d5db]",
 											children: p.category
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 552,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("td", {
+										}),
+										/* @__PURE__ */ jsxs("td", {
 											className: "py-3 px-3 text-[#c5a059] font-bold tabular-nums",
 											children: [
 												p.currency,
 												" ",
 												p.price.toLocaleString()
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$6,
-											lineNumber: 556,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("td", {
+										}),
+										/* @__PURE__ */ jsxs("td", {
 											className: "py-3 px-3 text-[#9ca3af]",
 											children: [
 												p.city,
 												", ",
 												p.country
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$6,
-											lineNumber: 560,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("td", {
+										}),
+										/* @__PURE__ */ jsx("td", {
 											className: "py-3 px-3",
-											children: /* @__PURE__ */ jsxDEV("span", {
+											children: /* @__PURE__ */ jsx("span", {
 												className: `text-[10px] px-1.5 py-0.5 rounded-sm uppercase ${p.source.type === "wordpress" ? "bg-blue-950 text-blue-300" : p.source.type === "csv" ? "bg-purple-950 text-purple-300" : "bg-[#1e2531] text-[#9ca3af]"}`,
 												children: p.source.type
-											}, void 0, false, {
-												fileName: _jsxFileName$6,
-												lineNumber: 565,
-												columnNumber: 25
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 564,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("td", {
+											})
+										}),
+										/* @__PURE__ */ jsx("td", {
 											className: "py-3 px-3",
-											children: /* @__PURE__ */ jsxDEV("button", {
+											children: /* @__PURE__ */ jsx("button", {
 												onClick: () => handleTogglePublish(p.id),
 												className: `text-[10px] font-mono px-2 py-0.5 rounded-sm cursor-pointer uppercase ${p.status === "Published" ? "bg-emerald-950 text-emerald-300 border border-emerald-800" : "bg-amber-950 text-amber-300 border border-amber-800"}`,
 												children: p.status
-											}, void 0, false, {
-												fileName: _jsxFileName$6,
-												lineNumber: 574,
-												columnNumber: 25
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 573,
-											columnNumber: 23
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("td", {
+											})
+										}),
+										/* @__PURE__ */ jsx("td", {
 											className: "py-3 px-4 text-right",
-											children: /* @__PURE__ */ jsxDEV("div", {
+											children: /* @__PURE__ */ jsxs("div", {
 												className: "inline-flex items-center gap-2",
 												children: [
-													/* @__PURE__ */ jsxDEV("button", {
+													/* @__PURE__ */ jsx("button", {
 														onClick: () => onViewProperty(p),
 														className: "p-1.5 bg-[#181f2a] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#cbd5e1] rounded-sm cursor-pointer",
 														title: "Inspect Live",
-														children: /* @__PURE__ */ jsxDEV(ExternalLink, { className: "w-3.5 h-3.5" }, void 0, false, {
-															fileName: _jsxFileName$6,
-															lineNumber: 593,
-															columnNumber: 29
-														}, void 0)
-													}, void 0, false, {
-														fileName: _jsxFileName$6,
-														lineNumber: 588,
-														columnNumber: 27
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("button", {
+														children: /* @__PURE__ */ jsx(ExternalLink, { className: "w-3.5 h-3.5" })
+													}),
+													/* @__PURE__ */ jsx("button", {
 														onClick: () => {
 															setEditingInitialTab("media");
 															setEditingProperty(p);
 														},
 														className: "p-1.5 bg-[#181f2a] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#cbd5e1] rounded-sm cursor-pointer",
 														title: "Upload / Change Main Image",
-														children: /* @__PURE__ */ jsxDEV(Image, { className: "w-3.5 h-3.5" }, void 0, false, {
-															fileName: _jsxFileName$6,
-															lineNumber: 603,
-															columnNumber: 29
-														}, void 0)
-													}, void 0, false, {
-														fileName: _jsxFileName$6,
-														lineNumber: 595,
-														columnNumber: 27
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("button", {
+														children: /* @__PURE__ */ jsx(Image, { className: "w-3.5 h-3.5" })
+													}),
+													/* @__PURE__ */ jsx("button", {
 														onClick: () => {
 															setEditingInitialTab("basics");
 															setEditingProperty(p);
 														},
 														className: "p-1.5 bg-[#181f2a] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#cbd5e1] rounded-sm cursor-pointer",
 														title: "Edit",
-														children: /* @__PURE__ */ jsxDEV(Edit, { className: "w-3.5 h-3.5" }, void 0, false, {
-															fileName: _jsxFileName$6,
-															lineNumber: 613,
-															columnNumber: 29
-														}, void 0)
-													}, void 0, false, {
-														fileName: _jsxFileName$6,
-														lineNumber: 605,
-														columnNumber: 27
-													}, void 0),
-													/* @__PURE__ */ jsxDEV("button", {
+														children: /* @__PURE__ */ jsx(Edit, { className: "w-3.5 h-3.5" })
+													}),
+													/* @__PURE__ */ jsx("button", {
 														onClick: () => handleDeleteProperty(p.id, p.title),
 														className: "p-1.5 bg-[#181f2a] hover:bg-red-600 text-[#cbd5e1] hover:text-white rounded-sm cursor-pointer",
 														title: "Delete",
-														children: /* @__PURE__ */ jsxDEV(Trash2, { className: "w-3.5 h-3.5" }, void 0, false, {
-															fileName: _jsxFileName$6,
-															lineNumber: 620,
-															columnNumber: 29
-														}, void 0)
-													}, void 0, false, {
-														fileName: _jsxFileName$6,
-														lineNumber: 615,
-														columnNumber: 27
-													}, void 0)
+														children: /* @__PURE__ */ jsx(Trash2, { className: "w-3.5 h-3.5" })
+													})
 												]
-											}, void 0, true, {
-												fileName: _jsxFileName$6,
-												lineNumber: 587,
-												columnNumber: 25
-											}, void 0)
-										}, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 586,
-											columnNumber: 23
-										}, void 0)
+											})
+										})
 									]
-								}, p.id, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 522,
-									columnNumber: 21
-								}, void 0))
-							}, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 520,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 508,
-							columnNumber: 15
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 507,
-						columnNumber: 13
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$6,
-					lineNumber: 506,
-					columnNumber: 11
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 463,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "inquiries" && /* @__PURE__ */ jsxDEV("div", {
+								}, p.id))
+							})]
+						})
+					})
+				})]
+			}),
+			activeTab === "inquiries" && /* @__PURE__ */ jsxs("div", {
 				className: "grid grid-cols-1 lg:grid-cols-12 gap-8 items-start",
-				children: [/* @__PURE__ */ jsxDEV("div", {
+				children: [/* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-7 bg-[#101419] border border-[#202732] rounded-sm shadow-xl overflow-hidden",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "p-4 bg-[#141922] border-b border-[#202732] flex items-center justify-between",
-						children: [/* @__PURE__ */ jsxDEV("h3", {
+						children: [/* @__PURE__ */ jsxs("h3", {
 							className: "font-serif text-base font-medium text-white",
 							children: [
 								"Client Transmissions (",
 								inquiries.length,
 								")"
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 641,
-							columnNumber: 15
-						}, void 0), /* @__PURE__ */ jsxDEV("span", {
+						}), /* @__PURE__ */ jsxs("span", {
 							className: "text-xs text-[#8a909a] font-mono",
 							children: [inquiries.filter((i) => i.status === "New").length, " Pending Review"]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 644,
-							columnNumber: 15
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 640,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsx("div", {
 						className: "divide-y divide-[#18202b]",
 						children: inquiries.map((inq) => {
 							const isSelected = selectedInquiry?.id === inq.id;
-							return /* @__PURE__ */ jsxDEV("div", {
+							return /* @__PURE__ */ jsx("div", {
 								onClick: () => {
 									setSelectedInquiry(inq);
 									setInquiryNotes(inq.notes || "");
 								},
 								className: `p-4 transition-colors cursor-pointer text-xs ${isSelected ? "bg-[#18202b]" : "hover:bg-[#131821]"}`,
-								children: /* @__PURE__ */ jsxDEV("div", {
+								children: /* @__PURE__ */ jsxs("div", {
 									className: "flex items-start justify-between gap-3",
-									children: [/* @__PURE__ */ jsxDEV("div", { children: [
-										/* @__PURE__ */ jsxDEV("div", {
+									children: [/* @__PURE__ */ jsxs("div", { children: [
+										/* @__PURE__ */ jsxs("div", {
 											className: "flex items-center gap-2",
-											children: [/* @__PURE__ */ jsxDEV("span", {
+											children: [/* @__PURE__ */ jsx("span", {
 												className: "font-semibold text-white font-serif text-sm",
 												children: inq.clientName
-											}, void 0, false, {
-												fileName: _jsxFileName$6,
-												lineNumber: 666,
-												columnNumber: 27
-											}, void 0), /* @__PURE__ */ jsxDEV("span", {
+											}), /* @__PURE__ */ jsx("span", {
 												className: `text-[10px] font-mono px-2 py-0.2 rounded-sm ${inq.status === "New" ? "bg-emerald-950 text-emerald-300" : inq.status === "In Negotiation" ? "bg-blue-950 text-blue-300" : "bg-[#1e2531] text-[#9ca3af]"}`,
 												children: inq.status
-											}, void 0, false, {
-												fileName: _jsxFileName$6,
-												lineNumber: 667,
-												columnNumber: 27
-											}, void 0)]
-										}, void 0, true, {
-											fileName: _jsxFileName$6,
-											lineNumber: 665,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("p", {
+											})]
+										}),
+										/* @__PURE__ */ jsxs("p", {
 											className: "text-[#8a909a] font-mono mt-0.5",
 											children: [
 												inq.email,
 												" · ",
 												inq.phone
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$6,
-											lineNumber: 674,
-											columnNumber: 25
-										}, void 0),
-										/* @__PURE__ */ jsxDEV("p", {
+										}),
+										/* @__PURE__ */ jsxs("p", {
 											className: "text-[#cbd5e1] mt-1 line-clamp-1 italic",
 											children: [
 												"\"",
 												inq.message,
 												"\""
 											]
-										}, void 0, true, {
-											fileName: _jsxFileName$6,
-											lineNumber: 677,
-											columnNumber: 25
-										}, void 0)
-									] }, void 0, true, {
-										fileName: _jsxFileName$6,
-										lineNumber: 664,
-										columnNumber: 23
-									}, void 0), /* @__PURE__ */ jsxDEV("span", {
+										})
+									] }), /* @__PURE__ */ jsx("span", {
 										className: "text-[10px] text-[#737a85] font-mono shrink-0",
 										children: new Date(inq.createdAt).toLocaleDateString()
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 682,
-										columnNumber: 23
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 663,
-									columnNumber: 21
-								}, void 0)
-							}, inq.id, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 653,
-								columnNumber: 19
-							}, void 0);
+									})]
+								})
+							}, inq.id);
 						})
-					}, void 0, false, {
-						fileName: _jsxFileName$6,
-						lineNumber: 649,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 639,
-					columnNumber: 11
-				}, void 0), selectedInquiry ? /* @__PURE__ */ jsxDEV("div", {
+					})]
+				}), selectedInquiry ? /* @__PURE__ */ jsxs("div", {
 					className: "lg:col-span-5 bg-[#101419] border border-[#202732] p-6 rounded-sm space-y-6 shadow-xl",
-					children: [/* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-between pb-3 border-b border-[#202732]",
-						children: [/* @__PURE__ */ jsxDEV("h4", {
+						children: [/* @__PURE__ */ jsxs("h4", {
 							className: "font-serif text-lg font-medium text-white",
 							children: ["Lead Dossier: ", selectedInquiry.clientName]
-						}, void 0, true, {
-							fileName: _jsxFileName$6,
-							lineNumber: 696,
-							columnNumber: 17
-						}, void 0), /* @__PURE__ */ jsxDEV("span", {
+						}), /* @__PURE__ */ jsx("span", {
 							className: "text-xs font-mono text-[#c5a059]",
 							children: selectedInquiry.preferredContactMethod.toUpperCase()
-						}, void 0, false, {
-							fileName: _jsxFileName$6,
-							lineNumber: 699,
-							columnNumber: 17
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 695,
-						columnNumber: 15
-					}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
 						className: "space-y-3 text-xs",
 						children: [
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 								className: "text-[#737a85] font-mono uppercase block",
 								children: "Target Property"
-							}, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 706,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-white font-serif text-sm",
 								children: selectedInquiry.propertyTitle || "General Advisory Mandate"
-							}, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 707,
-								columnNumber: 19
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 705,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", {
 								className: "grid grid-cols-2 gap-3 font-mono",
-								children: [/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#737a85] uppercase block",
 									children: "Budget Indication"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 712,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-[#f7f5f2]",
 									children: selectedInquiry.investmentBudget || "Disclosed under NDA"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 713,
-									columnNumber: 21
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 711,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("span", {
+								})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#737a85] uppercase block",
 									children: "Scheduled Tour"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 716,
-									columnNumber: 21
-								}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								}), /* @__PURE__ */ jsx("span", {
 									className: "text-[#f7f5f2]",
 									children: selectedInquiry.scheduledTourDate || "Flexible"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 717,
-									columnNumber: 21
-								}, void 0)] }, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 715,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 710,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", {
+								})] })]
+							}),
+							/* @__PURE__ */ jsxs("div", {
 								className: "bg-[#141922] p-3 rounded-sm border border-[#202732]",
-								children: [/* @__PURE__ */ jsxDEV("span", {
+								children: [/* @__PURE__ */ jsx("span", {
 									className: "text-[#737a85] font-mono uppercase block mb-1",
 									children: "Confidential Message"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 722,
-									columnNumber: 19
-								}, void 0), /* @__PURE__ */ jsxDEV("p", {
+								}), /* @__PURE__ */ jsxs("p", {
 									className: "text-[#f7f5f2] leading-relaxed italic",
 									children: [
 										"\"",
 										selectedInquiry.message,
 										"\""
 									]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 723,
-									columnNumber: 19
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 721,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 								className: "text-[#737a85] font-mono uppercase block mb-1",
 								children: "Update Status"
-							}, void 0, false, {
-								fileName: _jsxFileName$6,
-								lineNumber: 730,
-								columnNumber: 19
-							}, void 0), /* @__PURE__ */ jsxDEV("select", {
+							}), /* @__PURE__ */ jsxs("select", {
 								value: selectedInquiry.status,
 								onChange: (e) => handleUpdateInquiryStatus(selectedInquiry.id, e.target.value),
 								className: "w-full bg-[#161b22] border border-[#283241] rounded-sm px-3 py-2 text-white font-mono cursor-pointer",
 								children: [
-									/* @__PURE__ */ jsxDEV("option", {
+									/* @__PURE__ */ jsx("option", {
 										value: "New",
 										children: "New"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 736,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("option", {
+									}),
+									/* @__PURE__ */ jsx("option", {
 										value: "Contacted",
 										children: "Contacted"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 737,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("option", {
+									}),
+									/* @__PURE__ */ jsx("option", {
 										value: "In Negotiation",
 										children: "In Negotiation"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 738,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("option", {
+									}),
+									/* @__PURE__ */ jsx("option", {
 										value: "Closed",
 										children: "Closed"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 739,
-										columnNumber: 21
-									}, void 0),
-									/* @__PURE__ */ jsxDEV("option", {
+									}),
+									/* @__PURE__ */ jsx("option", {
 										value: "Archived",
 										children: "Archived"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 740,
-										columnNumber: 21
-									}, void 0)
+									})
 								]
-							}, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 731,
-								columnNumber: 19
-							}, void 0)] }, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 729,
-								columnNumber: 17
-							}, void 0),
-							/* @__PURE__ */ jsxDEV("div", { children: [
-								/* @__PURE__ */ jsxDEV("label", {
+							})] }),
+							/* @__PURE__ */ jsxs("div", { children: [
+								/* @__PURE__ */ jsx("label", {
 									className: "text-[#737a85] font-mono uppercase block mb-1",
 									children: "Managing Advisor Notes"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 746,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("textarea", {
+								}),
+								/* @__PURE__ */ jsx("textarea", {
 									rows: 3,
 									value: inquiryNotes,
 									onChange: (e) => setInquiryNotes(e.target.value),
 									placeholder: "Record NDA signing, verified proof of funds, or private viewing log...",
 									className: "w-full bg-[#161b22] border border-[#283241] rounded-sm p-2 text-white font-mono resize-none focus:outline-none"
-								}, void 0, false, {
-									fileName: _jsxFileName$6,
-									lineNumber: 747,
-									columnNumber: 19
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("div", {
+								}),
+								/* @__PURE__ */ jsxs("div", {
 									className: "mt-2 flex items-center justify-between gap-2",
-									children: [/* @__PURE__ */ jsxDEV("button", {
+									children: [/* @__PURE__ */ jsx("button", {
 										onClick: () => handleUpdateInquiryStatus(selectedInquiry.id, selectedInquiry.status),
 										className: "px-3 py-1 bg-[#18202b] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono text-white rounded-sm cursor-pointer",
 										children: "Save Notes"
-									}, void 0, false, {
-										fileName: _jsxFileName$6,
-										lineNumber: 755,
-										columnNumber: 21
-									}, void 0), /* @__PURE__ */ jsxDEV("button", {
+									}), /* @__PURE__ */ jsxs("button", {
 										onClick: () => handleDeleteInquiry(selectedInquiry.id),
 										className: "px-3 py-1 bg-[#18202b] hover:bg-red-700 text-xs font-mono text-[#9ca3af] hover:text-white rounded-sm cursor-pointer flex items-center gap-1",
-										children: [/* @__PURE__ */ jsxDEV(Trash2, { className: "w-3 h-3" }, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 765,
-											columnNumber: 23
-										}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "Delete Lead" }, void 0, false, {
-											fileName: _jsxFileName$6,
-											lineNumber: 766,
-											columnNumber: 23
-										}, void 0)]
-									}, void 0, true, {
-										fileName: _jsxFileName$6,
-										lineNumber: 761,
-										columnNumber: 21
-									}, void 0)]
-								}, void 0, true, {
-									fileName: _jsxFileName$6,
-									lineNumber: 754,
-									columnNumber: 19
-								}, void 0)
-							] }, void 0, true, {
-								fileName: _jsxFileName$6,
-								lineNumber: 745,
-								columnNumber: 17
-							}, void 0)
+										children: [/* @__PURE__ */ jsx(Trash2, { className: "w-3 h-3" }), /* @__PURE__ */ jsx("span", { children: "Delete Lead" })]
+									})]
+								})
+							] })
 						]
-					}, void 0, true, {
-						fileName: _jsxFileName$6,
-						lineNumber: 704,
-						columnNumber: 15
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$6,
-					lineNumber: 694,
-					columnNumber: 13
-				}, void 0) : /* @__PURE__ */ jsxDEV("div", {
+					})]
+				}) : /* @__PURE__ */ jsx("div", {
 					className: "lg:col-span-5 p-12 bg-[#101419] border border-[#202732] rounded-sm text-center text-xs text-[#8a909a]",
 					children: "Select an inquiry to review client details and update workflow status."
-				}, void 0, false, {
-					fileName: _jsxFileName$6,
-					lineNumber: 773,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$6,
-				lineNumber: 636,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "trophy" && /* @__PURE__ */ jsxDEV(TrophyHoldingsManager, {
+				})]
+			}),
+			activeTab === "trophy" && /* @__PURE__ */ jsx(TrophyHoldingsManager, {
 				properties,
 				onRefreshProperties,
 				onViewProperty
-			}, void 0, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 783,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "collections" && /* @__PURE__ */ jsxDEV(CuratedCollectionsManager, {
+			}),
+			activeTab === "collections" && /* @__PURE__ */ jsx(CuratedCollectionsManager, {
 				properties,
 				onRefreshProperties
-			}, void 0, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 792,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "locations" && /* @__PURE__ */ jsxDEV(LocationManager, {
+			}),
+			activeTab === "locations" && /* @__PURE__ */ jsx(LocationManager, {
 				properties,
 				onRefreshProperties
-			}, void 0, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 800,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "blogs" && /* @__PURE__ */ jsxDEV(BlogManager, {
+			}),
+			activeTab === "blogs" && /* @__PURE__ */ jsx(BlogManager, {
 				blogs: effectiveBlogs,
 				onRefreshBlogs: refreshBlogs
-			}, void 0, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 808,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "wordpress" && /* @__PURE__ */ jsxDEV(WordPressSyncHub, { onRefreshProperties }, void 0, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 816,
-				columnNumber: 9
-			}, void 0),
-			activeTab === "csv" && /* @__PURE__ */ jsxDEV(CsvTransferView, {
+			}),
+			activeTab === "hero-slides" && /* @__PURE__ */ jsx(HeroSliderManager, {
+				slides: effectiveHeroSlides,
+				onRefreshSlides: refreshHeroSlides
+			}),
+			activeTab === "wordpress" && /* @__PURE__ */ jsx(WordPressSyncHub, { onRefreshProperties }),
+			activeTab === "csv" && /* @__PURE__ */ jsx(CsvTransferView, {
 				properties,
 				onRefreshProperties
-			}, void 0, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 821,
-				columnNumber: 9
-			}, void 0),
-			(isCreatingProperty || editingProperty) && /* @__PURE__ */ jsxDEV(PropertyFormModal, {
+			}),
+			(isCreatingProperty || editingProperty) && /* @__PURE__ */ jsx(PropertyFormModal, {
 				property: editingProperty,
 				initialTab: isCreatingProperty ? "basics" : editingInitialTab,
 				isOpen: true,
@@ -24337,20 +15864,11 @@ var AdminDashboard = ({ adminUser, onLogout, onViewProperty, properties, onRefre
 					setEditingInitialTab("basics");
 				},
 				onSave: handleSaveProperty
-			}, `${editingProperty?.id || "new"}-${editingInitialTab}`, false, {
-				fileName: _jsxFileName$6,
-				lineNumber: 829,
-				columnNumber: 9
-			}, void 0)
+			}, `${editingProperty?.id || "new"}-${editingInitialTab}`)
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$6,
-		lineNumber: 230,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/pages/admin/AdminLoginModal.tsx
-var _jsxFileName$5 = "/app/applet/src/pages/admin/AdminLoginModal.tsx";
 var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -24413,136 +15931,64 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 			setError("Unable to reach authentication server. Please verify the backend service is running.");
 		}
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx("div", {
 		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200",
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "relative w-full max-w-md bg-[#101419] border border-[#2c3645] text-[#f7f5f2] rounded-sm shadow-2xl p-6 sm:p-8 space-y-6",
 			onClick: (e) => e.stopPropagation(),
 			children: [
-				/* @__PURE__ */ jsxDEV("button", {
+				/* @__PURE__ */ jsx("button", {
 					onClick: onClose,
 					"aria-label": "Close login dialog",
 					className: "absolute top-4 right-4 text-[#8a909a] hover:text-[#f7f5f2] transition-colors cursor-pointer p-1 rounded-sm hover:bg-[#1a212b]",
-					children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-						fileName: _jsxFileName$5,
-						lineNumber: 103,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$5,
-					lineNumber: 98,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+				}),
+				/* @__PURE__ */ jsxs("div", {
 					className: "text-center space-y-2",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "relative inline-block",
-							children: [/* @__PURE__ */ jsxDEV("img", {
+							children: [/* @__PURE__ */ jsx("img", {
 								src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 								alt: "BUILDsmore Logo",
 								className: "w-16 h-16 rounded-sm object-cover border border-[#c5a059]/50 mx-auto shadow-md"
-							}, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 109,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							}), /* @__PURE__ */ jsx("div", {
 								className: "absolute -bottom-1 -right-1 bg-[#101419] border border-[#c5a059] p-0.5 rounded-full",
-								children: /* @__PURE__ */ jsxDEV(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-									fileName: _jsxFileName$5,
-									lineNumber: 115,
-									columnNumber: 15
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 114,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 108,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("span", {
+								children: /* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" })
+							})]
+						}),
+						/* @__PURE__ */ jsx("span", {
 							className: "text-[10px] uppercase font-mono tracking-[0.25em] text-[#c5a059] block pt-1",
 							children: "BUILDsmore · Administrative Gateway"
-						}, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 119,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h2", {
+						}),
+						/* @__PURE__ */ jsx("h2", {
 							className: "font-serif text-2xl font-normal text-white",
 							children: "Admin Authentication"
-						}, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 122,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsx("p", {
 							className: "text-xs text-[#8a909a] max-w-xs mx-auto",
 							children: "Sign in with verified administrator credentials to manage properties, inquiries, and settings."
-						}, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 125,
-							columnNumber: 11
-						}, void 0)
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$5,
-					lineNumber: 107,
-					columnNumber: 9
-				}, void 0),
-				!error && authNotice && /* @__PURE__ */ jsxDEV("div", {
+				}),
+				!error && authNotice && /* @__PURE__ */ jsxs("div", {
 					className: "p-3 bg-amber-950/50 border border-amber-700/80 rounded-sm text-xs text-amber-200 flex items-start gap-2.5 animate-in fade-in duration-150",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-amber-400 shrink-0 mt-0.5" }, void 0, false, {
-						fileName: _jsxFileName$5,
-						lineNumber: 133,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: authNotice }, void 0, false, {
-						fileName: _jsxFileName$5,
-						lineNumber: 134,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$5,
-					lineNumber: 132,
-					columnNumber: 11
-				}, void 0),
-				error && /* @__PURE__ */ jsxDEV("div", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-amber-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: authNotice })]
+				}),
+				error && /* @__PURE__ */ jsxs("div", {
 					className: "p-3 bg-red-950/50 border border-red-800/80 rounded-sm text-xs text-red-200 flex items-start gap-2.5 animate-in fade-in duration-150",
-					children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }, void 0, false, {
-						fileName: _jsxFileName$5,
-						lineNumber: 141,
-						columnNumber: 13
-					}, void 0), /* @__PURE__ */ jsxDEV("span", { children: error }, void 0, false, {
-						fileName: _jsxFileName$5,
-						lineNumber: 142,
-						columnNumber: 13
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$5,
-					lineNumber: 140,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("form", {
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
+				}),
+				/* @__PURE__ */ jsxs("form", {
 					onSubmit: handleLogin,
 					className: "space-y-4",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("label", {
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
 							className: "text-[11px] font-mono text-[#a0a8b4] uppercase block mb-1.5",
 							children: "Administrator Email"
-						}, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 149,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "relative",
-							children: [/* @__PURE__ */ jsxDEV(User, { className: "w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 153,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							children: [/* @__PURE__ */ jsx(User, { className: "w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
 								ref: inputRef,
 								type: "email",
 								required: true,
@@ -24551,43 +15997,19 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 								onChange: (e) => setEmail(e.target.value),
 								placeholder: "info@buildsmoremohali.com",
 								className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-9 pr-3 py-2.5 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono transition-colors"
-							}, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 154,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 152,
-							columnNumber: 13
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 148,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("div", {
+							})]
+						})] }),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("div", {
 							className: "flex items-center justify-between mb-1.5",
-							children: /* @__PURE__ */ jsxDEV("label", {
+							children: /* @__PURE__ */ jsx("label", {
 								className: "text-[11px] font-mono text-[#a0a8b4] uppercase block",
 								children: "Password"
-							}, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 169,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 168,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+							})
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "relative",
 							children: [
-								/* @__PURE__ */ jsxDEV(KeyRound, { className: "w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }, void 0, false, {
-									fileName: _jsxFileName$5,
-									lineNumber: 174,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("input", {
+								/* @__PURE__ */ jsx(KeyRound, { className: "w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }),
+								/* @__PURE__ */ jsx("input", {
 									type: showPassword ? "text" : "password",
 									required: true,
 									autoComplete: "current-password",
@@ -24595,108 +16017,39 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 									onChange: (e) => setPassword(e.target.value),
 									placeholder: "Enter admin password",
 									className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-9 pr-10 py-2.5 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono transition-colors"
-								}, void 0, false, {
-									fileName: _jsxFileName$5,
-									lineNumber: 175,
-									columnNumber: 15
-								}, void 0),
-								/* @__PURE__ */ jsxDEV("button", {
+								}),
+								/* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: () => setShowPassword(!showPassword),
 									className: "absolute right-3 top-1/2 -translate-y-1/2 text-[#8a909a] hover:text-[#f7f5f2] transition-colors cursor-pointer",
 									"aria-label": showPassword ? "Hide password" : "Show password",
-									children: showPassword ? /* @__PURE__ */ jsxDEV(EyeOff, { className: "w-4 h-4" }, void 0, false, {
-										fileName: _jsxFileName$5,
-										lineNumber: 190,
-										columnNumber: 33
-									}, void 0) : /* @__PURE__ */ jsxDEV(Eye, { className: "w-4 h-4" }, void 0, false, {
-										fileName: _jsxFileName$5,
-										lineNumber: 190,
-										columnNumber: 66
-									}, void 0)
-								}, void 0, false, {
-									fileName: _jsxFileName$5,
-									lineNumber: 184,
-									columnNumber: 15
-								}, void 0)
+									children: showPassword ? /* @__PURE__ */ jsx(EyeOff, { className: "w-4 h-4" }) : /* @__PURE__ */ jsx(Eye, { className: "w-4 h-4" })
+								})
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 173,
-							columnNumber: 13
-						}, void 0)] }, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 167,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+						})] }),
+						/* @__PURE__ */ jsxs("button", {
 							type: "submit",
 							disabled: loading,
 							className: "w-full py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 mt-2",
-							children: [/* @__PURE__ */ jsxDEV(Lock, { className: "w-3.5 h-3.5" }, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 200,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: loading ? "Authenticating Session..." : "Sign In as Administrator" }, void 0, false, {
-								fileName: _jsxFileName$5,
-								lineNumber: 201,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 195,
-							columnNumber: 11
-						}, void 0)
+							children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: loading ? "Authenticating Session..." : "Sign In as Administrator" })]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$5,
-					lineNumber: 147,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "pt-3 border-t border-[#1f2732]",
-					children: /* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsxs("div", {
 						className: "flex items-start gap-2 text-[11px] text-[#8a909a] leading-relaxed bg-[#141a22] p-2.5 border border-[#222b37] rounded-sm",
-						children: [/* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" }, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 208,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", { children: [/* @__PURE__ */ jsxDEV("strong", {
+						children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("strong", {
 							className: "text-[#f7f5f2] block",
 							children: "Browser-Bound Secure Session"
-						}, void 0, false, {
-							fileName: _jsxFileName$5,
-							lineNumber: 210,
-							columnNumber: 15
-						}, void 0), "Your session expires immediately whenever you close the browser window or tab."] }, void 0, true, {
-							fileName: _jsxFileName$5,
-							lineNumber: 209,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$5,
-						lineNumber: 207,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$5,
-					lineNumber: 206,
-					columnNumber: 9
-				}, void 0)
+						}), "Your session expires immediately whenever you close the browser window or tab."] })]
+					})
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$5,
-			lineNumber: 92,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$5,
-		lineNumber: 91,
-		columnNumber: 5
-	}, void 0);
+		})
+	});
 };
 // src/components/inquiry/PrivateInquiryModal.tsx
-var _jsxFileName$4 = "/app/applet/src/components/inquiry/PrivateInquiryModal.tsx";
 var PrivateInquiryModal = ({ isOpen, onClose, propertyTitle }) => {
 	const [name, setName] = useState("");
 	const [phone, setPhone] = useState("");
@@ -24769,259 +16122,131 @@ var PrivateInquiryModal = ({ isOpen, onClose, propertyTitle }) => {
 		formStartedAt.current = Date.now();
 		onClose();
 	};
-	return /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx("div", {
 		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in",
 		onClick: handleResetAndClose,
 		role: "dialog",
 		"aria-modal": "true",
 		"aria-labelledby": "inquiry-modal-title",
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "relative w-full max-w-[450px] bg-[#12161c] border border-[#263140] text-[#f7f5f2] rounded-xl shadow-2xl p-6 sm:p-7 space-y-5 animate-scale-up",
 			onClick: (e) => e.stopPropagation(),
 			children: [
-				/* @__PURE__ */ jsxDEV("button", {
+				/* @__PURE__ */ jsx("button", {
 					onClick: handleResetAndClose,
 					className: "absolute top-4 right-4 text-gray-400 hover:text-[#f7f5f2] p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer",
 					"aria-label": "Close dialog",
-					children: /* @__PURE__ */ jsxDEV(X, { className: "w-5 h-5" }, void 0, false, {
-						fileName: _jsxFileName$4,
-						lineNumber: 124,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$4,
-					lineNumber: 119,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "flex flex-col items-center text-center",
-					children: /* @__PURE__ */ jsxDEV("div", {
+					children: /* @__PURE__ */ jsxs("div", {
 						className: "flex items-center justify-center gap-3 mb-1",
-						children: [/* @__PURE__ */ jsxDEV("img", {
+						children: [/* @__PURE__ */ jsx("img", {
 							src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 							alt: "BUILDsmore Logo",
 							className: "h-11 w-11 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm"
-						}, void 0, false, {
-							fileName: _jsxFileName$4,
-							lineNumber: 130,
-							columnNumber: 13
-						}, void 0), /* @__PURE__ */ jsxDEV("div", {
+						}), /* @__PURE__ */ jsxs("div", {
 							className: "text-left",
-							children: [/* @__PURE__ */ jsxDEV("span", {
+							children: [/* @__PURE__ */ jsx("span", {
 								className: "font-serif text-xl sm:text-2xl tracking-[0.14em] font-medium text-[#f7f5f2] uppercase leading-none block",
 								children: "BUILDsmore"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 136,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[9px] font-mono tracking-[0.2em] text-[#c5a059] uppercase block font-semibold mt-1",
 								children: "Let's Grow Together"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 139,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 135,
-							columnNumber: 13
-						}, void 0)]
-					}, void 0, true, {
-						fileName: _jsxFileName$4,
-						lineNumber: 129,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$4,
-					lineNumber: 128,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+							})]
+						})]
+					})
+				}),
+				/* @__PURE__ */ jsxs("div", {
 					className: "text-center",
-					children: [/* @__PURE__ */ jsxDEV("h3", {
+					children: [/* @__PURE__ */ jsx("h3", {
 						id: "inquiry-modal-title",
 						className: "font-serif text-xl sm:text-2xl font-normal text-[#f7f5f2] tracking-normal leading-snug",
 						children: "Register here and Avail the Best Offers!!"
-					}, void 0, false, {
-						fileName: _jsxFileName$4,
-						lineNumber: 148,
-						columnNumber: 11
-					}, void 0), /* @__PURE__ */ jsxDEV("p", {
+					}), /* @__PURE__ */ jsx("p", {
 						className: "text-xs text-[#9ca3af] mt-1.5 leading-relaxed",
 						children: "Exclusive access to prime holdings, early bird valuations & priority site visits."
-					}, void 0, false, {
-						fileName: _jsxFileName$4,
-						lineNumber: 154,
-						columnNumber: 11
-					}, void 0)]
-				}, void 0, true, {
-					fileName: _jsxFileName$4,
-					lineNumber: 147,
-					columnNumber: 9
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", {
 					className: "border border-[#c5a059]/25 bg-[#171d26]/85 rounded-lg p-3.5 grid grid-cols-3 gap-2 text-center",
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-col items-center justify-center",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "w-9 h-9 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/30 text-[#c5a059] flex items-center justify-center mb-1.5 shadow-xs mx-auto",
-								children: /* @__PURE__ */ jsxDEV(PhoneCall, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 163,
-									columnNumber: 15
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 162,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								children: /* @__PURE__ */ jsx(PhoneCall, { className: "w-4 h-4" })
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[11px] font-medium text-[#e5e7eb] leading-tight",
 								children: "Instant Call Back"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 165,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 161,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-col items-center justify-center",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "w-9 h-9 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/30 text-[#c5a059] flex items-center justify-center mb-1.5 shadow-xs mx-auto",
-								children: /* @__PURE__ */ jsxDEV(Tag, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 172,
-									columnNumber: 15
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 171,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								children: /* @__PURE__ */ jsx(Tag, { className: "w-4 h-4" })
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[11px] font-medium text-[#e5e7eb] leading-tight",
 								children: "Unmatched Price"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 174,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 170,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex flex-col items-center justify-center",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "w-9 h-9 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/30 text-[#c5a059] flex items-center justify-center mb-1.5 shadow-xs mx-auto",
-								children: /* @__PURE__ */ jsxDEV(Car, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 181,
-									columnNumber: 15
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 180,
-								columnNumber: 13
-							}, void 0), /* @__PURE__ */ jsxDEV("span", {
+								children: /* @__PURE__ */ jsx(Car, { className: "w-4 h-4" })
+							}), /* @__PURE__ */ jsx("span", {
 								className: "text-[11px] font-medium text-[#e5e7eb] leading-tight",
 								children: "Free Site Visit"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 183,
-								columnNumber: 13
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 179,
-							columnNumber: 11
-						}, void 0)
+							})]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$4,
-					lineNumber: 160,
-					columnNumber: 9
-				}, void 0),
-				submitted ? /* @__PURE__ */ jsxDEV("div", {
+				}),
+				submitted ? /* @__PURE__ */ jsxs("div", {
 					className: "py-6 px-4 bg-[#171d26] border border-[#c5a059]/40 rounded-lg text-center space-y-3",
 					children: [
-						/* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-12 h-12 text-[#c5a059] mx-auto animate-bounce" }, void 0, false, {
-							fileName: _jsxFileName$4,
-							lineNumber: 192,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h4", {
+						/* @__PURE__ */ jsx(CheckCircle2, { className: "w-12 h-12 text-[#c5a059] mx-auto animate-bounce" }),
+						/* @__PURE__ */ jsx("h4", {
 							className: "font-serif text-2xl font-normal text-[#f7f5f2]",
 							children: "Registration Successful!"
-						}, void 0, false, {
-							fileName: _jsxFileName$4,
-							lineNumber: 193,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("p", {
+						}),
+						/* @__PURE__ */ jsxs("p", {
 							className: "text-xs text-[#9ca3af] leading-relaxed max-w-xs mx-auto",
 							children: [
 								"Thank you, ",
-								/* @__PURE__ */ jsxDEV("strong", {
+								/* @__PURE__ */ jsx("strong", {
 									className: "text-[#f7f5f2] font-semibold",
 									children: name
-								}, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 197,
-									columnNumber: 26
-								}, void 0),
+								}),
 								".",
 								" ",
 								successNote || `Our senior property advisor will call you at ${phone} with the best available offers.`
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 196,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "pt-2",
-							children: /* @__PURE__ */ jsxDEV("button", {
+							children: /* @__PURE__ */ jsx("button", {
 								type: "button",
 								onClick: handleResetAndClose,
 								className: "px-6 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-[0.15em] rounded-sm transition-colors cursor-pointer shadow-sm",
 								children: "Done"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 202,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$4,
-							lineNumber: 201,
-							columnNumber: 13
-						}, void 0)
+							})
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$4,
-					lineNumber: 191,
-					columnNumber: 11
-				}, void 0) : /* @__PURE__ */ jsxDEV("form", {
+				}) : /* @__PURE__ */ jsxs("form", {
 					onSubmit: handleSubmit,
 					className: "space-y-3.5",
 					noValidate: true,
 					children: [
-						/* @__PURE__ */ jsxDEV("div", {
+						/* @__PURE__ */ jsxs("div", {
 							className: "sr-only",
 							"aria-hidden": "true",
-							children: [/* @__PURE__ */ jsxDEV("label", {
+							children: [/* @__PURE__ */ jsx("label", {
 								htmlFor: "modal-website-field",
 								children: "Website"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 214,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+							}), /* @__PURE__ */ jsx("input", {
 								id: "modal-website-field",
 								type: "text",
 								name: "website",
@@ -25029,320 +16254,150 @@ var PrivateInquiryModal = ({ isOpen, onClose, propertyTitle }) => {
 								autoComplete: "off",
 								value: honeypot,
 								onChange: (e) => setHoneypot(e.target.value)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 215,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 213,
-							columnNumber: 13
-						}, void 0),
-						error && /* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						error && /* @__PURE__ */ jsxs("div", {
 							role: "alert",
 							className: "p-2.5 bg-red-950/60 border border-red-500/40 text-red-300 text-xs rounded-sm flex items-start gap-2",
-							children: [/* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 228,
-								columnNumber: 17
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: error }, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 229,
-								columnNumber: 17
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 227,
-							columnNumber: 15
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "relative",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c5a059]/80",
-								children: /* @__PURE__ */ jsxDEV(User, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 236,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 235,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								children: /* @__PURE__ */ jsx(User, { className: "w-4 h-4" })
+							}), /* @__PURE__ */ jsx("input", {
 								type: "text",
 								required: true,
 								value: name,
 								onChange: (e) => setName(e.target.value),
 								placeholder: "Name *",
 								className: "w-full pl-10 pr-3.5 py-2.5 bg-[#171d26] border border-[#2a3443] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-all shadow-xs"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 238,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 234,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "relative",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c5a059]/80",
-								children: /* @__PURE__ */ jsxDEV(Phone, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 251,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 250,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								children: /* @__PURE__ */ jsx(Phone, { className: "w-4 h-4" })
+							}), /* @__PURE__ */ jsx("input", {
 								type: "tel",
 								required: true,
 								value: phone,
 								onChange: (e) => setPhone(e.target.value),
 								placeholder: "Phone *",
 								className: "w-full pl-10 pr-3.5 py-2.5 bg-[#171d26] border border-[#2a3443] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-all shadow-xs"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 253,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 249,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							})]
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "relative",
-							children: [/* @__PURE__ */ jsxDEV("div", {
+							children: [/* @__PURE__ */ jsx("div", {
 								className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c5a059]/80",
-								children: /* @__PURE__ */ jsxDEV(Mail, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$4,
-									lineNumber: 266,
-									columnNumber: 17
-								}, void 0)
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 265,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("input", {
+								children: /* @__PURE__ */ jsx(Mail, { className: "w-4 h-4" })
+							}), /* @__PURE__ */ jsx("input", {
 								type: "email",
 								value: email,
 								onChange: (e) => setEmail(e.target.value),
 								placeholder: "Email (Optional)",
 								className: "w-full pl-10 pr-3.5 py-2.5 bg-[#171d26] border border-[#2a3443] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-all shadow-xs"
-							}, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 268,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 264,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("button", {
+							})]
+						}),
+						/* @__PURE__ */ jsx("button", {
 							type: "submit",
 							disabled: loading,
 							className: "w-full py-3 bg-[#c5a059] hover:bg-[#d4af5f] active:bg-[#b38e47] text-[#0c0f12] font-semibold text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-[#c5a059]/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-2",
-							children: /* @__PURE__ */ jsxDEV("span", { children: loading ? "Submitting..." : "Send" }, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 283,
-								columnNumber: 15
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$4,
-							lineNumber: 278,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+							children: /* @__PURE__ */ jsx("span", { children: loading ? "Submitting..." : "Send" })
+						}),
+						/* @__PURE__ */ jsxs("div", {
 							className: "flex items-center justify-center gap-1.5 text-[11px] text-[#8a909a] pt-1",
-							children: [/* @__PURE__ */ jsxDEV(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 288,
-								columnNumber: 15
-							}, void 0), /* @__PURE__ */ jsxDEV("span", { children: "100% Confidential · Direct Support: 977-987-8303" }, void 0, false, {
-								fileName: _jsxFileName$4,
-								lineNumber: 289,
-								columnNumber: 15
-							}, void 0)]
-						}, void 0, true, {
-							fileName: _jsxFileName$4,
-							lineNumber: 287,
-							columnNumber: 13
-						}, void 0)
+							children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "100% Confidential · Direct Support: 977-987-8303" })]
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$4,
-					lineNumber: 212,
-					columnNumber: 11
-				}, void 0),
-				/* @__PURE__ */ jsxDEV("div", {
+				}),
+				/* @__PURE__ */ jsx("div", {
 					className: "flex justify-center pt-1",
-					children: /* @__PURE__ */ jsxDEV("button", {
+					children: /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: handleResetAndClose,
 						className: "w-8 h-8 rounded-full border border-[#2a3443] text-gray-400 hover:text-[#f7f5f2] hover:border-[#c5a059] hover:bg-white/5 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shadow-xs",
 						title: "Close",
 						children: "✕"
-					}, void 0, false, {
-						fileName: _jsxFileName$4,
-						lineNumber: 296,
-						columnNumber: 11
-					}, void 0)
-				}, void 0, false, {
-					fileName: _jsxFileName$4,
-					lineNumber: 295,
-					columnNumber: 9
-				}, void 0)
+					})
+				})
 			]
-		}, void 0, true, {
-			fileName: _jsxFileName$4,
-			lineNumber: 114,
-			columnNumber: 7
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$4,
-		lineNumber: 106,
-		columnNumber: 5
-	}, void 0);
+		})
+	});
 };
 // src/components/common/NotFoundPage.tsx
-var _jsxFileName$3 = "/app/applet/src/components/common/NotFoundPage.tsx";
 var NotFoundPage = ({ requestedPath, onNavigate }) => {
 	const isProperty = requestedPath.startsWith("/property/");
 	const isCollection = requestedPath.startsWith("/collection/");
 	const isBlog = requestedPath.startsWith("/blog/");
-	return /* @__PURE__ */ jsxDEV("section", {
+	return /* @__PURE__ */ jsxs("section", {
 		"aria-labelledby": "not-found-heading",
 		className: "relative w-full min-h-[76vh] sm:min-h-[82vh] flex items-center overflow-hidden bg-[#0c0f12]",
 		children: [
-			/* @__PURE__ */ jsxDEV("img", {
+			/* @__PURE__ */ jsx("img", {
 				src: "/assets/images/not_found_pavilion_1795013193029.jpg",
 				alt: "Minimalist architectural concrete pavilion overlooking a sunset horizon",
 				referrerPolicy: "no-referrer",
 				className: "absolute inset-0 w-full h-full object-cover object-center"
-			}, void 0, false, {
-				fileName: _jsxFileName$3,
-				lineNumber: 21,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsx("div", {
 				"aria-hidden": "true",
 				className: "absolute inset-0 bg-gradient-to-r from-[#0a0c0e]/92 via-[#0a0c0e]/65 to-[#0a0c0e]/20"
-			}, void 0, false, {
-				fileName: _jsxFileName$3,
-				lineNumber: 29,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsx("div", {
 				"aria-hidden": "true",
 				className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-transparent to-[#0c0f12]/45"
-			}, void 0, false, {
-				fileName: _jsxFileName$3,
-				lineNumber: 33,
-				columnNumber: 7
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("div", {
+			}),
+			/* @__PURE__ */ jsx("div", {
 				className: "relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-20 sm:py-24",
-				children: /* @__PURE__ */ jsxDEV("div", {
+				children: /* @__PURE__ */ jsxs("div", {
 					className: "max-w-lg space-y-5 sm:space-y-6",
 					children: [
-						/* @__PURE__ */ jsxDEV("span", {
+						/* @__PURE__ */ jsx("span", {
 							className: "text-xs sm:text-sm uppercase tracking-[0.22em] text-[#cfc9bf] font-medium block",
 							children: "Page Not Found"
-						}, void 0, false, {
-							fileName: _jsxFileName$3,
-							lineNumber: 41,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "text-[5.5rem] sm:text-[7.5rem] lg:text-[9.5rem] font-light leading-[0.88] tracking-tight text-white tabular-nums select-none",
 							"aria-hidden": "true",
 							children: "404"
-						}, void 0, false, {
-							fileName: _jsxFileName$3,
-							lineNumber: 45,
-							columnNumber: 11
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("h1", {
+						}),
+						/* @__PURE__ */ jsxs("h1", {
 							id: "not-found-heading",
 							className: "font-serif uppercase text-2xl sm:text-4xl lg:text-[2.75rem] font-normal leading-[1.12] tracking-[0.03em] text-[#d6d0c6]",
 							children: [
 								"THIS SPACE",
-								/* @__PURE__ */ jsxDEV("br", {}, void 0, false, {
-									fileName: _jsxFileName$3,
-									lineNumber: 57,
-									columnNumber: 13
-								}, void 0),
+								/* @__PURE__ */ jsx("br", {}),
 								"DOESN'T EXIST"
 							]
-						}, void 0, true, {
-							fileName: _jsxFileName$3,
-							lineNumber: 52,
-							columnNumber: 11
-						}, void 0),
-						(isProperty || isCollection || isBlog) && /* @__PURE__ */ jsxDEV("p", {
+						}),
+						(isProperty || isCollection || isBlog) && /* @__PURE__ */ jsx("p", {
 							className: "text-xs sm:text-sm text-[#c7c2b9] leading-relaxed font-light max-w-md",
 							children: isProperty ? "Property Dossier Unavailable — this listing does not exist, may have been archived, or its URL slug has changed." : isCollection ? "Curated Collection Unavailable — this investment collection could not be located in our active registry." : "Journal Article Unavailable — this editorial briefing does not exist, is unpublished, or its URL slug has changed."
-						}, void 0, false, {
-							fileName: _jsxFileName$3,
-							lineNumber: 62,
-							columnNumber: 13
-						}, void 0),
-						/* @__PURE__ */ jsxDEV("div", {
+						}),
+						/* @__PURE__ */ jsx("div", {
 							className: "pt-3 sm:pt-4",
-							children: /* @__PURE__ */ jsxDEV(AppLink, {
+							children: /* @__PURE__ */ jsxs(AppLink, {
 								href: "/",
 								onNavigate,
 								className: "inline-flex items-center gap-3 px-6 py-3 bg-[#0c0f12]/45 hover:bg-[#c5a059] text-[#f7f5f2] hover:text-[#0c0f12] border border-white/55 hover:border-[#c5a059] text-xs sm:text-sm tracking-wide font-medium transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 backdrop-blur-xs",
-								children: [/* @__PURE__ */ jsxDEV("span", { children: "Back to home" }, void 0, false, {
-									fileName: _jsxFileName$3,
-									lineNumber: 77,
-									columnNumber: 15
-								}, void 0), /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-4 h-4" }, void 0, false, {
-									fileName: _jsxFileName$3,
-									lineNumber: 78,
-									columnNumber: 15
-								}, void 0)]
-							}, void 0, true, {
-								fileName: _jsxFileName$3,
-								lineNumber: 72,
-								columnNumber: 13
-							}, void 0)
-						}, void 0, false, {
-							fileName: _jsxFileName$3,
-							lineNumber: 71,
-							columnNumber: 11
-						}, void 0)
+								children: [/* @__PURE__ */ jsx("span", { children: "Back to home" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4" })]
+							})
+						})
 					]
-				}, void 0, true, {
-					fileName: _jsxFileName$3,
-					lineNumber: 40,
-					columnNumber: 9
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$3,
-				lineNumber: 39,
-				columnNumber: 7
-			}, void 0)
+				})
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$3,
-		lineNumber: 16,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 // src/components/common/FloatingContactButtons.tsx
-var _jsxFileName$2 = "/app/applet/src/components/common/FloatingContactButtons.tsx";
 var WHATSAPP_URL = "https://wa.me/919779878303";
 var CALL_URL = "tel:+919779878303";
 var DISPLAY_PHONE = "+91 977-987-8303";
-var WhatsAppIcon = ({ className = "w-5 h-5" }) => /* @__PURE__ */ jsxDEV("svg", {
+var WhatsAppIcon = ({ className = "w-5 h-5" }) => /* @__PURE__ */ jsxs("svg", {
 	viewBox: "0 0 24 24",
 	fill: "none",
 	stroke: "currentColor",
@@ -25351,128 +16406,59 @@ var WhatsAppIcon = ({ className = "w-5 h-5" }) => /* @__PURE__ */ jsxDEV("svg", 
 	strokeLinejoin: "round",
 	className,
 	"aria-hidden": "true",
-	children: [/* @__PURE__ */ jsxDEV("path", { d: "M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" }, void 0, false, {
-		fileName: _jsxFileName$2,
-		lineNumber: 19,
-		columnNumber: 5
-	}, void 0), /* @__PURE__ */ jsxDEV("path", { d: "M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" }, void 0, false, {
-		fileName: _jsxFileName$2,
-		lineNumber: 20,
-		columnNumber: 5
-	}, void 0)]
-}, void 0, true, {
-	fileName: _jsxFileName$2,
-	lineNumber: 9,
-	columnNumber: 3
-}, void 0);
+	children: [/* @__PURE__ */ jsx("path", { d: "M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" }), /* @__PURE__ */ jsx("path", { d: "M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" })]
+});
 var FloatingContactButtons = () => {
-	return /* @__PURE__ */ jsxDEV(Fragment, { children: [/* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs("div", {
 		"aria-label": "Quick Contact Actions",
 		className: "hidden md:flex fixed bottom-6 right-6 z-40 flex-col gap-3",
-		children: [/* @__PURE__ */ jsxDEV("a", {
+		children: [/* @__PURE__ */ jsx("a", {
 			href: WHATSAPP_URL,
 			target: "_blank",
 			rel: "noopener noreferrer",
 			"aria-label": `Chat on WhatsApp (${DISPLAY_PHONE})`,
 			title: `WhatsApp: ${DISPLAY_PHONE}`,
 			className: "w-12 h-12 rounded-full bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] border border-[#dfc68e]/50 shadow-xl shadow-black/45 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer",
-			children: /* @__PURE__ */ jsxDEV(WhatsAppIcon, { className: "w-5 h-5" }, void 0, false, {
-				fileName: _jsxFileName$2,
-				lineNumber: 40,
-				columnNumber: 11
-			}, void 0)
-		}, void 0, false, {
-			fileName: _jsxFileName$2,
-			lineNumber: 32,
-			columnNumber: 9
-		}, void 0), /* @__PURE__ */ jsxDEV("a", {
+			children: /* @__PURE__ */ jsx(WhatsAppIcon, { className: "w-5 h-5" })
+		}), /* @__PURE__ */ jsx("a", {
 			href: CALL_URL,
 			"aria-label": `Call ${DISPLAY_PHONE}`,
 			title: `Call: ${DISPLAY_PHONE}`,
 			className: "w-12 h-12 rounded-full bg-[#0c0f12]/90 hover:bg-[#14181d] text-[#c5a059] border border-[#c5a059]/75 hover:border-[#dfc68e] shadow-xl shadow-black/55 backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer",
-			children: /* @__PURE__ */ jsxDEV(Phone, { className: "w-5 h-5" }, void 0, false, {
-				fileName: _jsxFileName$2,
-				lineNumber: 49,
-				columnNumber: 11
-			}, void 0)
-		}, void 0, false, {
-			fileName: _jsxFileName$2,
-			lineNumber: 43,
-			columnNumber: 9
-		}, void 0)]
-	}, void 0, true, {
-		fileName: _jsxFileName$2,
-		lineNumber: 28,
-		columnNumber: 7
-	}, void 0), /* @__PURE__ */ jsxDEV("nav", {
+			children: /* @__PURE__ */ jsx(Phone, { className: "w-5 h-5" })
+		})]
+	}), /* @__PURE__ */ jsx("nav", {
 		"aria-label": "Mobile Quick Contact Bar",
 		className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#050608]/95 backdrop-blur-md border-t border-white/15 shadow-[0_-6px_24px_rgba(0,0,0,0.55)] pb-[env(safe-area-inset-bottom)]",
-		children: /* @__PURE__ */ jsxDEV("div", {
+		children: /* @__PURE__ */ jsxs("div", {
 			className: "grid grid-cols-2 divide-x divide-white/25",
-			children: [/* @__PURE__ */ jsxDEV("a", {
+			children: [/* @__PURE__ */ jsxs("a", {
 				href: WHATSAPP_URL,
 				target: "_blank",
 				rel: "noopener noreferrer",
 				"aria-label": `Chat on WhatsApp (${DISPLAY_PHONE})`,
 				className: "flex flex-col items-center justify-center gap-1 py-2.5 px-2 text-white hover:bg-white/5 active:bg-white/10 transition-colors",
-				children: [/* @__PURE__ */ jsxDEV(WhatsAppIcon, { className: "w-5 h-5 text-white" }, void 0, false, {
-					fileName: _jsxFileName$2,
-					lineNumber: 66,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("span", {
+				children: [/* @__PURE__ */ jsx(WhatsAppIcon, { className: "w-5 h-5 text-white" }), /* @__PURE__ */ jsx("span", {
 					className: "text-xs font-medium tracking-wide leading-tight",
 					children: "Whatsapp"
-				}, void 0, false, {
-					fileName: _jsxFileName$2,
-					lineNumber: 67,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$2,
-				lineNumber: 59,
-				columnNumber: 11
-			}, void 0), /* @__PURE__ */ jsxDEV("a", {
+				})]
+			}), /* @__PURE__ */ jsxs("a", {
 				href: CALL_URL,
 				"aria-label": `Call Now (${DISPLAY_PHONE})`,
 				className: "flex flex-col items-center justify-center gap-1 py-2.5 px-2 text-white hover:bg-white/5 active:bg-white/10 transition-colors",
-				children: [/* @__PURE__ */ jsxDEV(Phone, { className: "w-5 h-5 text-white fill-white" }, void 0, false, {
-					fileName: _jsxFileName$2,
-					lineNumber: 75,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("span", {
+				children: [/* @__PURE__ */ jsx(Phone, { className: "w-5 h-5 text-white fill-white" }), /* @__PURE__ */ jsx("span", {
 					className: "text-xs font-medium tracking-wide leading-tight",
 					children: "Call Now"
-				}, void 0, false, {
-					fileName: _jsxFileName$2,
-					lineNumber: 76,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$2,
-				lineNumber: 70,
-				columnNumber: 11
-			}, void 0)]
-		}, void 0, true, {
-			fileName: _jsxFileName$2,
-			lineNumber: 58,
-			columnNumber: 9
-		}, void 0)
-	}, void 0, false, {
-		fileName: _jsxFileName$2,
-		lineNumber: 54,
-		columnNumber: 7
-	}, void 0)] }, void 0, true, {
-		fileName: _jsxFileName$2,
-		lineNumber: 26,
-		columnNumber: 5
-	}, void 0);
+				})]
+			})]
+		})
+	})] });
 };
 // src/App.tsx
 /**
 * BUILDsmore Luxury Real Estate Platform
 * Main Application Root (React Router BrowserRouter + SSR StaticRouter)
 */
-var _jsxFileName$1 = "/app/applet/src/App.tsx";
 function normalizeRouterTarget(rawTarget) {
 	const trimmed = (rawTarget || "/").trim();
 	const hashIdx = trimmed.indexOf("#");
@@ -25499,15 +16485,11 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 	const slugOrId = safeDecodeParam(slug);
 	const matchedProperty = properties.find((p) => p.slug === slugOrId || p.id === slugOrId) || null;
 	if (matchedProperty) {
-		if (matchedProperty.slug && matchedProperty.slug !== slugOrId) return /* @__PURE__ */ jsxDEV(Navigate, {
+		if (matchedProperty.slug && matchedProperty.slug !== slugOrId) return /* @__PURE__ */ jsx(Navigate, {
 			to: `/property/${encodeURIComponent(matchedProperty.slug)}`,
 			replace: true
-		}, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 100,
-			columnNumber: 14
-		}, void 0);
-		return /* @__PURE__ */ jsxDEV(PropertyDetailPage, {
+		});
+		return /* @__PURE__ */ jsx(PropertyDetailPage, {
 			property: matchedProperty,
 			onBack: () => onNavigate("/properties"),
 			onNavigateCategory: (cat) => onNavigate(getCategoryRoute(cat)),
@@ -25516,43 +16498,27 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 			onToggleSave,
 			onSelectProperty,
 			allProperties: properties
-		}, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 103,
-			columnNumber: 7
-		}, void 0);
+		});
 	}
-	if (!catalogSynced) return /* @__PURE__ */ jsxDEV("div", {
+	if (!catalogSynced) return /* @__PURE__ */ jsx("div", {
 		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]",
 		children: "Loading Property Dossier..."
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 118,
-		columnNumber: 7
-	}, void 0);
-	return /* @__PURE__ */ jsxDEV(NotFoundPage, {
+	});
+	return /* @__PURE__ */ jsx(NotFoundPage, {
 		requestedPath: currentPath,
 		onNavigate
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 124,
-		columnNumber: 10
-	}, void 0);
+	});
 };
 var CollectionRouteView = ({ collections, properties, catalogSynced, savedPropertyIds, onToggleSave, onSelectProperty, onNavigate, currentPath }) => {
 	const { slug } = useParams();
 	const slugOrId = safeDecodeParam(slug);
 	const collection = collections.find((c) => c.slug === slugOrId || c.id === slugOrId) || storage.getCollectionBySlug(slugOrId) || storage.getCollections(true).find((c) => c.id === slugOrId || c.slug === slugOrId) || null;
 	if (collection) {
-		if (collection.slug && collection.slug !== slugOrId) return /* @__PURE__ */ jsxDEV(Navigate, {
+		if (collection.slug && collection.slug !== slugOrId) return /* @__PURE__ */ jsx(Navigate, {
 			to: `/collection/${encodeURIComponent(collection.slug)}`,
 			replace: true
-		}, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 158,
-			columnNumber: 14
-		}, void 0);
-		return /* @__PURE__ */ jsxDEV(CollectionDetailPage, {
+		});
+		return /* @__PURE__ */ jsx(CollectionDetailPage, {
 			collection,
 			properties,
 			onSelectProperty,
@@ -25560,116 +16526,68 @@ var CollectionRouteView = ({ collections, properties, catalogSynced, savedProper
 			onNavigate,
 			savedIds: savedPropertyIds,
 			onToggleSave
-		}, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 161,
-			columnNumber: 7
-		}, void 0);
+		});
 	}
-	if (!catalogSynced) return /* @__PURE__ */ jsxDEV("div", {
+	if (!catalogSynced) return /* @__PURE__ */ jsx("div", {
 		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]",
 		children: "Loading Curated Collection..."
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 175,
-		columnNumber: 7
-	}, void 0);
-	return /* @__PURE__ */ jsxDEV(NotFoundPage, {
+	});
+	return /* @__PURE__ */ jsx(NotFoundPage, {
 		requestedPath: currentPath,
 		onNavigate
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 181,
-		columnNumber: 10
-	}, void 0);
+	});
 };
 var BlogRouteView = ({ blogs, catalogSynced, onNavigate, currentPath }) => {
 	const { slug } = useParams();
 	const slugOrId = safeDecodeParam(slug);
 	const post = blogs.find((b) => (b.slug === slugOrId || b.id === slugOrId) && b.status === "Published") || null;
 	if (post) {
-		if (post.slug && post.slug !== slugOrId) return /* @__PURE__ */ jsxDEV(Navigate, {
+		if (post.slug && post.slug !== slugOrId) return /* @__PURE__ */ jsx(Navigate, {
 			to: `/blog/${encodeURIComponent(post.slug)}`,
 			replace: true
-		}, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 205,
-			columnNumber: 14
-		}, void 0);
-		return /* @__PURE__ */ jsxDEV(BlogDetailPage, {
+		});
+		return /* @__PURE__ */ jsx(BlogDetailPage, {
 			blog: post,
 			allBlogs: blogs,
 			onNavigate,
 			onSelectTag: (tag) => onNavigate(`/blog?tag=${encodeURIComponent(tag)}`)
-		}, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 208,
-			columnNumber: 7
-		}, void 0);
+		});
 	}
-	if (!catalogSynced) return /* @__PURE__ */ jsxDEV("div", {
+	if (!catalogSynced) return /* @__PURE__ */ jsx("div", {
 		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]",
 		children: "Loading Editorial Briefing..."
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 219,
-		columnNumber: 7
-	}, void 0);
-	return /* @__PURE__ */ jsxDEV(NotFoundPage, {
+	});
+	return /* @__PURE__ */ jsx(NotFoundPage, {
 		requestedPath: currentPath,
 		onNavigate
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 225,
-		columnNumber: 10
-	}, void 0);
+	});
 };
-var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, properties, onRefreshProperties, blogs, onRefreshBlogs, onNavigate, currentPath }) => {
+var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, properties, onRefreshProperties, blogs, onRefreshBlogs, heroSlides, onRefreshHeroSlides, onNavigate, currentPath }) => {
 	const { section } = useParams();
-	if (section && !isValidAdminTab(section)) return /* @__PURE__ */ jsxDEV(NotFoundPage, {
+	if (section && !isValidAdminTab(section)) return /* @__PURE__ */ jsx(NotFoundPage, {
 		requestedPath: currentPath,
 		onNavigate
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 256,
-		columnNumber: 12
-	}, void 0);
-	if (!adminUser) return /* @__PURE__ */ jsxDEV("div", {
+	});
+	if (!adminUser) return /* @__PURE__ */ jsxs("div", {
 		className: "min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-4",
 		children: [
-			/* @__PURE__ */ jsxDEV("h2", {
+			/* @__PURE__ */ jsx("h2", {
 				className: "font-serif text-3xl font-normal text-white",
 				children: "Restricted Administrative Terminal"
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 262,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("p", {
+			}),
+			/* @__PURE__ */ jsx("p", {
 				className: "text-xs text-[#8a909a] max-w-sm",
 				children: "Please authenticate with verified administrator credentials to access portfolio operations."
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 265,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("button", {
+			}),
+			/* @__PURE__ */ jsx("button", {
 				onClick: onOpenLogin,
 				className: "px-6 py-2.5 bg-[#c5a059] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm cursor-pointer",
 				children: "Sign In to Admin Workspace"
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 268,
-				columnNumber: 9
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$1,
-		lineNumber: 261,
-		columnNumber: 7
-	}, void 0);
+	});
 	const activeTab = isValidAdminTab(section) ? section : "properties";
-	return /* @__PURE__ */ jsxDEV(AdminDashboard, {
+	return /* @__PURE__ */ jsx(AdminDashboard, {
 		adminUser,
 		onLogout,
 		onViewProperty,
@@ -25677,13 +16595,11 @@ var AdminRouteView = ({ adminUser, onOpenLogin, onLogout, onViewProperty, proper
 		onRefreshProperties,
 		blogs,
 		onRefreshBlogs,
+		heroSlides,
+		onRefreshHeroSlides,
 		activeTab,
 		onNavigate
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 281,
-		columnNumber: 5
-	}, void 0);
+	});
 };
 var AppShell = ({ initialData }) => {
 	if (initialData) storage.hydrateRuntimeSnapshot(initialData);
@@ -25697,6 +16613,7 @@ var AppShell = ({ initialData }) => {
 	const [collections, setCollections] = useState(() => initialData?.collections && initialData.collections.length > 0 ? initialData.collections : storage.getCollections(true));
 	const [trophyHoldings, setTrophyHoldings] = useState(() => initialData?.trophyHoldings && initialData.trophyHoldings.length > 0 ? initialData.trophyHoldings : storage.getTrophyHoldings());
 	const [blogs, setBlogs] = useState(() => Array.isArray(initialData?.blogs) ? initialData.blogs : storage.getBlogs(true));
+	const [heroSlides, setHeroSlides] = useState(() => Array.isArray(initialData?.heroSlides) ? initialData.heroSlides : storage.getHeroSlides());
 	const [catalogSynced, setCatalogSynced] = useState(() => Boolean(initialData));
 	const [adminUser, setAdminUser] = useState(null);
 	const [adminLoginOpen, setAdminLoginOpen] = useState(false);
@@ -25791,6 +16708,7 @@ var AppShell = ({ initialData }) => {
 			setCollections(storage.getCollections(true));
 			setTrophyHoldings(storage.getTrophyHoldings());
 			setBlogs(storage.getBlogs(true));
+			setHeroSlides(storage.getHeroSlides());
 		}).catch(() => {}).finally(() => {
 			if (active) setCatalogSynced(true);
 		});
@@ -25857,6 +16775,9 @@ var AppShell = ({ initialData }) => {
 	const handleRefreshBlogs = () => {
 		setBlogs(storage.getBlogs(true));
 	};
+	const handleRefreshHeroSlides = () => {
+		setHeroSlides(storage.getHeroSlides());
+	};
 	const handleOpenAdmin = () => {
 		if (adminUser) navigate("/admin");
 		else setAdminLoginOpen(true);
@@ -25870,6 +16791,7 @@ var AppShell = ({ initialData }) => {
 			setCollections(storage.getCollections(true));
 			setTrophyHoldings(storage.getTrophyHoldings());
 			setBlogs(storage.getBlogs(true));
+			setHeroSlides(storage.getHeroSlides());
 		}).catch(() => {});
 		if (!(currentPath === "/admin" || currentPath.startsWith("/admin/"))) navigate("/admin");
 	};
@@ -25881,69 +16803,51 @@ var AppShell = ({ initialData }) => {
 			setCollections(storage.getCollections(true));
 			setTrophyHoldings(storage.getTrophyHoldings());
 			setBlogs(storage.getBlogs(true));
+			setHeroSlides(storage.getHeroSlides());
 		}).catch(() => {});
 		navigate("/");
 	};
 	const blogTagFromUrl = searchParams.get("tag") || "";
-	return /* @__PURE__ */ jsxDEV(CurrencyProvider, { children: /* @__PURE__ */ jsxDEV("div", {
+	return /* @__PURE__ */ jsx(CurrencyProvider, { children: /* @__PURE__ */ jsxs("div", {
 		className: "min-h-screen flex flex-col bg-[#0c0f12] text-[#f7f5f2] selection:bg-[#c5a059]/30 selection:text-[#f7f5f2]",
 		children: [
-			/* @__PURE__ */ jsxDEV(Navbar, {
+			/* @__PURE__ */ jsx(Navbar, {
 				currentPath,
 				onNavigate: navigate,
 				onOpenAdmin: handleOpenAdmin,
 				isAdminLoggedIn: Boolean(adminUser),
 				onLogout: handleAdminLogout,
 				onOpenInquiry: () => setPrivateInquiryOpen(true)
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 575,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV("main", {
+			}),
+			/* @__PURE__ */ jsx("main", {
 				className: "flex-1",
-				children: /* @__PURE__ */ jsxDEV(Routes, { children: [
-					/* @__PURE__ */ jsxDEV(Route, {
+				children: /* @__PURE__ */ jsxs(Routes, { children: [
+					/* @__PURE__ */ jsx(Route, {
 						path: "/",
-						element: /* @__PURE__ */ jsxDEV(HomePage, {
+						element: /* @__PURE__ */ jsx(HomePage, {
 							properties,
 							collections,
 							trophyHoldings,
+							heroSlides,
 							onSelectProperty: handleSelectProperty,
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 590,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 587,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/properties",
-						element: /* @__PURE__ */ jsxDEV(PropertiesPage, {
+						element: /* @__PURE__ */ jsx(PropertiesPage, {
 							properties,
 							onSelectProperty: handleSelectProperty,
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 604,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 601,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/property/:slug",
-						element: /* @__PURE__ */ jsxDEV(PropertyRouteView, {
+						element: /* @__PURE__ */ jsx(PropertyRouteView, {
 							properties,
 							catalogSynced,
 							savedPropertyIds,
@@ -25951,19 +16855,11 @@ var AppShell = ({ initialData }) => {
 							onSelectProperty: handleSelectProperty,
 							onNavigate: navigate,
 							currentPath
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 616,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 613,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/collection/:slug",
-						element: /* @__PURE__ */ jsxDEV(CollectionRouteView, {
+						element: /* @__PURE__ */ jsx(CollectionRouteView, {
 							collections,
 							properties,
 							catalogSynced,
@@ -25972,19 +16868,11 @@ var AppShell = ({ initialData }) => {
 							onSelectProperty: handleSelectProperty,
 							onNavigate: navigate,
 							currentPath
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 630,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 627,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/category/residential",
-						element: /* @__PURE__ */ jsxDEV(CategoryPage, {
+						element: /* @__PURE__ */ jsx(CategoryPage, {
 							category: "Residential",
 							properties,
 							onSelectProperty: handleSelectProperty,
@@ -25992,19 +16880,11 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 645,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 642,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/category/commercial",
-						element: /* @__PURE__ */ jsxDEV(CategoryPage, {
+						element: /* @__PURE__ */ jsx(CategoryPage, {
 							category: "Commercial",
 							properties,
 							onSelectProperty: handleSelectProperty,
@@ -26012,19 +16892,11 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 659,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 656,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/category/land",
-						element: /* @__PURE__ */ jsxDEV(CategoryPage, {
+						element: /* @__PURE__ */ jsx(CategoryPage, {
 							category: "Plots/Land",
 							properties,
 							onSelectProperty: handleSelectProperty,
@@ -26032,19 +16904,11 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 673,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 670,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/category/developments",
-						element: /* @__PURE__ */ jsxDEV(CategoryPage, {
+						element: /* @__PURE__ */ jsx(CategoryPage, {
 							category: "New Projects",
 							properties,
 							onSelectProperty: handleSelectProperty,
@@ -26052,94 +16916,46 @@ var AppShell = ({ initialData }) => {
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 687,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 684,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/blog",
-						element: /* @__PURE__ */ jsxDEV(BlogPage, {
+						element: /* @__PURE__ */ jsx(BlogPage, {
 							blogs,
 							onNavigate: navigate,
 							initialTag: blogTagFromUrl
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 701,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 698,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/blog/:slug",
-						element: /* @__PURE__ */ jsxDEV(BlogRouteView, {
+						element: /* @__PURE__ */ jsx(BlogRouteView, {
 							blogs,
 							catalogSynced,
 							onNavigate: navigate,
 							currentPath
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 711,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 708,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/contact",
-						element: /* @__PURE__ */ jsxDEV(ContactPage, { onNavigate: navigate }, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 719,
-							columnNumber: 45
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 719,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						element: /* @__PURE__ */ jsx(ContactPage, { onNavigate: navigate })
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/privacy",
-						element: /* @__PURE__ */ jsxDEV(LegalPage, {
+						element: /* @__PURE__ */ jsx(LegalPage, {
 							type: "privacy",
 							onNavigate: navigate
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 720,
-							columnNumber: 45
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 720,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/terms",
-						element: /* @__PURE__ */ jsxDEV(LegalPage, {
+						element: /* @__PURE__ */ jsx(LegalPage, {
 							type: "terms",
 							onNavigate: navigate
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 721,
-							columnNumber: 43
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 721,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/admin",
-						element: /* @__PURE__ */ jsxDEV(AdminRouteView, {
+						element: /* @__PURE__ */ jsx(AdminRouteView, {
 							adminUser,
 							onOpenLogin: () => setAdminLoginOpen(true),
 							onLogout: handleAdminLogout,
@@ -26148,21 +16964,15 @@ var AppShell = ({ initialData }) => {
 							onRefreshProperties: handleRefreshProperties,
 							blogs,
 							onRefreshBlogs: handleRefreshBlogs,
+							heroSlides,
+							onRefreshHeroSlides: handleRefreshHeroSlides,
 							onNavigate: navigate,
 							currentPath
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 725,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 722,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "/admin/:section",
-						element: /* @__PURE__ */ jsxDEV(AdminRouteView, {
+						element: /* @__PURE__ */ jsx(AdminRouteView, {
 							adminUser,
 							onOpenLogin: () => setAdminLoginOpen(true),
 							onLogout: handleAdminLogout,
@@ -26171,75 +16981,33 @@ var AppShell = ({ initialData }) => {
 							onRefreshProperties: handleRefreshProperties,
 							blogs,
 							onRefreshBlogs: handleRefreshBlogs,
+							heroSlides,
+							onRefreshHeroSlides: handleRefreshHeroSlides,
 							onNavigate: navigate,
 							currentPath
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 742,
-							columnNumber: 17
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 739,
-						columnNumber: 13
-					}, void 0),
-					/* @__PURE__ */ jsxDEV(Route, {
+						})
+					}),
+					/* @__PURE__ */ jsx(Route, {
 						path: "*",
-						element: /* @__PURE__ */ jsxDEV(NotFoundPage, {
+						element: /* @__PURE__ */ jsx(NotFoundPage, {
 							requestedPath: currentPath,
 							onNavigate: navigate
-						}, void 0, false, {
-							fileName: _jsxFileName$1,
-							lineNumber: 758,
-							columnNumber: 24
-						}, void 0)
-					}, void 0, false, {
-						fileName: _jsxFileName$1,
-						lineNumber: 756,
-						columnNumber: 13
-					}, void 0)
-				] }, void 0, true, {
-					fileName: _jsxFileName$1,
-					lineNumber: 586,
-					columnNumber: 11
-				}, void 0)
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 585,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV(Footer, { onNavigate: navigate }, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 764,
-				columnNumber: 9
-			}, void 0),
-			!(currentPath === "/admin" || currentPath.startsWith("/admin/")) && /* @__PURE__ */ jsxDEV(FloatingContactButtons, {}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 768,
-				columnNumber: 11
-			}, void 0),
-			apiErrorToast && /* @__PURE__ */ jsxDEV("div", {
+						})
+					})
+				] })
+			}),
+			/* @__PURE__ */ jsx(Footer, { onNavigate: navigate }),
+			!(currentPath === "/admin" || currentPath.startsWith("/admin/")) && /* @__PURE__ */ jsx(FloatingContactButtons, {}),
+			apiErrorToast && /* @__PURE__ */ jsxs("div", {
 				className: "fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-red-950/95 border border-red-700 text-red-100 px-4 py-3 rounded-sm shadow-2xl text-xs font-mono flex items-start justify-between gap-3",
-				children: [/* @__PURE__ */ jsxDEV("span", { children: apiErrorToast }, void 0, false, {
-					fileName: _jsxFileName$1,
-					lineNumber: 774,
-					columnNumber: 13
-				}, void 0), /* @__PURE__ */ jsxDEV("button", {
+				children: [/* @__PURE__ */ jsx("span", { children: apiErrorToast }), /* @__PURE__ */ jsx("button", {
 					type: "button",
 					onClick: () => setApiErrorToast(""),
 					className: "text-red-300 hover:text-white uppercase font-semibold cursor-pointer shrink-0",
 					children: "Dismiss"
-				}, void 0, false, {
-					fileName: _jsxFileName$1,
-					lineNumber: 775,
-					columnNumber: 13
-				}, void 0)]
-			}, void 0, true, {
-				fileName: _jsxFileName$1,
-				lineNumber: 773,
-				columnNumber: 11
-			}, void 0),
-			/* @__PURE__ */ jsxDEV(AdminLoginModal, {
+				})]
+			}),
+			/* @__PURE__ */ jsx(AdminLoginModal, {
 				isOpen: adminLoginOpen,
 				onClose: () => {
 					setAdminLoginOpen(false);
@@ -26247,53 +17015,24 @@ var AppShell = ({ initialData }) => {
 				},
 				onLoginSuccess: handleAdminLoginSuccess,
 				authNotice
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 786,
-				columnNumber: 9
-			}, void 0),
-			/* @__PURE__ */ jsxDEV(PrivateInquiryModal, {
+			}),
+			/* @__PURE__ */ jsx(PrivateInquiryModal, {
 				isOpen: privateInquiryOpen,
 				onClose: () => setPrivateInquiryOpen(false),
 				propertyTitle: activeProperty?.title
-			}, void 0, false, {
-				fileName: _jsxFileName$1,
-				lineNumber: 797,
-				columnNumber: 9
-			}, void 0)
+			})
 		]
-	}, void 0, true, {
-		fileName: _jsxFileName$1,
-		lineNumber: 573,
-		columnNumber: 7
-	}, void 0) }, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 572,
-		columnNumber: 5
-	}, void 0);
+	}) });
 };
 function App({ initialPath, initialData } = {}) {
-	if (useInRouterContext()) return /* @__PURE__ */ jsxDEV(AppShell, { initialData }, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 810,
-		columnNumber: 12
-	}, this);
+	if (useInRouterContext()) return /* @__PURE__ */ jsx(AppShell, { initialData });
 	const startUrl = initialPath ? normalizeRouterTarget(initialPath) : typeof window !== "undefined" ? `${window.location.pathname || "/"}${window.location.search || ""}` : "/";
-	return /* @__PURE__ */ jsxDEV(MemoryRouter, {
+	return /* @__PURE__ */ jsx(MemoryRouter, {
 		initialEntries: [startUrl],
-		children: /* @__PURE__ */ jsxDEV(AppShell, { initialData }, void 0, false, {
-			fileName: _jsxFileName$1,
-			lineNumber: 819,
-			columnNumber: 7
-		}, this)
-	}, void 0, false, {
-		fileName: _jsxFileName$1,
-		lineNumber: 818,
-		columnNumber: 5
-	}, this);
+		children: /* @__PURE__ */ jsx(AppShell, { initialData })
+	});
 }
 // src/entry-server.tsx
-var _jsxFileName = "/app/applet/src/entry-server.tsx";
 /**
 * Server-side renders the complete BUILDsmore application HTML for any route
 * using React Router StaticRouter and live server-side portfolio, collection,
@@ -26302,20 +17041,12 @@ var _jsxFileName = "/app/applet/src/entry-server.tsx";
 function render(url, initialData) {
 	storage.hydrateRuntimeSnapshot(initialData);
 	const location = url && url.startsWith("/") ? url : `/${url || ""}`;
-	return renderToString(/* @__PURE__ */ jsxDEV(StaticRouter, {
+	return renderToString(/* @__PURE__ */ jsx(StaticRouter, {
 		location,
-		children: /* @__PURE__ */ jsxDEV(App, {
+		children: /* @__PURE__ */ jsx(App, {
 			initialPath: location,
 			initialData
-		}, void 0, false, {
-			fileName: _jsxFileName,
-			lineNumber: 18,
-			columnNumber: 7
-		}, this)
-	}, void 0, false, {
-		fileName: _jsxFileName,
-		lineNumber: 17,
-		columnNumber: 5
-	}, this));
+		})
+	}));
 }
 export { render };

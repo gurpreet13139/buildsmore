@@ -43,6 +43,10 @@ import {
   syncBlogToPostgres,
   deleteBlogFromPostgres,
   reconcileBlogsWithPostgres,
+  syncHeroSlideToPostgres,
+  syncAllHeroSlidesToPostgres,
+  deleteHeroSlideFromPostgres,
+  reconcileHeroSlidesWithPostgres,
 } from './src/server/postgresSync';
 import {
   inquiryRepository,
@@ -66,6 +70,7 @@ import {
 import { Property, ExtractedWebsiteData, ImportJob } from './src/types/property';
 import { propertyRepository } from './src/server/propertyRepository';
 import { blogRepository } from './src/server/blogRepository';
+import { heroSlideRepository } from './src/server/heroSlideRepository';
 import { 
   inspectWordPressSite, 
   fetchWordPressPosts, 
@@ -210,6 +215,13 @@ async function startServer() {
     if (blogPgSync.connected) {
       console.log(
         `[PostgreSQL Blog Sync] Reconciled cleanly (restoredFromPg=${blogPgSync.restoredFromPg}, syncedToPg=${blogPgSync.syncedToPg})`
+      );
+    }
+
+    const heroPgSync = await reconcileHeroSlidesWithPostgres(heroSlideRepository);
+    if (heroPgSync.connected) {
+      console.log(
+        `[PostgreSQL Hero Sync] Reconciled cleanly (restoredFromPg=${heroPgSync.restoredFromPg}, syncedToPg=${heroPgSync.syncedToPg})`
       );
     }
   } catch (err: unknown) {
@@ -1333,6 +1345,114 @@ async function startServer() {
     }
   });
 
+  // =========================================================================
+  // 8.6 HOMEPAGE HERO BANNER SLIDER REST API
+  // =========================================================================
+
+  // GET /api/hero-slides (Public read of ordered slides)
+  app.get('/api/hero-slides', (_req, res) => {
+    try {
+      const items = heroSlideRepository.getAllSlides();
+      res.json({ items, total: items.length });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to retrieve hero banner slides', message: (err as Error).message });
+    }
+  });
+
+  // POST /api/hero-slides (Admin-only: create new slide with Banner Image, Heading, Description)
+  app.post('/api/hero-slides', requireAdminAuth, async (req, res) => {
+    try {
+      const { imageUrl, heading, description } = req.body || {};
+      const cleanImage = typeof imageUrl === 'string' ? imageUrl.trim() : '';
+      const cleanHeading = typeof heading === 'string' ? heading.trim() : '';
+      const cleanDesc = typeof description === 'string' ? description.trim() : '';
+
+      if (!cleanImage && !cleanHeading && !cleanDesc) {
+        res.status(400).json({ error: 'Please provide at least a banner image, heading, or description.' });
+        return;
+      }
+
+      const created = heroSlideRepository.createSlide({
+        imageUrl: cleanImage,
+        heading: cleanHeading,
+        description: cleanDesc,
+      });
+      await syncHeroSlideToPostgres(created);
+      res.status(201).json({
+        success: true,
+        slide: created,
+        items: heroSlideRepository.getAllSlides(),
+      });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to create hero slide', message: (err as Error).message });
+    }
+  });
+
+  // PUT /api/hero-slides/reorder (Admin-only: persist custom slide order)
+  app.put('/api/hero-slides/reorder', requireAdminAuth, async (req, res) => {
+    try {
+      const { orderedIds } = req.body || {};
+      if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+        res.status(400).json({ error: 'orderedIds array is required to reorder slides.' });
+        return;
+      }
+      const items = heroSlideRepository.reorderSlides(orderedIds.map((id) => String(id)));
+      await syncAllHeroSlidesToPostgres(items);
+      res.json({ success: true, items });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to reorder hero slides', message: (err as Error).message });
+    }
+  });
+
+  // PUT /api/hero-slides/:id (Admin-only: edit Banner Image, Heading, Description)
+  app.put('/api/hero-slides/:id', requireAdminAuth, async (req, res) => {
+    try {
+      if (!req.body || typeof req.body !== 'object') {
+        res.status(400).json({ error: 'Invalid hero slide update payload.' });
+        return;
+      }
+      const { imageUrl, heading, description } = req.body as {
+        imageUrl?: unknown;
+        heading?: unknown;
+        description?: unknown;
+      };
+      const updated = heroSlideRepository.updateSlide(req.params.id, {
+        ...(imageUrl !== undefined ? { imageUrl: String(imageUrl) } : {}),
+        ...(heading !== undefined ? { heading: String(heading) } : {}),
+        ...(description !== undefined ? { description: String(description) } : {}),
+      });
+      if (!updated) {
+        res.status(404).json({ error: 'Hero slide not found for update.' });
+        return;
+      }
+      await syncHeroSlideToPostgres(updated);
+      res.json({
+        success: true,
+        slide: updated,
+        items: heroSlideRepository.getAllSlides(),
+      });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to update hero slide', message: (err as Error).message });
+    }
+  });
+
+  // DELETE /api/hero-slides/:id (Admin-only)
+  app.delete('/api/hero-slides/:id', requireAdminAuth, async (req, res) => {
+    try {
+      const success = heroSlideRepository.deleteSlide(req.params.id);
+      if (!success) {
+        res.status(404).json({ error: 'Hero slide not found for deletion.' });
+        return;
+      }
+      await deleteHeroSlideFromPostgres(req.params.id);
+      const remaining = heroSlideRepository.getAllSlides();
+      await syncAllHeroSlidesToPostgres(remaining);
+      res.json({ success: true, items: remaining, message: 'Hero slide deleted successfully.' });
+    } catch (err: unknown) {
+      res.status(500).json({ error: 'Failed to delete hero slide', message: (err as Error).message });
+    }
+  });
+
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'API endpoint not found' });
   });
@@ -1390,13 +1510,14 @@ async function startServer() {
     return true;
   };
 
-  // Public SSR initial payload strictly includes Published holdings, collections & blogs (never Drafts)
+  // Public SSR initial payload strictly includes Published holdings, collections, blogs & hero slides (never Drafts)
   const getSsrInitialData = (): InitialAppData => ({
     properties: propertyRepository.getAllProperties({ status: 'Published', limit: 5000 }).items,
     collections: propertyRepository.getAllCollections(false),
     locations: propertyRepository.getAllLocations(true),
     trophyHoldings: propertyRepository.getTrophyHoldings(),
     blogs: blogRepository.getAllBlogs({ includeDrafts: false, limit: 500 }).items,
+    heroSlides: heroSlideRepository.getAllSlides(),
   });
 
   // 9. Mount Frontend (Vite SSR in Dev, Dist + SSR in Prod)

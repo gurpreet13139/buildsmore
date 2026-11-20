@@ -1,4 +1,4 @@
-import { BlogPost, CuratedCollection, ManagedLocation, Property } from '../types/property';
+import { BlogPost, CuratedCollection, HeroSlide, ManagedLocation, Property } from '../types/property';
 import { getPrimaryPropertyImage } from './propertyImages';
 
 export const PRODUCTION_DOMAIN = 'https://buildsmoremohali.com';
@@ -15,6 +15,7 @@ export interface InitialAppData {
   locations: ManagedLocation[];
   trophyHoldings: Property[];
   blogs?: BlogPost[];
+  heroSlides?: HeroSlide[];
 }
 
 export interface BreadcrumbItem {
@@ -359,6 +360,13 @@ const STATIC_ROUTE_META: Record<
   '/admin/blogs': {
     title: 'Blog & Journal – Admin Console – BUILDsmore',
     description: 'Restricted BUILDsmore editorial journal and blog management.',
+    ogImage: DEFAULT_SOCIAL_IMAGE,
+    ogImageAlt: 'BUILDsmore Admin Terminal',
+    robots: 'noindex, nofollow',
+  },
+  '/admin/hero-slides': {
+    title: 'Hero Banner Slider – Admin Console – BUILDsmore',
+    description: 'Restricted BUILDsmore homepage hero banner slider management.',
     ogImage: DEFAULT_SOCIAL_IMAGE,
     ogImageAlt: 'BUILDsmore Admin Terminal',
     robots: 'noindex, nofollow',

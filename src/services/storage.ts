@@ -8,6 +8,7 @@ import { INITIAL_COLLECTIONS } from '../data/initialCollections';
 import { INITIAL_LOCATIONS } from '../data/initialLocations';
 import { 
   BlogPost,
+  HeroSlide,
   Property, 
   CuratedCollection,
   ManagedLocation,
@@ -49,6 +50,7 @@ const STORAGE_KEYS = {
   CURRENCY_PREF: 'buildsmore_currency_pref_v1',
   DELETED_IDS: 'buildsmore_deleted_ids_v1',
   BLOGS: 'buildsmore_blogs_v1',
+  HERO_SLIDES: 'buildsmore_hero_slides_v1',
 };
 
 const INITIAL_INQUIRIES: Inquiry[] = [
@@ -110,6 +112,7 @@ class StorageService {
   private memoryLocations: ManagedLocation[] = [...INITIAL_LOCATIONS];
   private memoryTrophyHoldings: Property[] | null = null;
   private memoryBlogs: BlogPost[] = [];
+  private memoryHeroSlides: HeroSlide[] = [];
 
   private isBrowser(): boolean {
     return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
@@ -152,6 +155,7 @@ class StorageService {
     locations?: ManagedLocation[];
     trophyHoldings?: Property[];
     blogs?: BlogPost[];
+    heroSlides?: HeroSlide[];
   }): void {
     if (!snapshot) return;
     if (Array.isArray(snapshot.properties) && snapshot.properties.length > 0) {
@@ -186,6 +190,14 @@ class StorageService {
       if (this.isBrowser()) {
         try {
           localStorage.setItem(STORAGE_KEYS.BLOGS, JSON.stringify(snapshot.blogs));
+        } catch {}
+      }
+    }
+    if (Array.isArray(snapshot.heroSlides)) {
+      this.memoryHeroSlides = snapshot.heroSlides;
+      if (this.isBrowser()) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.HERO_SLIDES, JSON.stringify(snapshot.heroSlides));
         } catch {}
       }
     }
@@ -414,11 +426,12 @@ class StorageService {
     const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
     try {
-      const [propsRes, colsRes, locsRes, blogsRes] = await Promise.all([
+      const [propsRes, colsRes, locsRes, blogsRes, heroSlidesRes] = await Promise.all([
         fetch(token ? '/api/properties?all=true' : '/api/properties', { headers: authHeaders }).catch(() => null),
         fetch(token ? '/api/collections?includeDrafts=true' : '/api/collections', { headers: authHeaders }).catch(() => null),
         fetch('/api/locations').catch(() => null),
         fetch(token ? '/api/blogs?includeDrafts=true&limit=200' : '/api/blogs?limit=200', { headers: authHeaders }).catch(() => null),
+        fetch('/api/hero-slides').catch(() => null),
       ]);
 
       if (colsRes && colsRes.ok) {
@@ -439,6 +452,13 @@ class StorageService {
         const blogsPayload = await blogsRes.json().catch(() => null);
         if (blogsPayload && Array.isArray(blogsPayload.items)) {
           this.saveBlogs(blogsPayload.items);
+        }
+      }
+
+      if (heroSlidesRes && heroSlidesRes.ok) {
+        const heroPayload = await heroSlidesRes.json().catch(() => null);
+        if (heroPayload && Array.isArray(heroPayload.items)) {
+          this.saveHeroSlides(heroPayload.items);
         }
       }
 
@@ -1555,6 +1575,174 @@ class StorageService {
     const current = this.getBlogs(true);
     this.saveBlogs(current.filter((b) => b.id !== id));
     return true;
+  }
+
+  // --- Homepage Hero Banner Slides CRUD & Reordering ---
+  getHeroSlides(): HeroSlide[] {
+    let list: HeroSlide[];
+    if (!this.isBrowser()) {
+      list = [...this.memoryHeroSlides];
+    } else {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.HERO_SLIDES);
+        list = raw ? JSON.parse(raw) : [...this.memoryHeroSlides];
+        if (!Array.isArray(list)) list = [];
+      } catch {
+        list = [...this.memoryHeroSlides];
+      }
+    }
+
+    return [...list].sort((a, b) => {
+      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+      return (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0);
+    });
+  }
+
+  saveHeroSlides(slides: HeroSlide[]): void {
+    this.memoryHeroSlides = slides;
+    if (this.isBrowser()) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.HERO_SLIDES, JSON.stringify(slides));
+      } catch {}
+    }
+  }
+
+  async saveHeroSlideAsync(slide: {
+    id?: string;
+    imageUrl: string;
+    heading: string;
+    description: string;
+  }): Promise<HeroSlide> {
+    if (!this.isBrowser()) {
+      const now = new Date().toISOString();
+      const existing = this.getHeroSlides();
+      const record: HeroSlide = {
+        id: slide.id || `hero-slide-${Date.now()}`,
+        imageUrl: slide.imageUrl.trim(),
+        heading: slide.heading.trim(),
+        description: slide.description.trim(),
+        displayOrder: existing.length,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const idx = existing.findIndex((s) => s.id === record.id);
+      if (idx >= 0) {
+        existing[idx] = { ...existing[idx], ...record, displayOrder: existing[idx].displayOrder };
+      } else {
+        existing.push(record);
+      }
+      this.saveHeroSlides(existing);
+      return record;
+    }
+
+    const token = this.getAdminToken();
+    if (!token) {
+      const msg = 'Administrator session is required to manage hero banner slides.';
+      this.emitAuthExpired(msg);
+      throw new Error(msg);
+    }
+
+    const isUpdate = Boolean(slide.id);
+    const url = isUpdate ? `/api/hero-slides/${encodeURIComponent(slide.id!)}` : '/api/hero-slides';
+    const res = await fetch(url, {
+      method: isUpdate ? 'PUT' : 'POST',
+      headers: this.getAuthHeaders(true),
+      body: JSON.stringify({
+        imageUrl: slide.imageUrl,
+        heading: slide.heading,
+        description: slide.description,
+      }),
+    });
+
+    if (!res.ok) {
+      this.handleUnauthorizedResponse(res);
+      const errMsg = await this.readErrorMessage(res, 'Failed to save hero banner slide');
+      this.emitApiError(errMsg, res.status);
+      throw new Error(errMsg);
+    }
+
+    const data = await res.json().catch(() => null);
+    if (Array.isArray(data?.items)) {
+      this.saveHeroSlides(data.items);
+    }
+    const persisted: HeroSlide | undefined = data?.slide;
+    if (!persisted) {
+      throw new Error('Unexpected response while saving hero banner slide.');
+    }
+    return persisted;
+  }
+
+  async deleteHeroSlideAsync(id: string): Promise<HeroSlide[]> {
+    if (!this.isBrowser()) {
+      const remaining = this.getHeroSlides()
+        .filter((s) => s.id !== id)
+        .map((s, idx) => ({ ...s, displayOrder: idx }));
+      this.saveHeroSlides(remaining);
+      return remaining;
+    }
+
+    const token = this.getAdminToken();
+    if (!token) {
+      const msg = 'Administrator session is required to delete hero banner slides.';
+      this.emitAuthExpired(msg);
+      throw new Error(msg);
+    }
+
+    const res = await fetch(`/api/hero-slides/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(false),
+    });
+
+    if (!res.ok) {
+      this.handleUnauthorizedResponse(res);
+      const errMsg = await this.readErrorMessage(res, 'Failed to delete hero banner slide');
+      this.emitApiError(errMsg, res.status);
+      throw new Error(errMsg);
+    }
+
+    const data = await res.json().catch(() => null);
+    const remaining: HeroSlide[] = Array.isArray(data?.items)
+      ? data.items
+      : this.getHeroSlides().filter((s) => s.id !== id);
+    this.saveHeroSlides(remaining);
+    return remaining;
+  }
+
+  async reorderHeroSlidesAsync(orderedIds: string[]): Promise<HeroSlide[]> {
+    if (!this.isBrowser()) {
+      const map = new Map(this.getHeroSlides().map((s) => [s.id, s]));
+      const reordered = orderedIds
+        .map((id) => map.get(id))
+        .filter((s): s is HeroSlide => Boolean(s))
+        .map((s, idx) => ({ ...s, displayOrder: idx }));
+      this.saveHeroSlides(reordered);
+      return reordered;
+    }
+
+    const token = this.getAdminToken();
+    if (!token) {
+      const msg = 'Administrator session is required to reorder hero banner slides.';
+      this.emitAuthExpired(msg);
+      throw new Error(msg);
+    }
+
+    const res = await fetch('/api/hero-slides/reorder', {
+      method: 'PUT',
+      headers: this.getAuthHeaders(true),
+      body: JSON.stringify({ orderedIds }),
+    });
+
+    if (!res.ok) {
+      this.handleUnauthorizedResponse(res);
+      const errMsg = await this.readErrorMessage(res, 'Failed to reorder hero banner slides');
+      this.emitApiError(errMsg, res.status);
+      throw new Error(errMsg);
+    }
+
+    const data = await res.json().catch(() => null);
+    const reordered: HeroSlide[] = Array.isArray(data?.items) ? data.items : this.getHeroSlides();
+    this.saveHeroSlides(reordered);
+    return reordered;
   }
 
   // --- Photo Upload Helper ---

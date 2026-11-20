@@ -58,3 +58,293 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #c5a059;
 }
+
+.admin-tabs-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #2b3442 #0c0f12;
+}
+.admin-tabs-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+.admin-tabs-scrollbar::-webkit-scrollbar-track {
+  background: #0c0f12;
+}
+.admin-tabs-scrollbar::-webkit-scrollbar-thumb {
+  background: #2b3442;
+  border-radius: 9999px;
+}
+.admin-tabs-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #c5a059;
+}
+
+/* Homepage Hero — Cinematic Living-Sky Visual Effect */
+@keyframes heroCinematicZoomOut {
+  0% {
+    transform: scale(1.1);
+  }
+  50% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes heroCloudDrift {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0%, 0, 0);
+  }
+}
+
+@keyframes heroCloudBreathe {
+  0%, 100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.28;
+  }
+}
+
+@keyframes heroSunGlow {
+  0% {
+    opacity: 0.56;
+    transform: translate3d(-1.5%, 0%, 0) scale(0.96);
+  }
+  50% {
+    opacity: 0.92;
+    transform: translate3d(1%, 0.8%, 0) scale(1.04);
+  }
+  100% {
+    opacity: 0.64;
+    transform: translate3d(2.2%, -0.6%, 0) scale(0.99);
+  }
+}
+
+@keyframes heroLightRayPrimary {
+  0% {
+    opacity: 0.28;
+    transform: translate3d(-1.8%, -0.8%, 0) rotate(-1.4deg) scaleX(0.96);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translate3d(1.2%, 0.4%, 0) rotate(0.8deg) scaleX(1.04);
+  }
+  100% {
+    opacity: 0.34;
+    transform: translate3d(2.4%, -0.4%, 0) rotate(1.6deg) scaleX(0.98);
+  }
+}
+
+@keyframes heroLightRaySecondary {
+  0% {
+    opacity: 0.68;
+    transform: translate3d(1.6%, -0.5%, 0) rotate(1.2deg) scaleX(1.03);
+  }
+  50% {
+    opacity: 0.22;
+    transform: translate3d(-1.2%, 0.6%, 0) rotate(-1deg) scaleX(0.95);
+  }
+  100% {
+    opacity: 0.72;
+    transform: translate3d(-0.4%, -0.3%, 0) rotate(0.6deg) scaleX(1.01);
+  }
+}
+
+.hero-cinematic-stage {
+  will-change: transform;
+  transform-origin: center center;
+  animation: heroCinematicZoomOut 20s ease-in-out infinite;
+}
+
+/*
+ * Feathered alpha sky mask matching the 1600x1060 natural aspect ratio of the hero photograph.
+ * Transparent areas hide the overlay completely (protecting the architectural building), while
+ * mask-size: cover + mask-position: center keeps the roofline silhouette locked to object-cover.
+ */
+.hero-living-sky-mask {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1060'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='40%25' stop-color='%23ffffff' stop-opacity='0.9'/%3E%3Cstop offset='54%25' stop-color='%23ffffff' stop-opacity='0.26'/%3E%3Cstop offset='62%25' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='b' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeGaussianBlur stdDeviation='22'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M-40,-40 L1640,-40 L1640,415 L1042,154 L708,412 L662,568 L-40,588 Z' fill='url(%23g)' filter='url(%23b)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1060'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ffffff' stop-opacity='1'/%3E%3Cstop offset='40%25' stop-color='%23ffffff' stop-opacity='0.9'/%3E%3Cstop offset='54%25' stop-color='%23ffffff' stop-opacity='0.26'/%3E%3Cstop offset='62%25' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='b' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeGaussianBlur stdDeviation='22'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M-40,-40 L1640,-40 L1640,415 L1042,154 L708,412 L662,568 L-40,588 Z' fill='url(%23g)' filter='url(%23b)'/%3E%3C/svg%3E");
+  -webkit-mask-size: cover;
+  mask-size: cover;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Seamless mirrored procedural dusk cloud layer 1 (cool high-altitude wisps) */
+.hero-cloud-layer-far {
+  position: absolute;
+  top: -4%;
+  left: 0;
+  width: 200%;
+  height: 66%;
+  mix-blend-mode: screen;
+  opacity: 0.34;
+  will-change: transform;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='480' viewBox='0 0 1600 480'%3E%3Cdefs%3E%3Cfilter id='f1' x='0%25' y='0%25' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0038 0.0115' numOctaves='5' seed='11' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 0.84 0 0 0 0 0.89 0 0 0 0 0.96 0.92 0.08 0 0 -0.45' result='c'/%3E%3CfeGaussianBlur in='c' stdDeviation='3'/%3E%3C/filter%3E%3Cg id='t1'%3E%3Crect width='800' height='480' filter='url(%23f1)'/%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23t1' x='0' y='0'/%3E%3Cuse href='%23t1' transform='translate(1600 0) scale(-1 1)'/%3E%3C/svg%3E");
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  animation: heroCloudDrift 105s linear infinite;
+}
+
+/* Seamless mirrored procedural cloud layer 2 (warmer sunlit mid-sky cloud veils) */
+.hero-cloud-layer-near {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 64%;
+  mix-blend-mode: screen;
+  opacity: 0.24;
+  will-change: transform, opacity;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='480' viewBox='0 0 1600 480'%3E%3Cdefs%3E%3Cfilter id='f2' x='0%25' y='0%25' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0052 0.0145' numOctaves='4' seed='29' result='n'/%3E%3CfeColorMatrix in='n' type='matrix' values='0 0 0 0 0.98 0 0 0 0 0.91 0 0 0 0 0.78 0.96 0.04 0 0 -0.50' result='c'/%3E%3CfeGaussianBlur in='c' stdDeviation='4'/%3E%3C/filter%3E%3Cg id='t2'%3E%3Crect width='800' height='480' filter='url(%23f2)'/%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23t2' x='0' y='0'/%3E%3Cuse href='%23t2' transform='translate(1600 0) scale(-1 1)'/%3E%3C/svg%3E");
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  animation:
+    heroCloudDrift 145s linear infinite,
+    heroCloudBreathe 24s ease-in-out infinite;
+}
+
+/* Complementary soft atmospheric cloud bank haze (pure CSS radial gradients for cross-browser depth) */
+.hero-cloud-haze {
+  position: absolute;
+  top: -6%;
+  left: 0;
+  width: 200%;
+  height: 62%;
+  mix-blend-mode: screen;
+  opacity: 0.26;
+  will-change: transform;
+  background-image:
+    radial-gradient(ellipse 26% 18% at 14% 28%, rgba(214, 224, 240, 0.28) 0%, transparent 72%),
+    radial-gradient(ellipse 22% 16% at 34% 20%, rgba(246, 232, 204, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 28% 20% at 64% 28%, rgba(214, 224, 240, 0.28) 0%, transparent 72%),
+    radial-gradient(ellipse 22% 16% at 84% 20%, rgba(246, 232, 204, 0.22) 0%, transparent 70%);
+  filter: blur(22px);
+  animation: heroCloudDrift 125s linear infinite;
+}
+
+/* Natural warm sunlight glow emerging softly behind upper-left clouds */
+.hero-sun-glow {
+  position: absolute;
+  top: -12%;
+  left: 12%;
+  width: 58%;
+  height: 62%;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+  background: radial-gradient(
+    ellipse 58% 48% at 48% 32%,
+    rgba(255, 240, 206, 0.24) 0%,
+    rgba(216, 179, 114, 0.13) 34%,
+    rgba(162, 180, 212, 0.05) 62%,
+    transparent 82%
+  );
+  filter: blur(16px);
+  animation: heroSunGlow 18s ease-in-out infinite alternate;
+}
+
+/* Extremely subtle changing crepuscular light rays filtering through passing clouds */
+.hero-light-rays-primary {
+  position: absolute;
+  top: -14%;
+  left: 6%;
+  width: 66%;
+  height: 68%;
+  mix-blend-mode: screen;
+  transform-origin: 42% 8%;
+  will-change: transform, opacity;
+  background: linear-gradient(
+    114deg,
+    transparent 16%,
+    rgba(255, 242, 214, 0.095) 27%,
+    transparent 38%,
+    rgba(228, 194, 134, 0.075) 50%,
+    transparent 62%,
+    rgba(255, 245, 222, 0.065) 73%,
+    transparent 84%
+  );
+  -webkit-mask-image: radial-gradient(ellipse 72% 78% at 44% 18%, #000 0%, rgba(0, 0, 0, 0.55) 52%, transparent 86%);
+  mask-image: radial-gradient(ellipse 72% 78% at 44% 18%, #000 0%, rgba(0, 0, 0, 0.55) 52%, transparent 86%);
+  filter: blur(18px);
+  animation: heroLightRayPrimary 22s ease-in-out infinite alternate;
+}
+
+.hero-light-rays-secondary {
+  position: absolute;
+  top: -12%;
+  left: 14%;
+  width: 62%;
+  height: 64%;
+  mix-blend-mode: screen;
+  transform-origin: 38% 10%;
+  will-change: transform, opacity;
+  background: linear-gradient(
+    124deg,
+    transparent 20%,
+    rgba(236, 206, 150, 0.075) 33%,
+    transparent 46%,
+    rgba(255, 243, 218, 0.065) 60%,
+    transparent 74%
+  );
+  -webkit-mask-image: radial-gradient(ellipse 68% 74% at 42% 20%, #000 0%, rgba(0, 0, 0, 0.48) 50%, transparent 84%);
+  mask-image: radial-gradient(ellipse 68% 74% at 42% 20%, #000 0%, rgba(0, 0, 0, 0.48) 50%, transparent 84%);
+  filter: blur(22px);
+  animation: heroLightRaySecondary 29s ease-in-out -11s infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-cinematic-stage,
+  .hero-cloud-layer-far,
+  .hero-cloud-layer-near,
+  .hero-cloud-haze,
+  .hero-sun-glow,
+  .hero-light-rays-primary,
+  .hero-light-rays-secondary {
+    animation: none !important;
+  }
+
+  .hero-cinematic-stage {
+    transform: scale(1) !important;
+  }
+
+  .hero-cloud-layer-far,
+  .hero-cloud-layer-near,
+  .hero-cloud-haze {
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  .hero-sun-glow {
+    opacity: 0.65 !important;
+    transform: none !important;
+  }
+
+  .hero-light-rays-primary,
+  .hero-light-rays-secondary {
+    opacity: 0.4 !important;
+    transform: none !important;
+  }
+
+  .hero-slide-copy-enter {
+    animation: none !important;
+  }
+}
+
+@keyframes heroSlideCopyFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.hero-slide-copy-enter {
+  animation: heroSlideCopyFade 700ms ease-in-out both;
+}
+
+

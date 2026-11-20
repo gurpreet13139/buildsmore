@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { storage } from '../../services/storage';
-import { BlogPost, Property, Inquiry, InquiryStatus, AdminUser, DashboardStats } from '../../types/property';
+import { BlogPost, HeroSlide, Property, Inquiry, InquiryStatus, AdminUser, DashboardStats } from '../../types/property';
 import { useCurrency } from '../../context/CurrencyContext';
 import { PropertyFormModal } from './PropertyFormModal';
 import { WordPressSyncHub } from './WordPressSyncHub';
@@ -9,6 +9,7 @@ import { TrophyHoldingsManager } from './TrophyHoldingsManager';
 import { CuratedCollectionsManager } from './CuratedCollectionsManager';
 import { LocationManager } from './LocationManager';
 import { BlogManager } from './BlogManager';
+import { HeroSliderManager } from './HeroSliderManager';
 import { 
   Building2, 
   Plus, 
@@ -35,7 +36,9 @@ import {
   MapPin,
   Image as ImageIcon,
   AlertCircle,
-  BookOpen
+  BookOpen,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { getPrimaryPropertyImage } from '../../utils/propertyImages';
 import { AppLink } from '../../components/common/AppLink';
@@ -46,6 +49,7 @@ export type AdminTabId =
   | 'collections'
   | 'locations'
   | 'blogs'
+  | 'hero-slides'
   | 'wordpress'
   | 'overview'
   | 'inquiries'
@@ -57,6 +61,7 @@ export const VALID_ADMIN_TABS: readonly AdminTabId[] = [
   'collections',
   'locations',
   'blogs',
+  'hero-slides',
   'wordpress',
   'overview',
   'inquiries',
@@ -71,6 +76,8 @@ interface AdminDashboardProps {
   onRefreshProperties: () => void;
   blogs?: BlogPost[];
   onRefreshBlogs?: () => void;
+  heroSlides?: HeroSlide[];
+  onRefreshHeroSlides?: () => void;
   activeTab?: AdminTabId;
   onNavigate?: (path: string) => void;
 }
@@ -83,12 +90,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onRefreshProperties,
   blogs,
   onRefreshBlogs,
+  heroSlides,
+  onRefreshHeroSlides,
   activeTab: routeActiveTab,
   onNavigate,
 }) => {
   const { formatPrice } = useCurrency();
   const effectiveBlogs = blogs ?? storage.getBlogs(true);
   const refreshBlogs = onRefreshBlogs ?? onRefreshProperties;
+  const effectiveHeroSlides = heroSlides ?? storage.getHeroSlides();
+  const refreshHeroSlides = onRefreshHeroSlides ?? onRefreshProperties;
 
   const [localActiveTab, setLocalActiveTab] = useState<AdminTabId>(routeActiveTab || 'properties');
   const activeTab: AdminTabId = routeActiveTab ?? localActiveTab;
@@ -103,6 +114,88 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setLocalActiveTab(routeActiveTab);
     }
   }, [routeActiveTab]);
+
+  // Horizontal scrollable tab strip state & controls
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
+  const [hasTabOverflow, setHasTabOverflow] = useState(false);
+  const [canScrollTabsLeft, setCanScrollTabsLeft] = useState(false);
+  const [canScrollTabsRight, setCanScrollTabsRight] = useState(false);
+
+  const updateTabScrollability = useCallback(() => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setHasTabOverflow(scrollWidth > clientWidth + 2);
+    setCanScrollTabsLeft(scrollLeft > 2);
+    setCanScrollTabsRight(scrollLeft + clientWidth < scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    updateTabScrollability();
+    const el = tabsScrollRef.current;
+    if (!el) return;
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => updateTabScrollability());
+      resizeObserver.observe(el);
+    }
+    window.addEventListener('resize', updateTabScrollability);
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateTabScrollability);
+    };
+  }, [updateTabScrollability, properties.length, effectiveBlogs.length, effectiveHeroSlides.length]);
+
+  useEffect(() => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        const atStart = el.scrollLeft <= 0 && e.deltaY < 0;
+        const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && e.deltaY > 0;
+        if (!atStart && !atEnd) {
+          e.preventDefault();
+          el.scrollLeft += e.deltaY;
+          updateTabScrollability();
+        }
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [updateTabScrollability]);
+
+  // Keep the active admin tab fully visible horizontally inside the tab strip (never vertically scrolls the page)
+  useEffect(() => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+
+    const timer = window.setTimeout(() => {
+      const activeEl = el.querySelector<HTMLElement>('[data-admin-tab-active="true"]');
+      if (activeEl && el.scrollWidth > el.clientWidth) {
+        const containerRect = el.getBoundingClientRect();
+        const tabRect = activeEl.getBoundingClientRect();
+        if (tabRect.left < containerRect.left + 16) {
+          el.scrollBy({ left: tabRect.left - containerRect.left - 24, behavior: 'smooth' });
+        } else if (tabRect.right > containerRect.right - 16) {
+          el.scrollBy({ left: tabRect.right - containerRect.right + 24, behavior: 'smooth' });
+        }
+      }
+      updateTabScrollability();
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [activeTab, updateTabScrollability]);
+
+  const scrollTabsBy = (offset: number) => {
+    const el = tabsScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: offset, behavior: 'smooth' });
+    window.setTimeout(updateTabScrollability, 280);
+  };
   
   // Property management state
   const [propertySearch, setPropertySearch] = useState('');
@@ -294,52 +387,109 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Main Tab Navigation (URL-backed via /admin/:section) */}
-      <nav aria-label="Admin Console Sections" className="flex items-center gap-2 border-b border-[#202732] overflow-x-auto no-scrollbar text-xs font-mono uppercase">
-        {(
-          [
-            { id: 'properties', label: `1. All Properties (${properties.length})`, icon: Building2 },
-            { id: 'trophy', label: '2. Trophy Holdings', icon: Trophy },
-            { id: 'collections', label: '3. Curated Collections', icon: Layers },
-            { id: 'locations', label: '4. Locations', icon: MapPin },
-            { id: 'blogs', label: `5. Blog & Journal (${effectiveBlogs.length})`, icon: BookOpen },
-            { id: 'wordpress', label: '6. WordPress Import', icon: Globe },
-            { id: 'overview', label: 'Dashboard & KPI', icon: TrendingUp },
-            { id: 'inquiries', label: `Client Inquiries (${inquiries.filter(i => i.status === 'New').length} New)`, icon: MessageSquare },
-            { id: 'csv', label: 'CSV Tools', icon: FileSpreadsheet },
-          ] as Array<{ id: AdminTabId; label: string; icon: React.ComponentType<{ className?: string }> }>
-        ).map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <AppLink
-              key={tab.id}
-              href={`/admin/${tab.id}`}
-              onNavigate={(dest) => {
-                setLocalActiveTab(tab.id);
-                onNavigate?.(dest);
-              }}
-              onClick={() => setLocalActiveTab(tab.id)}
-              aria-current={isActive ? 'page' : undefined}
-              className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
-                isActive
-                  ? 'border-[#c5a059] text-[#c5a059] font-bold bg-[#141922]'
-                  : 'border-transparent text-[#8a909a] hover:text-[#f7f5f2]'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </AppLink>
-          );
-        })}
+      {/* Main Tab Navigation (URL-backed via /admin/:section, horizontally scrollable) */}
+      <nav aria-label="Admin Console Sections" className="relative flex items-center gap-1.5 border-b border-[#202732]">
+        {hasTabOverflow && (
+          <button
+            type="button"
+            onClick={() => scrollTabsBy(-280)}
+            aria-label="Scroll admin tabs left"
+            disabled={!canScrollTabsLeft}
+            className={`shrink-0 flex items-center justify-center w-8 h-8 mb-1 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${
+              canScrollTabsLeft
+                ? 'hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm'
+                : 'opacity-25 pointer-events-none'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
 
-        <button
-          onClick={() => setIsCreatingProperty(true)}
-          className="ml-auto my-1.5 px-3.5 py-1.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors shadow-sm"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add New Property</span>
-        </button>
+        <div className="relative min-w-0 flex-1 overflow-hidden">
+          {canScrollTabsLeft && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 bottom-1 w-8 sm:w-12 bg-gradient-to-r from-[#0c0f12] via-[#0c0f12]/85 to-transparent z-[5]"
+            />
+          )}
+
+          <div
+            ref={tabsScrollRef}
+            onScroll={updateTabScrollability}
+            className="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden flex-nowrap scroll-smooth touch-pan-x admin-tabs-scrollbar text-xs font-mono uppercase pb-1"
+          >
+            {(
+              [
+                { id: 'properties', label: `1. All Properties (${properties.length})`, icon: Building2 },
+                { id: 'trophy', label: '2. Trophy Holdings', icon: Trophy },
+                { id: 'collections', label: '3. Curated Collections', icon: Layers },
+                { id: 'locations', label: '4. Locations', icon: MapPin },
+                { id: 'blogs', label: `5. Blog & Journal (${effectiveBlogs.length})`, icon: BookOpen },
+                { id: 'hero-slides', label: `6. Hero Slider (${effectiveHeroSlides.length})`, icon: ImageIcon },
+                { id: 'wordpress', label: '7. WordPress Import', icon: Globe },
+                { id: 'overview', label: 'Dashboard & KPI', icon: TrendingUp },
+                { id: 'inquiries', label: `Client Inquiries (${inquiries.filter(i => i.status === 'New').length} New)`, icon: MessageSquare },
+                { id: 'csv', label: 'CSV Tools', icon: FileSpreadsheet },
+              ] as Array<{ id: AdminTabId; label: string; icon: React.ComponentType<{ className?: string }> }>
+            ).map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <AppLink
+                  key={tab.id}
+                  href={`/admin/${tab.id}`}
+                  data-admin-tab-active={isActive ? 'true' : 'false'}
+                  onNavigate={(dest) => {
+                    setLocalActiveTab(tab.id);
+                    onNavigate?.(dest);
+                  }}
+                  onClick={() => setLocalActiveTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                    isActive
+                      ? 'border-[#c5a059] text-[#c5a059] font-bold bg-[#141922]'
+                      : 'border-transparent text-[#8a909a] hover:text-[#f7f5f2]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{tab.label}</span>
+                </AppLink>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => setIsCreatingProperty(true)}
+              className="ml-2 my-1.5 px-3.5 py-1.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 transition-colors shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add New Property</span>
+            </button>
+          </div>
+
+          {canScrollTabsRight && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 sm:w-12 bg-gradient-to-l from-[#0c0f12] via-[#0c0f12]/85 to-transparent z-[5]"
+            />
+          )}
+        </div>
+
+        {hasTabOverflow && (
+          <button
+            type="button"
+            onClick={() => scrollTabsBy(280)}
+            aria-label="Scroll admin tabs right"
+            disabled={!canScrollTabsRight}
+            className={`shrink-0 flex items-center justify-center w-8 h-8 mb-1 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${
+              canScrollTabsRight
+                ? 'hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm'
+                : 'opacity-25 pointer-events-none'
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </nav>
 
       {/* TAB 1: OVERVIEW & STATS */}
@@ -811,7 +961,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         />
       )}
 
-      {/* TAB 6: WORDPRESS MULTI-SITE MIGRATION HUB */}
+      {/* TAB 6: HOMEPAGE HERO BANNER SLIDER */}
+      {activeTab === 'hero-slides' && (
+        <HeroSliderManager
+          slides={effectiveHeroSlides}
+          onRefreshSlides={refreshHeroSlides}
+        />
+      )}
+
+      {/* TAB 7: WORDPRESS MULTI-SITE MIGRATION HUB */}
       {activeTab === 'wordpress' && (
         <WordPressSyncHub onRefreshProperties={onRefreshProperties} />
       )}
