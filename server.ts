@@ -54,8 +54,11 @@ import {
 } from './src/server/inquiryRepository';
 import { 
   ALLOWED_IMAGE_MIME_TYPES,
+  ALLOWED_HERO_MEDIA_MIME_TYPES,
+  MAX_VIDEO_UPLOAD_SIZE_BYTES,
   getUploadsDirectory,
   uploadPropertyPhoto, 
+  uploadHeroBannerMedia,
   testLocalStorageHealth,
 } from './src/server/storage-local';
 import { 
@@ -100,6 +103,25 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Unsupported file type. Only JPEG, PNG, WebP, and AVIF images are allowed.'));
+    }
+  },
+});
+
+const heroMediaUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_VIDEO_UPLOAD_SIZE_BYTES,
+    files: 1,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_HERO_MEDIA_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          'Unsupported file type. Upload a JPEG, PNG, WebP, AVIF image or an MP4, WebM, MOV video.'
+        )
+      );
     }
   },
 });
@@ -354,6 +376,49 @@ async function startServer() {
       res.status(400).json({ error: 'Batch upload rejected', message: msg });
     }
   });
+
+  // Hero Banner Media Upload Endpoint (Admin-only: Images + Videos with binary verification)
+  const handleHeroMediaUploadMiddleware = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    heroMediaUpload.single('media')(req, res, (err: unknown) => {
+      if (err) {
+        const message = err instanceof Error ? err.message : 'Invalid hero media upload request.';
+        const status = message.toLowerCase().includes('large') ? 413 : 400;
+        res.status(status).json({ error: message });
+        return;
+      }
+      next();
+    });
+  };
+
+  app.post(
+    '/api/upload-hero-media',
+    requireAdminAuth,
+    uploadRateLimiter,
+    handleHeroMediaUploadMiddleware,
+    async (req, res) => {
+      try {
+        if (!req.file) {
+          res.status(400).json({ error: 'No image or video file was provided in the upload request.' });
+          return;
+        }
+
+        const uploadResult = await uploadHeroBannerMedia(
+          req.file.buffer,
+          req.file.originalname,
+          req.file.mimetype
+        );
+
+        res.json(uploadResult);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Hero banner media upload failed';
+        res.status(400).json({ error: 'Media upload rejected', message: msg });
+      }
+    }
+  );
 
   // Update manual main image for a specific property (Admin-only)
   app.patch('/api/properties/:id/main-image', requireAdminAuth, async (req, res) => {

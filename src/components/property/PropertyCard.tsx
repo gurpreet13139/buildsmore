@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Property } from '../../types/property';
 import { useCurrency } from '../../context/CurrencyContext';
-import { Bookmark, MapPin, ArrowUpRight } from 'lucide-react';
+import { Heart, MapPin, Bed, Bath, Maximize2 } from 'lucide-react';
 import { getPrimaryPropertyImage, isSafeDisplayImageUrl } from '../../utils/propertyImages';
 import { AppLink } from '../common/AppLink';
 
@@ -27,15 +27,23 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     imgError &&
     !primary.isLogo &&
     !logoError &&
-    Boolean(property.sourceLogoUrl && isSafeDisplayImageUrl(property.sourceLogoUrl) && property.sourceLogoUrl !== primary.url);
+    Boolean(
+      property.sourceLogoUrl &&
+        isSafeDisplayImageUrl(property.sourceLogoUrl) &&
+        property.sourceLogoUrl !== primary.url
+    );
 
-  const displayUrl = canTrySourceLogoFallback ? property.sourceLogoUrl : (!imgError ? primary.url : undefined);
+  const displayUrl = canTrySourceLogoFallback
+    ? property.sourceLogoUrl
+    : !imgError
+    ? primary.url
+    : undefined;
   const isDisplayingLogo = canTrySourceLogoFallback || (!imgError && primary.isLogo);
   const propertyHref = `/property/${encodeURIComponent(property.slug)}`;
 
   return (
-    <article className="group relative bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-all duration-300 flex flex-col overflow-hidden rounded-sm">
-      {/* Top Floating Control: Save / Bookmark (kept outside <a> for valid HTML) */}
+    <article className="group relative bg-white border border-slate-200/80 hover:border-[#163B8C]/35 rounded-2xl shadow-[0_8px_28px_rgba(13,37,88,0.06)] hover:shadow-[0_16px_40px_rgba(13,37,88,0.13)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden">
+      {/* Top-Right Save / Heart Button (kept outside <a> for valid semantic HTML) */}
       <div className="absolute top-3.5 right-3.5 z-20">
         <button
           type="button"
@@ -43,24 +51,28 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             e.stopPropagation();
             onToggleSave?.(property.id, e);
           }}
-          aria-label="Save property"
-          className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer ${
-            isSaved 
-              ? 'bg-[#c5a059] text-[#0c0f12]' 
-              : 'bg-[#0c0f12]/60 text-[#f7f5f2] hover:bg-[#c5a059] hover:text-[#0c0f12]'
+          aria-label={isSaved ? 'Remove property from saved list' : 'Save property'}
+          className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-sm ${
+            isSaved
+              ? 'bg-[#DC1F26] text-white'
+              : 'bg-white/90 text-[#0D2558] hover:bg-[#DC1F26] hover:text-white'
           }`}
         >
-          <Bookmark className="w-3.5 h-3.5" fill={isSaved ? 'currentColor' : 'none'} />
+          <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
         </button>
       </div>
 
       <AppLink
         href={propertyHref}
         onNavigate={() => onSelect(property)}
-        className="flex flex-col flex-1 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#c5a059]"
+        className="flex flex-col flex-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#163B8C]"
       >
-        {/* Visual Asset Container (65% height ratio) */}
-        <div className={`relative aspect-[4/3] w-full overflow-hidden ${isDisplayingLogo ? 'bg-[#0f141b]' : 'bg-[#14181d]'}`}>
+        {/* Property Image Container */}
+        <div
+          className={`relative aspect-[4/3] w-full overflow-hidden ${
+            isDisplayingLogo ? 'bg-[#0D2558]' : 'bg-slate-100'
+          }`}
+        >
           {displayUrl ? (
             <img
               src={displayUrl}
@@ -76,89 +88,82 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               loading="lazy"
               className={
                 isDisplayingLogo
-                  ? 'w-full h-full object-contain p-8 transition-transform duration-700 ease-out group-hover:scale-105'
-                  : 'w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105'
+                  ? 'w-full h-full object-contain p-8 transition-transform duration-500 ease-out group-hover:scale-105'
+                  : 'w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105'
               }
             />
           ) : (
-            /* Zero-Broken-Image Fallback with Architectural Gradient & Motif */
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#1a212b] to-[#0c0f12] text-center">
-              <div className="w-12 h-12 rounded-full border border-[#c5a059]/40 flex items-center justify-center text-[#c5a059] mb-3">
-                <span className="font-serif text-lg font-bold">B</span>
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#0D2558] to-[#163B8C] text-center">
+              <div className="w-11 h-11 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-white mb-2.5">
+                <span className="text-lg font-extrabold">B</span>
               </div>
-              <p className="font-serif text-sm text-[#f7f5f2] font-medium tracking-wide">
-                {property.title}
+              <p className="text-sm text-white font-semibold line-clamp-1">{property.title}</p>
+              <p className="text-[11px] text-blue-200 mt-0.5">
+                {property.city}, {property.country}
               </p>
-              <p className="text-[11px] text-[#8a909a] mt-1">{property.city}, {property.country}</p>
             </div>
           )}
 
-          {/* Ambient Dark Gradient Scrim for Contrast */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#101419] via-transparent to-black/20 pointer-events-none" />
-
-          {/* Quiet Category Marker (No Pill, unboxed text) */}
+          {/* Top-Left Deep Royal Blue Badge (Matches Screenshot "For Sale" pill on card media) */}
           <div className="absolute top-3.5 left-3.5 z-10">
-            <span className="text-[11px] uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] bg-[#0c0f12]/70 backdrop-blur-sm px-2.5 py-1 rounded-sm border border-white/10">
-              {property.category}
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#0D2558]/90 backdrop-blur-xs text-white text-[11px] font-semibold tracking-wide shadow-sm">
+              {property.category === 'New Projects' ? 'New Project' : 'For Sale'}
             </span>
           </div>
         </div>
 
-        {/* Content & Metadata Section */}
-        <div className="p-5 flex flex-col flex-1 justify-between">
+        {/* Crisp White Card Content */}
+        <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between">
           <div>
-            {/* Unboxed Metadata Strip with Bullet Separators */}
-            <div className="flex items-center gap-2 text-xs text-[#8a909a] mb-2 font-mono">
-              {property.bedrooms > 0 && (
-                <>
-                  <span>{property.bedrooms} Beds</span>
-                  <span aria-hidden="true" className="text-[#3b4452]">·</span>
-                </>
-              )}
-              {property.bathrooms > 0 && (
-                <>
-                  <span>{property.bathrooms} Baths</span>
-                  <span aria-hidden="true" className="text-[#3b4452]">·</span>
-                </>
-              )}
-              {property.interiorAreaSqFt > 0 ? (
-                <span>{property.interiorAreaSqFt.toLocaleString()} sq ft</span>
-              ) : property.lotSizeAcres ? (
-                <span>{property.lotSizeAcres} Acres</span>
-              ) : (
-                <span>Prime Footprint</span>
-              )}
-            </div>
-
-            {/* Title */}
-            <h3 className="font-serif text-lg font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors leading-snug line-clamp-1">
+            {/* Property Title */}
+            <h3 className="text-base sm:text-[17px] font-bold text-[#0D2558] group-hover:text-[#DC1F26] transition-colors leading-snug line-clamp-1">
               {property.title}
             </h3>
 
-            {/* Location */}
-            <p className="text-xs text-[#9ba1ab] flex items-center gap-1.5 mt-1.5 line-clamp-1">
-              <MapPin className="w-3 h-3 text-[#c5a059] shrink-0" />
-              <span>{property.address ? `${property.address}, ` : ''}{property.city}, {property.country}</span>
+            {/* Location with Red Map Pin */}
+            <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1.5 line-clamp-1">
+              <MapPin className="w-3.5 h-3.5 text-[#DC1F26] shrink-0" />
+              <span className="truncate">
+                {property.city}
+                {property.stateRegion ? `, ${property.stateRegion}` : property.country ? `, ${property.country}` : ''}
+              </span>
             </p>
+
+            {/* Bold Royal Navy Price */}
+            <div className="mt-3 text-lg sm:text-[19px] font-extrabold text-[#0D2558] tabular-nums tracking-tight">
+              {formatPrice(property.price, property.currency)}
+            </div>
           </div>
 
-          {/* Price & Action Row */}
-          <div className="mt-5 pt-4 border-t border-[#1c232d] flex items-baseline justify-between">
-            <div>
-              <span className="text-[10px] uppercase tracking-wider text-[#737a85] block font-mono">
-                Asking Price
+          {/* Bottom Property Specs Row (Matches Screenshot Beds · Baths · Sq.Ft) */}
+          <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-[11.5px] font-medium text-slate-600">
+            {property.bedrooms > 0 ? (
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Bed className="w-3.5 h-3.5 text-[#163B8C] shrink-0" />
+                <span className="tabular-nums">{property.bedrooms} Beds</span>
               </span>
-              <span className="text-base font-semibold text-[#f7f5f2] font-mono tabular-nums tracking-tight">
-                {formatPrice(property.price, property.currency)}
-              </span>
-            </div>
+            ) : (
+              <span className="text-slate-500 truncate">{property.category}</span>
+            )}
 
-            <span className="text-xs text-[#c5a059] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-medium">
-              Details
-              <ArrowUpRight className="w-3.5 h-3.5" />
+            {property.bathrooms > 0 && (
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Bath className="w-3.5 h-3.5 text-[#163B8C] shrink-0" />
+                <span className="tabular-nums">{property.bathrooms} Baths</span>
+              </span>
+            )}
+
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
+              <Maximize2 className="w-3.5 h-3.5 text-[#163B8C] shrink-0" />
+              <span className="tabular-nums">
+                {property.interiorAreaSqFt > 0
+                  ? `${property.interiorAreaSqFt.toLocaleString()} Sq.Ft`
+                  : property.lotSizeAcres
+                  ? `${property.lotSizeAcres} Acres`
+                  : 'Prime Plot'}
+              </span>
             </span>
           </div>
-
         </div>
       </AppLink>
     </article>

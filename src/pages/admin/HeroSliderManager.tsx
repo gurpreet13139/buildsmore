@@ -3,12 +3,15 @@ import { HeroSlide } from '../../types/property';
 import { storage } from '../../services/storage';
 import {
   DEFAULT_HERO_DESCRIPTION,
+  DEFAULT_HERO_FALLBACK_IMAGE_URL,
   DEFAULT_HERO_HEADING,
-  DEFAULT_HERO_IMAGE_URL,
+  DEFAULT_HERO_VIDEO_URL,
   isHeroSlideComplete,
+  isHeroVideoUrl,
 } from '../../utils/heroSlides';
 import {
   Image as ImageIcon,
+  Film,
   Plus,
   Edit,
   Trash2,
@@ -36,12 +39,13 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Strictly 3 editable fields per slide: Banner Image, Heading, Content/Description
+  // Strictly 3 editable fields per slide: Banner Media (exclusively Image OR Video), Heading, Content/Description
+  const [mediaKind, setMediaKind] = useState<'image' | 'video'>('video');
   const [imageUrl, setImageUrl] = useState('');
   const [heading, setHeading] = useState('');
   const [description, setDescription] = useState('');
 
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reordering, setReordering] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -54,6 +58,7 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
 
   const orderedSlides = [...slides].sort((a, b) => a.displayOrder - b.displayOrder);
   const activeCount = orderedSlides.filter((s) => isHeroSlideComplete(s)).length;
+  const previewIsVideo = imageUrl.trim() ? isHeroVideoUrl(imageUrl) : mediaKind === 'video';
 
   const showSuccess = (msg: string) => {
     setErrorMsg(null);
@@ -63,6 +68,7 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
 
   const resetForm = () => {
     setEditingId(null);
+    setMediaKind('video');
     setImageUrl('');
     setHeading('');
     setDescription('');
@@ -75,28 +81,42 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
   };
 
   const handleOpenEdit = (slide: HeroSlide) => {
+    const existingUrl = slide.imageUrl || '';
     setEditingId(slide.id);
-    setImageUrl(slide.imageUrl || '');
+    setMediaKind(isHeroVideoUrl(existingUrl) ? 'video' : 'image');
+    setImageUrl(existingUrl);
     setHeading(slide.heading || '');
     setDescription(slide.description || '');
     setErrorMsg(null);
     setIsFormOpen(true);
   };
 
-  const handleUploadImage = async (file: File) => {
+  const handleSelectMediaKind = (nextKind: 'image' | 'video') => {
+    setMediaKind(nextKind);
+    setErrorMsg(null);
+    // Ensure a slide never holds mismatched media when switching between Image and Video
+    if (imageUrl.trim()) {
+      const currentIsVideo = isHeroVideoUrl(imageUrl);
+      if ((nextKind === 'video' && !currentIsVideo) || (nextKind === 'image' && currentIsVideo)) {
+        setImageUrl('');
+      }
+    }
+  };
+
+  const handleUploadMedia = async (file: File) => {
     const token = storage.getAdminToken();
     if (!token) {
-      setErrorMsg('Administrator authentication is required to upload banner images.');
+      setErrorMsg('Administrator authentication is required to upload banner images or videos.');
       return;
     }
 
-    setUploadingImage(true);
+    setUploadingMedia(true);
     setErrorMsg(null);
     try {
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('media', file);
 
-      const res = await fetch('/api/upload', {
+      const res = await fetch('/api/upload-hero-media', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -106,15 +126,22 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
 
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.url) {
-        throw new Error(data?.error || data?.message || 'Banner image upload failed.');
+        throw new Error(data?.message || data?.error || 'Banner media upload failed.');
       }
 
+      const uploadedType: 'image' | 'video' =
+        data.mediaType === 'video' || isHeroVideoUrl(data.url) ? 'video' : 'image';
+      setMediaKind(uploadedType);
       setImageUrl(data.url);
-      showSuccess('Banner image uploaded successfully.');
+      showSuccess(
+        uploadedType === 'video'
+          ? 'Banner video uploaded successfully.'
+          : 'Banner image uploaded successfully.'
+      );
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Unable to upload banner image.');
+      setErrorMsg(err instanceof Error ? err.message : 'Unable to upload banner media.');
     } finally {
-      setUploadingImage(false);
+      setUploadingMedia(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -130,7 +157,9 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
     const cleanDesc = description.trim();
 
     if (!cleanImage || !cleanHeading || !cleanDesc) {
-      setErrorMsg('Banner Image, Heading, and Content/Description are all required for a slide to display.');
+      setErrorMsg(
+        'Banner Image/Video, Heading, and Content/Description are all required for a slide to display.'
+      );
       return;
     }
 
@@ -224,7 +253,8 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
             </h2>
           </div>
           <p className="text-xs text-[#8a909a] mt-1">
-            Manage dynamic homepage hero slides. Each slide supports Banner Image, Heading, and Content/Description.
+            Manage dynamic homepage hero slides. Each slide supports Banner Image or Video, Heading,
+            and Content/Description.
           </p>
         </div>
 
@@ -268,8 +298,9 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
         <div className="text-xs text-[#a0a8b4] leading-relaxed">
           {activeCount === 0 ? (
             <>
-              <strong className="text-[#f7f5f2]">Default Hero Banner Active:</strong>{' '}
-              No complete custom slides are configured yet. The homepage automatically displays the default Buildsmore architectural banner ({DEFAULT_HERO_HEADING}) so the hero is never blank.
+              <strong className="text-[#f7f5f2]">Default Hero Banner Active:</strong> No complete
+              custom slides are configured yet. The homepage automatically displays the default
+              Buildsmore architectural banner ({DEFAULT_HERO_HEADING}) so the hero is never blank.
             </>
           ) : (
             <>
@@ -277,14 +308,14 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
                 {activeCount} Active {activeCount === 1 ? 'Slide' : 'Slides'} Live on Homepage:
               </strong>{' '}
               {activeCount > 1
-                ? 'Automatic sliding with smooth crossfade transitions is active. Drag slides or use the arrows below to change display order.'
+                ? 'Automatic sliding with smooth crossfade transitions is active for both image and video slides. Drag slides or use the arrows below to change display order.'
                 : 'Add a second slide to enable automatic multi-slide transitions. Deleting all slides automatically restores the default Buildsmore hero banner.'}
             </>
           )}
         </div>
       </div>
 
-      {/* Add / Edit Slide Form (Strictly 3 Editable Fields) */}
+      {/* Add / Edit Slide Form (Strictly 3 Editable Fields: Media Image/Video, Heading, Description) */}
       {isFormOpen && (
         <form
           onSubmit={handleSaveSlide}
@@ -307,55 +338,163 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
             </button>
           </div>
 
-          {/* Field 1: Banner Image (Upload / Change) */}
-          <div className="space-y-2.5">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block">
-              1. Banner Image *
-            </label>
+          {/* Field 1: Exclusive Banner Image OR Video (Upload / Replace / Remove + Live Preview) */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block">
+                1. Banner Background Media (Choose Image or Video) *
+              </label>
+
+              {/* Mutually Exclusive Media Type Toggle */}
+              <div
+                className="inline-flex items-center rounded-sm border border-[#2a3442] bg-[#161b22] p-0.5"
+                role="radiogroup"
+                aria-label="Select banner background media type"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mediaKind === 'image'}
+                  onClick={() => handleSelectMediaKind('image')}
+                  className={`px-3 py-1 text-[11px] font-mono uppercase rounded-sm flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    mediaKind === 'image'
+                      ? 'bg-[#c5a059] text-[#0c0f12] font-semibold'
+                      : 'text-[#9ca3af] hover:text-white'
+                  }`}
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Image</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mediaKind === 'video'}
+                  onClick={() => handleSelectMediaKind('video')}
+                  className={`px-3 py-1 text-[11px] font-mono uppercase rounded-sm flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    mediaKind === 'video'
+                      ? 'bg-[#c5a059] text-[#0c0f12] font-semibold'
+                      : 'text-[#9ca3af] hover:text-white'
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5" />
+                  <span>Video</span>
+                </button>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
               <div className="md:col-span-5 relative aspect-[16/9] bg-[#161b22] border border-[#2a3442] rounded-sm overflow-hidden flex items-center justify-center">
                 {imageUrl.trim() ? (
-                  <img
-                    src={imageUrl.trim()}
-                    alt="Slide banner preview"
-                    className="w-full h-full object-cover filter brightness-[0.65]"
-                  />
+                  previewIsVideo ? (
+                    <>
+                      <video
+                        key={imageUrl.trim()}
+                        src={imageUrl.trim()}
+                        controls
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#0c0f12]/85 border border-[#c5a059]/50 text-[#c5a059] text-[10px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none">
+                        <Film className="w-3 h-3" />
+                        <span>Video</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <img
+                        src={imageUrl.trim()}
+                        alt="Slide banner preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#0c0f12]/85 border border-[#2a3442] text-[#cbd5e1] text-[10px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none">
+                        <ImageIcon className="w-3 h-3 text-[#c5a059]" />
+                        <span>Image</span>
+                      </span>
+                    </>
+                  )
                 ) : (
                   <div className="text-center p-4 space-y-1.5 text-[#64748b]">
-                    <ImageIcon className="w-7 h-7 mx-auto opacity-70" />
-                    <span className="text-[11px] font-mono block">No banner image selected</span>
+                    <div className="flex items-center justify-center opacity-75">
+                      {mediaKind === 'video' ? (
+                        <Film className="w-6 h-6 text-[#c5a059]" />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-[#c5a059]" />
+                      )}
+                    </div>
+                    <span className="text-[11px] font-mono block">
+                      {mediaKind === 'video'
+                        ? 'No banner video selected yet'
+                        : 'No banner image selected yet'}
+                    </span>
                   </div>
                 )}
               </div>
 
               <div className="md:col-span-7 space-y-3">
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    accept={
+                      mediaKind === 'video'
+                        ? 'video/mp4,video/webm,video/quicktime'
+                        : 'image/jpeg,image/png,image/webp,image/avif'
+                    }
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleUploadImage(file);
+                      if (file) handleUploadMedia(file);
                     }}
                   />
                   <button
                     type="button"
-                    disabled={uploadingImage}
+                    disabled={uploadingMedia}
                     onClick={() => fileInputRef.current?.click()}
                     className="px-4 py-2 bg-[#18202b] hover:bg-[#222d3d] border border-[#c5a059]/50 text-[#f7f5f2] text-xs font-mono uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <Upload className="w-3.5 h-3.5 text-[#c5a059]" />
                     <span>
-                      {uploadingImage
-                        ? 'Uploading Image...'
+                      {uploadingMedia
+                        ? mediaKind === 'video'
+                          ? 'Uploading Video...'
+                          : 'Uploading Image...'
                         : imageUrl.trim()
-                        ? 'Change / Upload Image'
-                        : 'Upload Banner Image'}
+                          ? mediaKind === 'video'
+                            ? 'Replace Video'
+                            : 'Replace Image'
+                          : mediaKind === 'video'
+                            ? 'Upload Video'
+                            : 'Upload Image'}
                     </span>
                   </button>
+
+                  {mediaKind === 'video' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaKind('video');
+                        setImageUrl(DEFAULT_HERO_VIDEO_URL);
+                        setErrorMsg(null);
+                      }}
+                      className="px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-[#c5a059]/60 text-[#cbd5e1] hover:text-white text-xs font-mono rounded-sm cursor-pointer"
+                    >
+                      Use Buildsmore Drone Video
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaKind('image');
+                        setImageUrl(DEFAULT_HERO_FALLBACK_IMAGE_URL);
+                        setErrorMsg(null);
+                      }}
+                      className="px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-[#c5a059]/60 text-[#cbd5e1] hover:text-white text-xs font-mono rounded-sm cursor-pointer"
+                    >
+                      Use Default Image
+                    </button>
+                  )}
 
                   {imageUrl.trim() && (
                     <button
@@ -363,7 +502,7 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
                       onClick={() => setImageUrl('')}
                       className="px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-red-500/50 text-[#8a909a] hover:text-red-300 text-xs font-mono rounded-sm cursor-pointer"
                     >
-                      Clear Image
+                      Remove Media
                     </button>
                   )}
                 </div>
@@ -371,12 +510,24 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
                 <input
                   type="text"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="/uploads/... or https://... (upload above or paste image URL)"
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    setImageUrl(nextVal);
+                    if (nextVal.trim()) {
+                      setMediaKind(isHeroVideoUrl(nextVal) ? 'video' : 'image');
+                    }
+                  }}
+                  placeholder={
+                    mediaKind === 'video'
+                      ? '/uploads/...mp4 or /assets/aistudio/buildsmore-drone-hero_7194a756.mp4'
+                      : '/uploads/...jpg or https://... (upload image above or paste URL)'
+                  }
                   className="w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono"
                 />
                 <p className="text-[11px] text-[#737a85]">
-                  Recommended landscape high-resolution image (JPEG, PNG, WebP, or AVIF, max 10MB).
+                  {mediaKind === 'video'
+                    ? 'Video mode: supports MP4, WebM, and MOV up to 50MB. Plays muted, auto-playing, and looped as the banner background (never combined with an image).'
+                    : 'Image mode: supports landscape JPEG, PNG, WebP, and AVIF up to 10MB. Displays cleanly as the banner background (never combined with a video).'}
                 </p>
               </div>
             </div>
@@ -435,7 +586,7 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
             </button>
             <button
               type="submit"
-              disabled={saving || uploadingImage}
+              disabled={saving || uploadingMedia}
               className="px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Save className="w-3.5 h-3.5" />
@@ -445,11 +596,12 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
         </form>
       )}
 
-      {/* Existing Slides List (with Reorder, Edit, Delete) */}
+      {/* Existing Slides List (with Image/Video Preview, Reorder, Edit, Delete) */}
       {orderedSlides.length > 0 ? (
         <div className="space-y-3">
           {orderedSlides.map((slide, idx) => {
             const complete = isHeroSlideComplete(slide);
+            const slideIsVideo = isHeroVideoUrl(slide.imageUrl);
             const isConfirmingDelete = pendingDeleteId === slide.id;
             const isDragTarget = dragOverId === slide.id && draggedId !== slide.id;
 
@@ -488,14 +640,38 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
                     </span>
                   </div>
 
-                  {/* Thumbnail */}
-                  <div className="w-full md:w-44 aspect-[16/9] bg-[#161b22] border border-[#242c38] rounded-sm overflow-hidden shrink-0">
+                  {/* Thumbnail Preview (Image or Video) */}
+                  <div className="relative w-full md:w-48 aspect-[16/9] bg-[#161b22] border border-[#242c38] rounded-sm overflow-hidden shrink-0">
                     {slide.imageUrl ? (
-                      <img
-                        src={slide.imageUrl}
-                        alt={slide.heading || `Hero slide ${idx + 1}`}
-                        className="w-full h-full object-cover filter brightness-[0.75]"
-                      />
+                      slideIsVideo ? (
+                        <>
+                          <video
+                            src={slide.imageUrl}
+                            muted
+                            loop
+                            playsInline
+                            controls
+                            preload="metadata"
+                            className="w-full h-full object-cover"
+                          />
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#0c0f12]/85 border border-[#c5a059]/50 text-[#c5a059] text-[9px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none">
+                            <Film className="w-2.5 h-2.5" />
+                            <span>Video</span>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <img
+                            src={slide.imageUrl}
+                            alt={slide.heading || `Hero slide ${idx + 1}`}
+                            className="w-full h-full object-cover filter brightness-[0.8]"
+                          />
+                          <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#0c0f12]/85 border border-[#2a3442] text-[#cbd5e1] text-[9px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none">
+                            <ImageIcon className="w-2.5 h-2.5 text-[#c5a059]" />
+                            <span>Image</span>
+                          </span>
+                        </>
+                      )
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[#555f6d]">
                         <ImageIcon className="w-6 h-6" />
@@ -593,16 +769,24 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
         /* Default Fallback Preview Card when 0 custom slides exist */
         <div className="bg-[#101419] border border-[#202732] rounded-sm p-6">
           <div className="flex flex-col md:flex-row gap-6 items-center">
-            <div className="w-full md:w-64 aspect-[16/9] rounded-sm overflow-hidden border border-[#263140] shrink-0">
-              <img
-                src={DEFAULT_HERO_IMAGE_URL}
-                alt="Default Buildsmore Hero Banner"
-                className="w-full h-full object-cover filter brightness-[0.55]"
+            <div className="relative w-full md:w-64 aspect-[16/9] rounded-sm overflow-hidden border border-[#263140] shrink-0 bg-[#161b22]">
+              <video
+                src={DEFAULT_HERO_VIDEO_URL}
+                controls
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
               />
+              <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#0c0f12]/85 border border-[#c5a059]/50 text-[#c5a059] text-[10px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none">
+                <Film className="w-3 h-3" />
+                <span>Default Video</span>
+              </span>
             </div>
             <div className="flex-1 space-y-2">
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059]">
-                Active Default Fallback Banner
+                Active Default Homepage Banner
               </span>
               <h3 className="font-serif text-xl text-white">{DEFAULT_HERO_HEADING}</h3>
               <p className="text-xs text-[#9ca3af] leading-relaxed">{DEFAULT_HERO_DESCRIPTION}</p>
@@ -613,7 +797,7 @@ export const HeroSliderManager: React.FC<HeroSliderManagerProps> = ({
                   className="px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Add First Custom Slide</span>
+                  <span>Add Custom Image or Video Slide</span>
                 </button>
               </div>
             </div>

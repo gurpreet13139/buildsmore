@@ -35,6 +35,20 @@ export const ALLOWED_IMAGE_MIME_TYPES = new Set([
   'image/avif',
 ]);
 
+export const ALLOWED_VIDEO_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+]);
+
+export const ALLOWED_HERO_MEDIA_MIME_TYPES = new Set([
+  ...ALLOWED_IMAGE_MIME_TYPES,
+  ...ALLOWED_VIDEO_MIME_TYPES,
+]);
+
+export const MAX_IMAGE_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_VIDEO_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+
 export function getUploadsDirectory(): string {
   return path.resolve(process.cwd(), 'public/uploads');
 }
@@ -86,6 +100,101 @@ export function detectSafeImageFormat(
 }
 
 /**
+ * Verifies binary container magic bytes for MP4, WebM, and QuickTime MOV videos.
+ * Rejects disguised HTML/SVG/script payloads.
+ */
+export function detectSafeVideoFormat(
+  buffer: Buffer
+): { ext: 'mp4' | 'webm' | 'mov'; mime: string } | null {
+  if (!buffer || buffer.length < 12) return null;
+
+  // WebM / Matroska EBML header: 1A 45 DF A3
+  if (
+    buffer[0] === 0x1a &&
+    buffer[1] === 0x45 &&
+    buffer[2] === 0xdf &&
+    buffer[3] === 0xa3
+  ) {
+    return { ext: 'webm', mime: 'video/webm' };
+  }
+
+  // ISO Base Media File Format (MP4 / QuickTime MOV): bytes 4..8 === "ftyp"
+  const boxType = buffer.subarray(4, 8).toString('ascii');
+  if (boxType === 'ftyp') {
+    const brand = buffer.subarray(8, 12).toString('ascii');
+    // Explicitly exclude AVIF image brands
+    if (brand === 'avif' || brand === 'avis' || brand === 'mif1') {
+      return null;
+    }
+    if (brand === 'qt  ') {
+      return { ext: 'mov', mime: 'video/quicktime' };
+    }
+    const mp4Brands = new Set([
+      'isom',
+      'iso2',
+      'iso3',
+      'iso4',
+      'iso5',
+      'iso6',
+      'mp41',
+      'mp42',
+      'mp71',
+      'avc1',
+      'M4V ',
+      'M4VH',
+      'M4VP',
+      'MSNV',
+      'f4v ',
+      'dash',
+      '3gp4',
+      '3gp5',
+      '3gp6',
+      'hevc',
+      'hvc1',
+      'hev1',
+    ]);
+    if (mp4Brands.has(brand)) {
+      return { ext: 'mp4', mime: 'video/mp4' };
+    }
+  }
+
+  // Legacy QuickTime MOV containers starting with wide/mdat/moov/free atom
+  if (boxType === 'moov' || boxType === 'wide' || boxType === 'free' || boxType === 'mdat') {
+    return { ext: 'mov', mime: 'video/quicktime' };
+  }
+
+  return null;
+}
+
+async function saveValidatedBufferToUploads(
+  fileBuffer: Buffer,
+  ext: string,
+  mime: string
+): Promise<LocalUploadResult> {
+  const uploadsDir = getUploadsDirectory();
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  const safeFilename = path.basename(`${Date.now()}-${crypto.randomUUID()}.${ext}`);
+  const filePath = path.resolve(uploadsDir, safeFilename);
+  if (!filePath.startsWith(`${uploadsDir}${path.sep}`)) {
+    throw new Error('Rejected unsafe upload target path.');
+  }
+
+  await fs.promises.writeFile(filePath, fileBuffer);
+
+  return {
+    key: `uploads/${safeFilename}`,
+    url: `/uploads/${safeFilename}`,
+    storage: 'local-disk',
+    bucket: 'local-storage',
+    sizeBytes: fileBuffer.length,
+    contentType: mime,
+  };
+}
+
+/**
  * Validates and saves a property or editorial image directly to local disk in public/uploads/.
  */
 export async function uploadPropertyPhoto(
@@ -102,27 +211,45 @@ export async function uploadPropertyPhoto(
     throw new Error('File content failed binary image signature verification.');
   }
 
-  const uploadsDir = getUploadsDirectory();
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+  return saveValidatedBufferToUploads(fileBuffer, detected.ext, detected.mime);
+}
+
+/**
+ * Validates and saves a Hero Banner image or video (JPEG, PNG, WebP, AVIF, MP4, WebM, MOV)
+ * directly to local disk in public/uploads/.
+ */
+export async function uploadHeroBannerMedia(
+  fileBuffer: Buffer,
+  _originalFilename: string,
+  mimeType: string
+): Promise<LocalUploadResult & { mediaType: 'image' | 'video' }> {
+  if (ALLOWED_IMAGE_MIME_TYPES.has(mimeType)) {
+    if (fileBuffer.length > MAX_IMAGE_UPLOAD_SIZE_BYTES) {
+      throw new Error('Banner image exceeds the maximum size of 10MB.');
+    }
+    const detectedImg = detectSafeImageFormat(fileBuffer);
+    if (!detectedImg) {
+      throw new Error('Image file failed binary signature verification.');
+    }
+    const saved = await saveValidatedBufferToUploads(fileBuffer, detectedImg.ext, detectedImg.mime);
+    return { ...saved, mediaType: 'image' };
   }
 
-  const safeFilename = path.basename(`${Date.now()}-${crypto.randomUUID()}.${detected.ext}`);
-  const filePath = path.resolve(uploadsDir, safeFilename);
-  if (!filePath.startsWith(`${uploadsDir}${path.sep}`)) {
-    throw new Error('Rejected unsafe upload target path.');
+  if (ALLOWED_VIDEO_MIME_TYPES.has(mimeType)) {
+    if (fileBuffer.length > MAX_VIDEO_UPLOAD_SIZE_BYTES) {
+      throw new Error('Banner video exceeds the maximum size of 50MB.');
+    }
+    const detectedVideo = detectSafeVideoFormat(fileBuffer);
+    if (!detectedVideo) {
+      throw new Error('Video file failed binary container verification. Upload a valid MP4, WebM, or MOV video.');
+    }
+    const saved = await saveValidatedBufferToUploads(fileBuffer, detectedVideo.ext, detectedVideo.mime);
+    return { ...saved, mediaType: 'video' };
   }
 
-  await fs.promises.writeFile(filePath, fileBuffer);
-
-  return {
-    key: `uploads/${safeFilename}`,
-    url: `/uploads/${safeFilename}`,
-    storage: 'local-disk',
-    bucket: 'local-storage',
-    sizeBytes: fileBuffer.length,
-    contentType: detected.mime,
-  };
+  throw new Error(
+    'Unsupported file type. Upload a JPEG, PNG, WebP, AVIF image or an MP4, WebM, MOV video.'
+  );
 }
 
 /**

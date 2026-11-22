@@ -3,6 +3,12 @@
 @theme {
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --color-royal-950: #08183A;
+  --color-royal-900: #0D2558;
+  --color-royal-800: #13347A;
+  --color-royal-700: #1D4ED8;
+  --color-brand-red: #DC1F26;
+  --color-brand-red-dark: #B91C1C;
   --color-gold-50: #fbf8f0;
   --color-gold-100: #f6efdc;
   --color-gold-200: #ebdcb7;
@@ -22,15 +28,18 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #0c0f12;
-    color: #f7f5f2;
+    background-color: #ffffff;
+    color: #0D2558;
     overflow-x: hidden;
     width: 100%;
     margin: 0;
     padding: 0;
   }
 
-  h1, h2, h3, .font-serif-luxury {
+  .admin-theme h1,
+  .admin-theme h2,
+  .admin-theme h3,
+  .font-serif-luxury {
     font-family: var(--font-serif);
   }
 }
@@ -43,20 +52,20 @@
   scrollbar-width: none;
 }
 
-/* Custom luxury scrollbar */
+/* Custom sleek scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0c0f12;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #242b35;
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c5a059;
+  background: #0D2558;
 }
 
 .admin-tabs-scrollbar {

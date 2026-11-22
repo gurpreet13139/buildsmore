@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { renderToString } from "react-dom/server";
 import { Link, MemoryRouter, Navigate, Route, Routes, StaticRouter, useInRouterContext, useLocation, useNavigate, useNavigationType, useParams, useSearchParams } from "react-router-dom";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
-import { AlertCircle, AlertTriangle, Anchor, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Bath, Bed, BookOpen, Bookmark, Building, Building2, Calculator, Calendar, Car, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Download, Edit, Edit3, ExternalLink, Eye, EyeOff, FileCheck2, FileSpreadsheet, FileText, Globe, GripVertical, Image, Info, KeyRound, Layers, LayoutGrid, List, Lock, LogOut, Mail, MapPin, Maximize2, Menu, MessageCircle, MessageSquare, Phone, PhoneCall, Plane, Play, Plus, Printer, RefreshCw, RotateCcw, Save, Search, Send, Settings, Share2, Shield, ShieldCheck, Sparkles, Star, Tag, Trash2, TrendingUp, Trophy, Upload, User, X, Zap } from "lucide-react";
+import { AlertCircle, AlertTriangle, Anchor, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Award, Bath, Bed, BookOpen, Bookmark, Building, Building2, Calculator, Calendar, Car, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, Compass, Download, Edit, Edit3, ExternalLink, Eye, EyeOff, FileCheck2, FileSpreadsheet, FileText, Film, Gem, Globe, GripVertical, Handshake, Heart, Home, Image, IndianRupee, Info, KeyRound, Layers, LayoutGrid, List, Lock, LogOut, Mail, MapPin, Maximize2, Menu, MessageCircle, MessageSquare, Phone, PhoneCall, Plane, Play, Plus, Printer, RefreshCw, RotateCcw, Save, Search, Send, Settings, Share2, Shield, ShieldCheck, Sparkles, Star, Tag, Trash2, TrendingUp, Trophy, Upload, User, Users, X, Zap } from "lucide-react";
 // src/data/initialProperties.ts
 var INITIAL_PROPERTIES = [
 	{
@@ -3294,189 +3294,399 @@ var AppLink = ({ href, onNavigate, onClick, children, ...rest }) => {
 	});
 };
 // src/components/layout/Navbar.tsx
-var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout, onOpenInquiry }) => {
+var PROPERTY_CATEGORIES = [
+	{
+		label: "All Properties",
+		path: "/properties"
+	},
+	{
+		label: "Residential",
+		path: "/category/residential"
+	},
+	{
+		label: "Commercial",
+		path: "/category/commercial"
+	},
+	{
+		label: "Plots & Land",
+		path: "/category/land"
+	},
+	{
+		label: "New Developments",
+		path: "/category/developments"
+	}
+];
+var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout, onOpenInquiry, isAdminRoute = false }) => {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const navLinks = [
-		{
-			label: "Portfolio",
-			path: "/properties"
-		},
-		{
-			label: "Residential",
-			path: "/category/residential"
-		},
-		{
-			label: "Commercial",
-			path: "/category/commercial"
-		},
-		{
-			label: "Plots & Land",
-			path: "/category/land"
-		},
-		{
-			label: "Developments",
-			path: "/category/developments"
-		},
-		{
-			label: "Contact Us",
-			path: "/contact"
-		}
-	];
+	const [openDropdown, setOpenDropdown] = useState(null);
+	const navRef = useRef(null);
+	const managedLocations = storage.getLocations(true);
+	useEffect(() => {
+		const handleClickOutside = (e) => {
+			if (navRef.current && !navRef.current.contains(e.target)) setOpenDropdown(null);
+		};
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, []);
 	const isLinkActive = (linkPath) => currentPath === linkPath;
+	const isPropertiesSection = currentPath === "/properties" || currentPath.startsWith("/category/") || currentPath.startsWith("/property/") || currentPath.startsWith("/collection/");
 	const handleNavClick = (path) => {
-		onNavigate(path);
+		setOpenDropdown(null);
 		setMobileMenuOpen(false);
+		if (path === "/#trophy-holdings") {
+			if (currentPath === "/" && typeof document !== "undefined") {
+				const el = document.getElementById("trophy-holdings");
+				if (el) {
+					el.scrollIntoView({
+						behavior: "smooth",
+						block: "start"
+					});
+					return;
+				}
+			}
+			onNavigate("/");
+			if (typeof window !== "undefined") window.setTimeout(() => {
+				document.getElementById("trophy-holdings")?.scrollIntoView({
+					behavior: "smooth",
+					block: "start"
+				});
+			}, 180);
+			return;
+		}
+		onNavigate(path);
 	};
-	return /* @__PURE__ */ jsxs("header", {
+	if (isAdminRoute) return /* @__PURE__ */ jsx("header", {
 		className: "sticky top-0 z-50 bg-[#0c0f12]/95 backdrop-blur-md border-b border-[#242b35]/80 transition-colors w-full overflow-x-clip",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "w-full max-w-[1440px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-2 sm:gap-3 xl:gap-4",
+			children: [
+				/* @__PURE__ */ jsxs(AppLink, {
+					href: "/",
+					onNavigate: handleNavClick,
+					className: "flex items-center gap-2.5 text-left group cursor-pointer focus:outline-none shrink-0",
+					children: [/* @__PURE__ */ jsx("img", {
+						src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
+						alt: "BUILDsmore Logo",
+						className: "h-9 w-9 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm shrink-0"
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "flex flex-col",
+						children: [/* @__PURE__ */ jsx("span", {
+							className: "font-serif text-sm sm:text-base tracking-[0.12em] font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors uppercase leading-none whitespace-nowrap",
+							children: "BUILDsmore"
+						}), /* @__PURE__ */ jsx("span", {
+							className: "text-[8px] font-mono tracking-[0.15em] text-[#c5a059] uppercase mt-1 hidden sm:block whitespace-nowrap",
+							children: "Let's Grow Together"
+						})]
+					})]
+				}),
+				/* @__PURE__ */ jsx("nav", {
+					"aria-label": "Primary Navigation",
+					className: "hidden xl:flex flex-1 min-w-0 items-center justify-center gap-4 text-[11px] uppercase tracking-[0.06em] font-medium text-[#a0a5ad]",
+					children: [
+						{
+							label: "Portfolio",
+							path: "/properties"
+						},
+						{
+							label: "Residential",
+							path: "/category/residential"
+						},
+						{
+							label: "Commercial",
+							path: "/category/commercial"
+						},
+						{
+							label: "Plots & Land",
+							path: "/category/land"
+						},
+						{
+							label: "Developments",
+							path: "/category/developments"
+						},
+						{
+							label: "Contact Us",
+							path: "/contact"
+						}
+					].map((link) => /* @__PURE__ */ jsx(AppLink, {
+						href: link.path,
+						onNavigate: handleNavClick,
+						className: "transition-colors whitespace-nowrap cursor-pointer hover:text-[#f7f5f2] py-1 shrink-0",
+						children: link.label
+					}, link.path))
+				}),
+				/* @__PURE__ */ jsx("div", {
+					className: "flex items-center gap-2 shrink-0",
+					children: isAdminLoggedIn ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs(AppLink, {
+						href: "/admin",
+						onNavigate: handleNavClick,
+						className: "flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm border bg-[#c5a059]/15 text-[#c5a059] border-[#c5a059]/40 hover:bg-[#c5a059]/25 whitespace-nowrap shrink-0",
+						children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Admin Panel" })]
+					}), onLogout && /* @__PURE__ */ jsxs("button", {
+						onClick: onLogout,
+						className: "flex items-center gap-1 px-2.5 py-1.5 text-[11px] uppercase rounded-sm border bg-[#14181d] text-[#9ca3af] border-[#242b35] hover:border-red-500/50 hover:text-red-400 cursor-pointer whitespace-nowrap shrink-0",
+						title: "Sign Out of Admin Session",
+						children: [/* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", {
+							className: "hidden sm:inline",
+							children: "Exit"
+						})]
+					})] }) : /* @__PURE__ */ jsxs("button", {
+						onClick: onOpenAdmin,
+						className: "flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase rounded-sm border bg-[#14181d] text-[#f7f5f2] border-[#242b35] hover:border-[#c5a059] hover:text-[#c5a059] cursor-pointer whitespace-nowrap shrink-0",
+						children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Login" })]
+					})
+				})
+			]
+		})
+	});
+	return /* @__PURE__ */ jsxs("header", {
+		className: "sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_2px_16px_rgba(13,37,88,0.04)] w-full",
 		children: [
 			/* @__PURE__ */ jsxs("div", {
-				className: "w-full max-w-[1440px] mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-2 sm:gap-3 xl:gap-4",
+				ref: navRef,
+				className: "w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4",
 				children: [
 					/* @__PURE__ */ jsxs(AppLink, {
 						href: "/",
 						onNavigate: handleNavClick,
 						onClick: () => setMobileMenuOpen(false),
-						className: "flex items-center gap-2 sm:gap-2.5 text-left group cursor-pointer focus:outline-none shrink-0",
-						children: [/* @__PURE__ */ jsx("img", {
-							src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
-							alt: "BUILDsmore Logo",
-							className: "h-9 w-9 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm group-hover:border-[#c5a059] transition-all shrink-0"
+						className: "flex items-center gap-3 text-left group cursor-pointer focus:outline-none shrink-0",
+						children: [/* @__PURE__ */ jsx("div", {
+							className: "h-11 w-11 rounded-xl bg-[#0c0f12] p-0.5 border border-[#0D2558]/15 shadow-sm group-hover:border-[#DC1F26]/50 transition-colors shrink-0 overflow-hidden",
+							children: /* @__PURE__ */ jsx("img", {
+								src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
+								alt: "BUILDsmore Logo",
+								className: "w-full h-full rounded-[9px] object-cover"
+							})
 						}), /* @__PURE__ */ jsxs("div", {
 							className: "flex flex-col",
 							children: [/* @__PURE__ */ jsx("span", {
-								className: "font-serif text-sm sm:text-base tracking-[0.11em] sm:tracking-[0.12em] font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors uppercase leading-none whitespace-nowrap",
+								className: "text-xl sm:text-[22px] font-extrabold tracking-tight text-[#0D2558] group-hover:text-[#163B8C] transition-colors leading-none whitespace-nowrap",
 								children: "BUILDsmore"
 							}), /* @__PURE__ */ jsx("span", {
-								className: "text-[8px] font-mono tracking-[0.15em] text-[#c5a059] uppercase mt-1 hidden sm:block whitespace-nowrap",
+								className: "text-[10px] font-semibold tracking-[0.06em] text-[#163B8C]/80 mt-1 hidden sm:block whitespace-nowrap",
 								children: "Let's Grow Together"
 							})]
 						})]
 					}),
-					/* @__PURE__ */ jsx("nav", {
+					/* @__PURE__ */ jsxs("nav", {
 						"aria-label": "Primary Navigation",
-						className: "hidden xl:flex flex-1 min-w-0 items-center justify-center gap-3 2xl:gap-4 text-[11px] uppercase tracking-[0.05em] 2xl:tracking-[0.07em] font-medium text-[#a0a5ad]",
-						children: navLinks.map((link) => {
-							const isActive = isLinkActive(link.path);
-							return /* @__PURE__ */ jsxs(AppLink, {
-								href: link.path,
+						className: "hidden lg:flex items-center justify-center gap-1 xl:gap-2 text-[13.5px] font-semibold text-[#0D2558]",
+						children: [
+							/* @__PURE__ */ jsx(AppLink, {
+								href: "/",
 								onNavigate: handleNavClick,
-								onClick: () => setMobileMenuOpen(false),
-								"aria-current": isActive ? "page" : void 0,
-								className: `transition-colors whitespace-nowrap cursor-pointer hover:text-[#f7f5f2] relative py-1 shrink-0 ${isActive ? "text-[#c5a059] font-semibold" : ""}`,
-								children: [link.label, isActive && /* @__PURE__ */ jsx("span", { className: "absolute bottom-0 left-0 right-0 h-[1.5px] bg-[#c5a059]" })]
-							}, link.path);
-						})
+								"aria-current": isLinkActive("/") ? "page" : void 0,
+								className: `px-4 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isLinkActive("/") ? "bg-[#DC1F26] text-white shadow-sm shadow-[#DC1F26]/25" : "text-[#0D2558] hover:text-[#DC1F26] hover:bg-slate-50"}`,
+								children: "Home"
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative",
+								onMouseEnter: () => setOpenDropdown("properties"),
+								onMouseLeave: () => setOpenDropdown((cur) => cur === "properties" ? null : cur),
+								children: [/* @__PURE__ */ jsxs("button", {
+									type: "button",
+									onClick: () => setOpenDropdown((cur) => cur === "properties" ? null : "properties"),
+									"aria-expanded": openDropdown === "properties",
+									className: `inline-flex items-center gap-1 px-3.5 py-2 rounded-lg transition-all whitespace-nowrap shrink-0 cursor-pointer ${isPropertiesSection ? "bg-[#0D2558]/8 text-[#DC1F26]" : "text-[#0D2558] hover:text-[#DC1F26] hover:bg-slate-50"}`,
+									children: [/* @__PURE__ */ jsx("span", { children: "Properties" }), /* @__PURE__ */ jsx(ChevronDown, { className: `w-3.5 h-3.5 transition-transform duration-200 ${openDropdown === "properties" ? "rotate-180 text-[#DC1F26]" : "text-slate-500"}` })]
+								}), /* @__PURE__ */ jsx("div", {
+									className: `absolute left-0 top-full pt-2 w-56 z-50 transition-all duration-150 ${openDropdown === "properties" ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"}`,
+									children: /* @__PURE__ */ jsx("div", {
+										className: "bg-white rounded-xl border border-slate-200 shadow-[0_16px_40px_rgba(13,37,88,0.14)] p-2 space-y-0.5",
+										children: PROPERTY_CATEGORIES.map((cat) => {
+											const active = isLinkActive(cat.path);
+											return /* @__PURE__ */ jsxs(AppLink, {
+												href: cat.path,
+												onNavigate: handleNavClick,
+												className: `flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors ${active ? "bg-[#DC1F26]/10 text-[#DC1F26]" : "text-[#0D2558] hover:bg-slate-50 hover:text-[#DC1F26]"}`,
+												children: [/* @__PURE__ */ jsx("span", { children: cat.label }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 opacity-60" })]
+											}, cat.path);
+										})
+									})
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative",
+								onMouseEnter: () => setOpenDropdown("locations"),
+								onMouseLeave: () => setOpenDropdown((cur) => cur === "locations" ? null : cur),
+								children: [/* @__PURE__ */ jsxs("button", {
+									type: "button",
+									onClick: () => setOpenDropdown((cur) => cur === "locations" ? null : "locations"),
+									"aria-expanded": openDropdown === "locations",
+									className: "inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-[#0D2558] hover:text-[#DC1F26] hover:bg-slate-50 transition-all whitespace-nowrap shrink-0 cursor-pointer",
+									children: [/* @__PURE__ */ jsx("span", { children: "Locations" }), /* @__PURE__ */ jsx(ChevronDown, { className: `w-3.5 h-3.5 transition-transform duration-200 ${openDropdown === "locations" ? "rotate-180 text-[#DC1F26]" : "text-slate-500"}` })]
+								}), /* @__PURE__ */ jsx("div", {
+									className: `absolute left-0 top-full pt-2 w-60 z-50 transition-all duration-150 ${openDropdown === "locations" ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-1 pointer-events-none"}`,
+									children: /* @__PURE__ */ jsxs("div", {
+										className: "bg-white rounded-xl border border-slate-200 shadow-[0_16px_40px_rgba(13,37,88,0.14)] p-2 max-h-80 overflow-y-auto space-y-0.5",
+										children: [/* @__PURE__ */ jsxs(AppLink, {
+											href: "/properties",
+											onNavigate: handleNavClick,
+											className: "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-[#0D2558] hover:bg-slate-50 hover:text-[#DC1F26]",
+											children: [/* @__PURE__ */ jsx(Building2, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "All Locations" })]
+										}), managedLocations.map((loc) => /* @__PURE__ */ jsxs(AppLink, {
+											href: `/properties?location=${encodeURIComponent(loc.slug || loc.id)}`,
+											onNavigate: handleNavClick,
+											className: "flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-[#DC1F26]",
+											children: [/* @__PURE__ */ jsxs("span", {
+												className: "inline-flex items-center gap-2 truncate",
+												children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsx("span", {
+													className: "truncate",
+													children: loc.name
+												})]
+											}), typeof loc.propertyCount === "number" && loc.propertyCount > 0 && /* @__PURE__ */ jsx("span", {
+												className: "text-[11px] text-slate-400 tabular-nums",
+												children: loc.propertyCount
+											})]
+										}, loc.id))]
+									})
+								})]
+							}),
+							/* @__PURE__ */ jsx("a", {
+								href: "/#trophy-holdings",
+								onClick: (e) => {
+									e.preventDefault();
+									handleNavClick("/#trophy-holdings");
+								},
+								className: "px-3.5 py-2 rounded-lg text-[#0D2558] hover:text-[#DC1F26] hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0 cursor-pointer",
+								children: "Trophy Holdings"
+							}),
+							/* @__PURE__ */ jsx(AppLink, {
+								href: "/blog",
+								onNavigate: handleNavClick,
+								"aria-current": currentPath === "/blog" || currentPath.startsWith("/blog/") ? "page" : void 0,
+								className: `px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${currentPath === "/blog" || currentPath.startsWith("/blog/") ? "bg-[#DC1F26] text-white shadow-sm" : "text-[#0D2558] hover:text-[#DC1F26] hover:bg-slate-50"}`,
+								children: "Blog"
+							}),
+							/* @__PURE__ */ jsx(AppLink, {
+								href: "/contact",
+								onNavigate: handleNavClick,
+								"aria-current": isLinkActive("/contact") ? "page" : void 0,
+								className: `px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${isLinkActive("/contact") ? "bg-[#DC1F26] text-white shadow-sm" : "text-[#0D2558] hover:text-[#DC1F26] hover:bg-slate-50"}`,
+								children: "Contact"
+							})
+						]
 					}),
 					/* @__PURE__ */ jsxs("div", {
-						className: "flex items-center gap-1.5 shrink-0",
+						className: "flex items-center gap-2 sm:gap-2.5 shrink-0",
 						children: [
 							isAdminLoggedIn ? /* @__PURE__ */ jsxs("div", {
 								className: "hidden sm:flex items-center gap-1.5 shrink-0",
 								children: [/* @__PURE__ */ jsxs(AppLink, {
 									href: "/admin",
 									onNavigate: handleNavClick,
-									onClick: () => setMobileMenuOpen(false),
-									className: "flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm transition-all cursor-pointer whitespace-nowrap border bg-[#c5a059]/15 text-[#c5a059] border-[#c5a059]/40 hover:bg-[#c5a059]/25 shrink-0",
+									className: "inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-[#0D2558]/20 bg-[#F4F7FC] text-[#0D2558] hover:border-[#0D2558] hover:bg-[#0D2558] hover:text-white transition-colors whitespace-nowrap shrink-0",
 									title: "Administrative Console",
-									children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Admin Panel" })]
-								}), onLogout && /* @__PURE__ */ jsxs("button", {
+									children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Admin" })]
+								}), onLogout && /* @__PURE__ */ jsx("button", {
 									onClick: onLogout,
-									className: "flex items-center gap-1 px-2 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm transition-all cursor-pointer whitespace-nowrap border bg-[#14181d] text-[#9ca3af] border-[#242b35] hover:border-red-500/50 hover:text-red-400 shrink-0",
+									className: "inline-flex items-center justify-center p-2 text-slate-500 hover:text-[#DC1F26] bg-slate-50 border border-slate-200 hover:border-[#DC1F26]/40 rounded-lg transition-colors cursor-pointer shrink-0",
 									title: "Sign Out of Admin Session",
 									"aria-label": "Sign Out of Admin Session",
-									children: [/* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5 shrink-0" }), /* @__PURE__ */ jsx("span", {
-										className: "hidden md:inline xl:hidden 2xl:inline text-[10px]",
-										children: "Exit"
-									})]
+									children: /* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5" })
 								})]
 							}) : /* @__PURE__ */ jsxs("button", {
 								onClick: onOpenAdmin,
-								className: "hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-[11px] tracking-[0.05em] uppercase rounded-sm transition-all cursor-pointer whitespace-nowrap border bg-[#14181d] text-[#f7f5f2] border-[#242b35] hover:border-[#c5a059] hover:text-[#c5a059] shrink-0 shadow-sm",
+								className: "hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-[#0D2558] hover:border-[#0D2558]/40 transition-colors cursor-pointer whitespace-nowrap shrink-0",
 								title: "Administrator Login",
-								children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Login" })]
+								children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "Login" })]
 							}),
-							/* @__PURE__ */ jsxs("a", {
-								href: "tel:9779878303",
-								className: "hidden md:flex items-center gap-1.5 px-2 py-1.5 text-[11px] text-[#f7f5f2] bg-[#14181d] border border-[#242b35] hover:border-[#c5a059] rounded-sm font-mono transition-colors whitespace-nowrap shrink-0",
-								title: "Direct Concierge Hotline: 9779878303",
-								"aria-label": "Direct Concierge Hotline: 977-987-8303",
-								children: [/* @__PURE__ */ jsx(Phone, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", {
-									className: "tabular-nums hidden 2xl:inline",
-									children: "977-987-8303"
-								})]
-							}),
-							/* @__PURE__ */ jsx("button", {
+							/* @__PURE__ */ jsxs("button", {
+								type: "button",
 								onClick: () => {
 									if (onOpenInquiry) onOpenInquiry();
 									else handleNavClick("/contact");
 								},
-								className: "inline-flex items-center px-2.5 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] tracking-[0.05em] uppercase font-semibold bg-[#c5a059] text-[#0c0f12] rounded-sm hover:bg-[#d4af5f] transition-all cursor-pointer whitespace-nowrap shadow-sm shrink-0",
-								children: "Private Inquiry"
+								className: "inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#0D2558] hover:bg-[#163B8C] text-white text-xs sm:text-[13px] font-semibold rounded-xl shadow-md shadow-[#0D2558]/20 transition-all cursor-pointer whitespace-nowrap shrink-0",
+								children: [/* @__PURE__ */ jsx("span", { children: "Enquire Now" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
 							}),
 							/* @__PURE__ */ jsx("button", {
+								type: "button",
 								onClick: () => setMobileMenuOpen(!mobileMenuOpen),
-								className: "xl:hidden p-2 text-[#d1d5db] hover:text-[#c5a059] bg-[#14181d] border border-[#242b35] hover:border-[#c5a059]/50 rounded-sm transition-colors cursor-pointer shrink-0",
+								className: "lg:hidden p-2.5 text-[#0D2558] hover:text-[#DC1F26] bg-slate-50 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0",
 								"aria-label": "Toggle navigation menu",
-								children: mobileMenuOpen ? /* @__PURE__ */ jsx(X, { className: "w-4 h-4 text-[#c5a059]" }) : /* @__PURE__ */ jsx(Menu, { className: "w-4 h-4" })
+								"aria-expanded": mobileMenuOpen,
+								children: mobileMenuOpen ? /* @__PURE__ */ jsx(X, { className: "w-5 h-5" }) : /* @__PURE__ */ jsx(Menu, { className: "w-5 h-5" })
 							})
 						]
 					})
 				]
 			}),
-			/* @__PURE__ */ jsx("nav", {
+			/* @__PURE__ */ jsxs("nav", {
 				"aria-label": "Mobile Category Navigation",
-				className: "xl:hidden flex items-center px-4 sm:px-6 py-2 bg-[#101419] border-t border-[#242b35]/60 overflow-x-auto text-[11px] uppercase tracking-wider text-[#9ca3af] gap-5 no-scrollbar",
-				children: navLinks.map((link) => {
-					const isActive = isLinkActive(link.path);
-					return /* @__PURE__ */ jsx(AppLink, {
-						href: link.path,
+				className: "lg:hidden flex items-center px-4 sm:px-6 py-2 bg-[#F7F9FC] border-t border-slate-200/70 overflow-x-auto text-xs font-semibold text-slate-600 gap-4 no-scrollbar",
+				children: [
+					/* @__PURE__ */ jsx(AppLink, {
+						href: "/",
 						onNavigate: handleNavClick,
-						onClick: () => setMobileMenuOpen(false),
-						"aria-current": isActive ? "page" : void 0,
-						className: `whitespace-nowrap cursor-pointer transition-colors py-0.5 ${isActive ? "text-[#c5a059] font-semibold border-b border-[#c5a059]" : "hover:text-[#f7f5f2]"}`,
-						children: link.label
-					}, link.path);
-				})
+						className: `whitespace-nowrap shrink-0 py-0.5 ${isLinkActive("/") ? "text-[#DC1F26] border-b-2 border-[#DC1F26]" : "hover:text-[#0D2558]"}`,
+						children: "Home"
+					}),
+					PROPERTY_CATEGORIES.map((cat) => /* @__PURE__ */ jsx(AppLink, {
+						href: cat.path,
+						onNavigate: handleNavClick,
+						className: `whitespace-nowrap shrink-0 py-0.5 ${isLinkActive(cat.path) ? "text-[#DC1F26] border-b-2 border-[#DC1F26]" : "hover:text-[#0D2558]"}`,
+						children: cat.label
+					}, cat.path)),
+					/* @__PURE__ */ jsx(AppLink, {
+						href: "/blog",
+						onNavigate: handleNavClick,
+						className: `whitespace-nowrap shrink-0 py-0.5 ${currentPath.startsWith("/blog") ? "text-[#DC1F26] border-b-2 border-[#DC1F26]" : "hover:text-[#0D2558]"}`,
+						children: "Blog"
+					}),
+					/* @__PURE__ */ jsx(AppLink, {
+						href: "/contact",
+						onNavigate: handleNavClick,
+						className: `whitespace-nowrap shrink-0 py-0.5 ${isLinkActive("/contact") ? "text-[#DC1F26] border-b-2 border-[#DC1F26]" : "hover:text-[#0D2558]"}`,
+						children: "Contact"
+					})
+				]
 			}),
 			mobileMenuOpen && /* @__PURE__ */ jsx("div", {
-				className: "xl:hidden bg-[#0e1217] border-b border-[#242b35] px-6 py-6 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200",
+				className: "lg:hidden bg-white border-b border-slate-200 px-5 py-6 shadow-xl",
 				children: /* @__PURE__ */ jsxs("div", {
-					className: "space-y-4",
-					children: [
-						/* @__PURE__ */ jsx("p", {
-							className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059]",
-							children: "Portfolio Directories"
-						}),
-						/* @__PURE__ */ jsx("div", {
-							className: "grid grid-cols-2 gap-2 text-xs uppercase tracking-wider",
-							children: navLinks.map((link) => {
-								const isActive = isLinkActive(link.path);
-								return /* @__PURE__ */ jsxs(AppLink, {
-									href: link.path,
-									onNavigate: handleNavClick,
-									onClick: () => setMobileMenuOpen(false),
-									className: `flex items-center justify-between p-3 rounded-sm border text-left cursor-pointer transition-colors ${isActive ? "bg-[#181f2a] border-[#c5a059] text-[#c5a059] font-medium" : "bg-[#14181d] border-[#202732] text-[#d1d5db] hover:border-[#c5a059]/40 hover:text-white"}`,
-									children: [/* @__PURE__ */ jsx("span", { children: link.label }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3 h-3 opacity-60" })]
-								}, link.path);
+					className: "space-y-5",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", {
+						className: "text-[11px] font-bold uppercase tracking-wider text-[#DC1F26] mb-2.5",
+						children: "Explore Properties"
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "grid grid-cols-2 gap-2 text-xs font-semibold",
+						children: [
+							PROPERTY_CATEGORIES.map((cat) => /* @__PURE__ */ jsxs(AppLink, {
+								href: cat.path,
+								onNavigate: handleNavClick,
+								className: `flex items-center justify-between p-3 rounded-xl border transition-colors ${isLinkActive(cat.path) ? "bg-[#0D2558] border-[#0D2558] text-white" : "bg-[#F7F9FC] border-slate-200 text-[#0D2558] hover:border-[#163B8C]"}`,
+								children: [/* @__PURE__ */ jsx("span", { children: cat.label }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 opacity-60" })]
+							}, cat.path)),
+							/* @__PURE__ */ jsxs(AppLink, {
+								href: "/blog",
+								onNavigate: handleNavClick,
+								className: "flex items-center justify-between p-3 rounded-xl border bg-[#F7F9FC] border-slate-200 text-[#0D2558] hover:border-[#163B8C]",
+								children: [/* @__PURE__ */ jsx("span", { children: "Blog & Journal" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 opacity-60" })]
+							}),
+							/* @__PURE__ */ jsxs(AppLink, {
+								href: "/contact",
+								onNavigate: handleNavClick,
+								className: "flex items-center justify-between p-3 rounded-xl border bg-[#F7F9FC] border-slate-200 text-[#0D2558] hover:border-[#163B8C]",
+								children: [/* @__PURE__ */ jsx("span", { children: "Contact Us" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 opacity-60" })]
 							})
-						}),
-						/* @__PURE__ */ jsx("div", {
-							className: "sm:hidden pt-2 border-t border-[#1f2631]",
-							children: isAdminLoggedIn ? /* @__PURE__ */ jsxs("div", {
+						]
+					})] }), /* @__PURE__ */ jsxs("div", {
+						className: "pt-3 border-t border-slate-100 flex flex-col gap-2.5",
+						children: [
+							isAdminLoggedIn ? /* @__PURE__ */ jsxs("div", {
 								className: "flex gap-2",
 								children: [/* @__PURE__ */ jsxs(AppLink, {
 									href: "/admin",
 									onNavigate: handleNavClick,
-									onClick: () => setMobileMenuOpen(false),
-									className: "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#c5a059]/15 border border-[#c5a059]/40 text-[#c5a059] rounded-sm text-xs uppercase tracking-wider",
-									children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Admin Panel" })]
+									className: "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#F4F7FC] border border-[#0D2558]/20 text-[#0D2558] rounded-xl text-xs font-semibold",
+									children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Admin Panel" })]
 								}), onLogout && /* @__PURE__ */ jsxs("button", {
 									onClick: () => {
 										onLogout();
 										setMobileMenuOpen(false);
 									},
-									className: "px-3 py-2.5 bg-[#14181d] border border-red-900/50 text-red-400 rounded-sm text-xs uppercase tracking-wider flex items-center justify-center gap-1",
+									className: "px-4 py-2.5 bg-red-50 border border-red-200 text-[#DC1F26] rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer",
 									children: [/* @__PURE__ */ jsx(LogOut, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Exit" })]
 								})]
 							}) : /* @__PURE__ */ jsxs("button", {
@@ -3484,27 +3694,25 @@ var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout,
 									onOpenAdmin();
 									setMobileMenuOpen(false);
 								},
-								className: "flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-[#14181d] border border-[#202732] text-[#f7f5f2] rounded-sm hover:border-[#c5a059] text-xs uppercase tracking-wider",
-								children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Admin Login" })]
-							})
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "pt-2 border-t border-[#1f2631] flex flex-col gap-2.5",
-							children: [/* @__PURE__ */ jsxs("a", {
+								className: "flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-[#0D2558] rounded-xl text-xs font-semibold cursor-pointer",
+								children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "Admin Login" })]
+							}),
+							/* @__PURE__ */ jsxs("a", {
 								href: "tel:9779878303",
-								className: "flex items-center justify-center gap-2 w-full py-2.5 bg-[#14181d] border border-[#242b35] text-[#f7f5f2] rounded-sm text-xs font-mono",
-								children: [/* @__PURE__ */ jsx(Phone, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Direct Hotline: 977-987-8303" })]
-							}), /* @__PURE__ */ jsx("button", {
+								className: "flex items-center justify-center gap-2 w-full py-2.5 bg-[#F7F9FC] border border-slate-200 text-[#0D2558] rounded-xl text-xs font-semibold tabular-nums",
+								children: [/* @__PURE__ */ jsx(Phone, { className: "w-4 h-4 text-[#DC1F26]" }), /* @__PURE__ */ jsx("span", { children: "Direct Hotline: 977-987-8303" })]
+							}),
+							/* @__PURE__ */ jsx("button", {
 								onClick: () => {
 									setMobileMenuOpen(false);
 									if (onOpenInquiry) onOpenInquiry();
 									else handleNavClick("/contact");
 								},
-								className: "w-full py-2.5 bg-[#c5a059] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm text-center cursor-pointer hover:bg-[#d4af5f] transition-colors",
-								children: "Schedule Private Consultation"
-							})]
-						})
-					]
+								className: "w-full py-3 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs uppercase tracking-wider font-bold rounded-xl text-center cursor-pointer transition-colors",
+								children: "Enquire Now"
+							})
+						]
+					})]
 				})
 			})
 		]
@@ -3513,11 +3721,11 @@ var Navbar = ({ currentPath, onNavigate, onOpenAdmin, isAdminLoggedIn, onLogout,
 // src/components/layout/Footer.tsx
 var Footer = ({ onNavigate }) => {
 	return /* @__PURE__ */ jsx("footer", {
-		className: "bg-[#080a0c] text-[#a0a5ad] border-t border-[#1a2027] pt-16 pb-24 md:pb-12",
+		className: "bg-[#0B1F4B] text-slate-300 border-t border-white/10 pt-14 pb-24 md:pb-10",
 		children: /* @__PURE__ */ jsxs("div", {
-			className: "max-w-7xl mx-auto px-6",
+			className: "max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8",
 			children: [/* @__PURE__ */ jsxs("div", {
-				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16",
+				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12",
 				children: [
 					/* @__PURE__ */ jsxs("div", {
 						className: "lg:col-span-2 space-y-4",
@@ -3526,116 +3734,135 @@ var Footer = ({ onNavigate }) => {
 								href: "/",
 								onNavigate,
 								className: "inline-flex items-center gap-3 group",
-								children: [/* @__PURE__ */ jsx("img", {
-									src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
-									alt: "BUILDsmore Logo",
-									className: "w-12 h-12 rounded-sm object-cover border border-[#c5a059]/40"
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-12 h-12 rounded-xl bg-[#0c0f12] p-0.5 border border-[#c5a059]/60 shadow-md shrink-0 overflow-hidden",
+									children: /* @__PURE__ */ jsx("img", {
+										src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
+										alt: "BUILDsmore Logo",
+										className: "w-full h-full rounded-[9px] object-cover"
+									})
 								}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-									className: "font-serif text-2xl tracking-[0.18em] font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors uppercase block leading-none",
+									className: "text-2xl font-extrabold tracking-tight text-white group-hover:text-blue-200 transition-colors block leading-none",
 									children: "BUILDsmore"
 								}), /* @__PURE__ */ jsx("span", {
-									className: "text-[9px] font-mono tracking-[0.25em] text-[#c5a059] uppercase block mt-1",
+									className: "text-[11px] font-semibold tracking-wide text-blue-200/80 block mt-1",
 									children: "Let's Grow Together"
 								})] })]
 							}),
 							/* @__PURE__ */ jsx("p", {
-								className: "text-sm text-[#8a909a] leading-relaxed max-w-sm",
-								children: "International luxury property advisory specializing in architectural trophy residences, private islands, historic vineyard estates, and prime commercial headquarters."
+								className: "text-sm text-slate-300/90 leading-relaxed max-w-sm",
+								children: "Trusted real estate advisory for luxury residential villas, prime commercial landmarks, investment plots, and curated developments across Mohali, Zirakpur, Dera Bassi & New Chandigarh."
 							}),
 							/* @__PURE__ */ jsxs("div", {
-								className: "pt-1 text-xs text-[#c5a059] flex items-center gap-2",
-								children: [/* @__PURE__ */ jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: ["Direct Concierge Hotline: ", /* @__PURE__ */ jsx("a", {
-									href: "tel:9779878303",
-									className: "underline font-mono",
-									children: "9779878303"
-								})] })]
+								className: "pt-1 text-xs text-white/90 flex items-center gap-2",
+								children: [/* @__PURE__ */ jsx(Phone, { className: "w-3.5 h-3.5 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsxs("span", { children: [
+									"Direct Concierge Hotline:",
+									" ",
+									/* @__PURE__ */ jsx("a", {
+										href: "tel:9779878303",
+										className: "font-bold text-white hover:text-[#DC1F26] underline underline-offset-4 tabular-nums transition-colors",
+										children: "977-987-8303"
+									})
+								] })]
 							})
 						]
 					}),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
-						className: "text-xs uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] mb-4",
-						children: "Portfolio"
+						className: "text-xs uppercase tracking-[0.14em] font-bold text-white mb-4",
+						children: "Properties"
 					}), /* @__PURE__ */ jsxs("ul", {
-						className: "space-y-2.5 text-xs",
+						className: "space-y-2.5 text-sm text-slate-300",
 						children: [
 							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/properties",
 								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
+								className: "hover:text-white transition-colors",
 								children: "All Properties"
 							}) }),
 							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/category/residential",
 								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
-								children: "Prime Residential"
+								className: "hover:text-white transition-colors",
+								children: "Residential Estates"
 							}) }),
 							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/category/commercial",
 								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
+								className: "hover:text-white transition-colors",
 								children: "Commercial Landmarks"
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
+								href: "/category/land",
+								onNavigate,
+								className: "hover:text-white transition-colors",
+								children: "Plots & Land"
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
+								href: "/category/developments",
+								onNavigate,
+								className: "hover:text-white transition-colors",
+								children: "New Developments"
 							}) })
 						]
 					})] }),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
-						className: "text-xs uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] mb-4",
-						children: "Private Services"
+						className: "text-xs uppercase tracking-[0.14em] font-bold text-white mb-4",
+						children: "Advisory & Insights"
 					}), /* @__PURE__ */ jsxs("ul", {
-						className: "space-y-2.5 text-xs",
+						className: "space-y-2.5 text-sm text-slate-300",
 						children: [
 							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
-								href: "/contact",
+								href: "/",
 								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
-								children: "Private Valuations"
-							}) }),
-							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
-								href: "/contact",
-								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
-								children: "Schedule Inspection"
-							}) }),
-							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
-								href: "/contact",
-								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
-								children: "Contact Us"
+								className: "hover:text-white transition-colors",
+								children: "Home"
 							}) }),
 							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
 								href: "/blog",
 								onNavigate,
-								className: "hover:text-[#c5a059] transition-colors cursor-pointer",
-								children: "Blog"
+								className: "hover:text-white transition-colors",
+								children: "Blog & Journal"
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
+								href: "/contact",
+								onNavigate,
+								className: "hover:text-white transition-colors",
+								children: "Schedule Site Visit"
+							}) }),
+							/* @__PURE__ */ jsx("li", { children: /* @__PURE__ */ jsx(AppLink, {
+								href: "/contact",
+								onNavigate,
+								className: "hover:text-white transition-colors",
+								children: "Contact Us"
 							}) })
 						]
 					})] }),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h4", {
-						className: "text-xs uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] mb-4",
+						className: "text-xs uppercase tracking-[0.14em] font-bold text-white mb-4",
 						children: "Corporate Office"
 					}), /* @__PURE__ */ jsxs("div", {
-						className: "space-y-3 text-xs",
+						className: "space-y-3 text-sm text-slate-300",
 						children: [
 							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-start gap-2.5",
-								children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
-									className: "leading-relaxed",
+								children: [/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#DC1F26] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
+									className: "leading-relaxed text-xs sm:text-sm",
 									children: "Buildsmore, SCO 24, Sector 82 A, IT City Rd, JLPL Industrial Area, Sahibzada Ajit Singh Nagar, Punjab 140306"
 								})]
 							}),
 							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2.5",
-								children: [/* @__PURE__ */ jsx(Phone, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("a", {
+								children: [/* @__PURE__ */ jsx(Phone, { className: "w-4 h-4 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsx("a", {
 									href: "tel:9779878303",
-									className: "hover:text-[#c5a059] transition-colors font-mono",
+									className: "hover:text-white transition-colors tabular-nums",
 									children: "977-987-8303"
 								})]
 							}),
 							/* @__PURE__ */ jsxs("div", {
 								className: "flex items-center gap-2.5",
-								children: [/* @__PURE__ */ jsx(Mail, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("a", {
+								children: [/* @__PURE__ */ jsx(Mail, { className: "w-4 h-4 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsx("a", {
 									href: "mailto:info@buildsmoremohali.com",
-									className: "hover:text-[#c5a059] transition-colors",
+									className: "hover:text-white transition-colors break-all",
 									children: "info@buildsmoremohali.com"
 								})]
 							})
@@ -3643,23 +3870,23 @@ var Footer = ({ onNavigate }) => {
 					})] })
 				]
 			}), /* @__PURE__ */ jsxs("div", {
-				className: "pt-8 border-t border-[#1a2027] flex flex-col lg:flex-row items-center justify-between gap-4 text-xs text-[#6b7280]",
+				className: "pt-7 border-t border-white/10 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs text-slate-400",
 				children: [/* @__PURE__ */ jsxs("div", {
-					className: "flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left",
+					className: "flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-center sm:text-left",
 					children: [
 						/* @__PURE__ */ jsxs("p", { children: [
 							"© ",
 							(/* @__PURE__ */ new Date()).getUTCFullYear(),
-							" BUILDsmore International Real Estate S.A. All rights reserved."
+							" BUILDsmore. All rights reserved."
 						] }),
 						/* @__PURE__ */ jsx("span", {
-							className: "hidden sm:inline text-[#2e3742]",
-							children: "•"
+							className: "hidden sm:inline text-white/25",
+							children: "·"
 						}),
 						/* @__PURE__ */ jsxs("p", {
-							className: "text-[#9ca3af]",
+							className: "text-slate-300",
 							children: ["Developed by ", /* @__PURE__ */ jsx("span", {
-								className: "text-[#c5a059] font-medium tracking-wide",
+								className: "text-white font-semibold",
 								children: "Browsera Infotech"
 							})]
 						})
@@ -3670,20 +3897,20 @@ var Footer = ({ onNavigate }) => {
 						/* @__PURE__ */ jsx(AppLink, {
 							href: "/privacy",
 							onNavigate,
-							className: "hover:text-[#a0a5ad] transition-colors cursor-pointer",
+							className: "hover:text-white transition-colors",
 							children: "Privacy Policy"
 						}),
 						/* @__PURE__ */ jsx(AppLink, {
 							href: "/terms",
 							onNavigate,
-							className: "hover:text-[#a0a5ad] transition-colors cursor-pointer",
+							className: "hover:text-white transition-colors",
 							children: "Terms of Service"
 						}),
 						/* @__PURE__ */ jsx(AppLink, {
 							href: "/contact",
 							onNavigate,
-							className: "hover:text-[#a0a5ad] transition-colors cursor-pointer",
-							children: "Global Compliance"
+							className: "hover:text-white transition-colors",
+							children: "Contact Advisory"
 						})
 					]
 				})]
@@ -3702,7 +3929,7 @@ var PropertyCard = ({ property, onSelect, isSaved = false, onToggleSave }) => {
 	const isDisplayingLogo = canTrySourceLogoFallback || !imgError && primary.isLogo;
 	const propertyHref = `/property/${encodeURIComponent(property.slug)}`;
 	return /* @__PURE__ */ jsxs("article", {
-		className: "group relative bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-all duration-300 flex flex-col overflow-hidden rounded-sm",
+		className: "group relative bg-white border border-slate-200/80 hover:border-[#163B8C]/35 rounded-2xl shadow-[0_8px_28px_rgba(13,37,88,0.06)] hover:shadow-[0_16px_40px_rgba(13,37,88,0.13)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden",
 		children: [/* @__PURE__ */ jsx("div", {
 			className: "absolute top-3.5 right-3.5 z-20",
 			children: /* @__PURE__ */ jsx("button", {
@@ -3711,107 +3938,105 @@ var PropertyCard = ({ property, onSelect, isSaved = false, onToggleSave }) => {
 					e.stopPropagation();
 					onToggleSave?.(property.id, e);
 				},
-				"aria-label": "Save property",
-				className: `w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md transition-colors cursor-pointer ${isSaved ? "bg-[#c5a059] text-[#0c0f12]" : "bg-[#0c0f12]/60 text-[#f7f5f2] hover:bg-[#c5a059] hover:text-[#0c0f12]"}`,
-				children: /* @__PURE__ */ jsx(Bookmark, {
-					className: "w-3.5 h-3.5",
+				"aria-label": isSaved ? "Remove property from saved list" : "Save property",
+				className: `w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-sm ${isSaved ? "bg-[#DC1F26] text-white" : "bg-white/90 text-[#0D2558] hover:bg-[#DC1F26] hover:text-white"}`,
+				children: /* @__PURE__ */ jsx(Heart, {
+					className: "w-4 h-4",
 					fill: isSaved ? "currentColor" : "none"
 				})
 			})
 		}), /* @__PURE__ */ jsxs(AppLink, {
 			href: propertyHref,
 			onNavigate: () => onSelect(property),
-			className: "flex flex-col flex-1 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[#c5a059]",
+			className: "flex flex-col flex-1 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#163B8C]",
 			children: [/* @__PURE__ */ jsxs("div", {
-				className: `relative aspect-[4/3] w-full overflow-hidden ${isDisplayingLogo ? "bg-[#0f141b]" : "bg-[#14181d]"}`,
-				children: [
-					displayUrl ? /* @__PURE__ */ jsx("img", {
-						src: displayUrl,
-						alt: property.title,
-						onError: () => {
-							if (canTrySourceLogoFallback) setLogoError(true);
-							else setImgError(true);
-						},
-						referrerPolicy: "no-referrer",
-						loading: "lazy",
-						className: isDisplayingLogo ? "w-full h-full object-contain p-8 transition-transform duration-700 ease-out group-hover:scale-105" : "w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-					}) : /* @__PURE__ */ jsxs("div", {
-						className: "w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#1a212b] to-[#0c0f12] text-center",
-						children: [
-							/* @__PURE__ */ jsx("div", {
-								className: "w-12 h-12 rounded-full border border-[#c5a059]/40 flex items-center justify-center text-[#c5a059] mb-3",
-								children: /* @__PURE__ */ jsx("span", {
-									className: "font-serif text-lg font-bold",
-									children: "B"
-								})
-							}),
-							/* @__PURE__ */ jsx("p", {
-								className: "font-serif text-sm text-[#f7f5f2] font-medium tracking-wide",
-								children: property.title
-							}),
-							/* @__PURE__ */ jsxs("p", {
-								className: "text-[11px] text-[#8a909a] mt-1",
-								children: [
-									property.city,
-									", ",
-									property.country
-								]
+				className: `relative aspect-[4/3] w-full overflow-hidden ${isDisplayingLogo ? "bg-[#0D2558]" : "bg-slate-100"}`,
+				children: [displayUrl ? /* @__PURE__ */ jsx("img", {
+					src: displayUrl,
+					alt: property.title,
+					onError: () => {
+						if (canTrySourceLogoFallback) setLogoError(true);
+						else setImgError(true);
+					},
+					referrerPolicy: "no-referrer",
+					loading: "lazy",
+					className: isDisplayingLogo ? "w-full h-full object-contain p-8 transition-transform duration-500 ease-out group-hover:scale-105" : "w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+				}) : /* @__PURE__ */ jsxs("div", {
+					className: "w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#0D2558] to-[#163B8C] text-center",
+					children: [
+						/* @__PURE__ */ jsx("div", {
+							className: "w-11 h-11 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-white mb-2.5",
+							children: /* @__PURE__ */ jsx("span", {
+								className: "text-lg font-extrabold",
+								children: "B"
 							})
-						]
-					}),
-					/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#101419] via-transparent to-black/20 pointer-events-none" }),
-					/* @__PURE__ */ jsx("div", {
-						className: "absolute top-3.5 left-3.5 z-10",
-						children: /* @__PURE__ */ jsx("span", {
-							className: "text-[11px] uppercase tracking-[0.15em] font-semibold text-[#f7f5f2] bg-[#0c0f12]/70 backdrop-blur-sm px-2.5 py-1 rounded-sm border border-white/10",
-							children: property.category
+						}),
+						/* @__PURE__ */ jsx("p", {
+							className: "text-sm text-white font-semibold line-clamp-1",
+							children: property.title
+						}),
+						/* @__PURE__ */ jsxs("p", {
+							className: "text-[11px] text-blue-200 mt-0.5",
+							children: [
+								property.city,
+								", ",
+								property.country
+							]
 						})
+					]
+				}), /* @__PURE__ */ jsx("div", {
+					className: "absolute top-3.5 left-3.5 z-10",
+					children: /* @__PURE__ */ jsx("span", {
+						className: "inline-flex items-center px-3 py-1 rounded-full bg-[#0D2558]/90 backdrop-blur-xs text-white text-[11px] font-semibold tracking-wide shadow-sm",
+						children: property.category === "New Projects" ? "New Project" : "For Sale"
 					})
-				]
+				})]
 			}), /* @__PURE__ */ jsxs("div", {
-				className: "p-5 flex flex-col flex-1 justify-between",
+				className: "p-4 sm:p-5 flex flex-col flex-1 justify-between",
 				children: [/* @__PURE__ */ jsxs("div", { children: [
-					/* @__PURE__ */ jsxs("div", {
-						className: "flex items-center gap-2 text-xs text-[#8a909a] mb-2 font-mono",
-						children: [
-							property.bedrooms > 0 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs("span", { children: [property.bedrooms, " Beds"] }), /* @__PURE__ */ jsx("span", {
-								"aria-hidden": "true",
-								className: "text-[#3b4452]",
-								children: "·"
-							})] }),
-							property.bathrooms > 0 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsxs("span", { children: [property.bathrooms, " Baths"] }), /* @__PURE__ */ jsx("span", {
-								"aria-hidden": "true",
-								className: "text-[#3b4452]",
-								children: "·"
-							})] }),
-							property.interiorAreaSqFt > 0 ? /* @__PURE__ */ jsxs("span", { children: [property.interiorAreaSqFt.toLocaleString(), " sq ft"] }) : property.lotSizeAcres ? /* @__PURE__ */ jsxs("span", { children: [property.lotSizeAcres, " Acres"] }) : /* @__PURE__ */ jsx("span", { children: "Prime Footprint" })
-						]
-					}),
 					/* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-lg font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors leading-snug line-clamp-1",
+						className: "text-base sm:text-[17px] font-bold text-[#0D2558] group-hover:text-[#DC1F26] transition-colors leading-snug line-clamp-1",
 						children: property.title
 					}),
 					/* @__PURE__ */ jsxs("p", {
-						className: "text-xs text-[#9ba1ab] flex items-center gap-1.5 mt-1.5 line-clamp-1",
-						children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3 h-3 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsxs("span", { children: [
-							property.address ? `${property.address}, ` : "",
-							property.city,
-							", ",
-							property.country
-						] })]
+						className: "text-xs text-slate-500 flex items-center gap-1.5 mt-1.5 line-clamp-1",
+						children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsxs("span", {
+							className: "truncate",
+							children: [property.city, property.stateRegion ? `, ${property.stateRegion}` : property.country ? `, ${property.country}` : ""]
+						})]
+					}),
+					/* @__PURE__ */ jsx("div", {
+						className: "mt-3 text-lg sm:text-[19px] font-extrabold text-[#0D2558] tabular-nums tracking-tight",
+						children: formatPrice(property.price, property.currency)
 					})
 				] }), /* @__PURE__ */ jsxs("div", {
-					className: "mt-5 pt-4 border-t border-[#1c232d] flex items-baseline justify-between",
-					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase tracking-wider text-[#737a85] block font-mono",
-						children: "Asking Price"
-					}), /* @__PURE__ */ jsx("span", {
-						className: "text-base font-semibold text-[#f7f5f2] font-mono tabular-nums tracking-tight",
-						children: formatPrice(property.price, property.currency)
-					})] }), /* @__PURE__ */ jsxs("span", {
-						className: "text-xs text-[#c5a059] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-medium",
-						children: ["Details", /* @__PURE__ */ jsx(ArrowUpRight, { className: "w-3.5 h-3.5" })]
-					})]
+					className: "mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-[11.5px] font-medium text-slate-600",
+					children: [
+						property.bedrooms > 0 ? /* @__PURE__ */ jsxs("span", {
+							className: "inline-flex items-center gap-1 whitespace-nowrap",
+							children: [/* @__PURE__ */ jsx(Bed, { className: "w-3.5 h-3.5 text-[#163B8C] shrink-0" }), /* @__PURE__ */ jsxs("span", {
+								className: "tabular-nums",
+								children: [property.bedrooms, " Beds"]
+							})]
+						}) : /* @__PURE__ */ jsx("span", {
+							className: "text-slate-500 truncate",
+							children: property.category
+						}),
+						property.bathrooms > 0 && /* @__PURE__ */ jsxs("span", {
+							className: "inline-flex items-center gap-1 whitespace-nowrap",
+							children: [/* @__PURE__ */ jsx(Bath, { className: "w-3.5 h-3.5 text-[#163B8C] shrink-0" }), /* @__PURE__ */ jsxs("span", {
+								className: "tabular-nums",
+								children: [property.bathrooms, " Baths"]
+							})]
+						}),
+						/* @__PURE__ */ jsxs("span", {
+							className: "inline-flex items-center gap-1 whitespace-nowrap",
+							children: [/* @__PURE__ */ jsx(Maximize2, { className: "w-3.5 h-3.5 text-[#163B8C] shrink-0" }), /* @__PURE__ */ jsx("span", {
+								className: "tabular-nums",
+								children: property.interiorAreaSqFt > 0 ? `${property.interiorAreaSqFt.toLocaleString()} Sq.Ft` : property.lotSizeAcres ? `${property.lotSizeAcres} Acres` : "Prime Plot"
+							})]
+						})
+					]
 				})]
 			})]
 		})]
@@ -3848,16 +4073,16 @@ async function submitPublicInquiry(payload) {
 var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 	const [fullName, setFullName] = useState("");
 	const [phone, setPhone] = useState("");
-	const [email, setEmail] = useState("");
-	const [propertyType, setPropertyType] = useState("Any Asset Class");
-	const [budgetRange, setBudgetRange] = useState("Flexible / Consultation");
+	const [interestedIn, setInterestedIn] = useState("Residential");
 	const [preferredLocation, setPreferredLocation] = useState("");
+	const [budgetRange, setBudgetRange] = useState("Flexible / Consultation");
 	const [honeypot, setHoneypot] = useState("");
 	const formStartedAt = useRef(Date.now());
 	const [loading, setLoading] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
 	const [successNote, setSuccessNote] = useState(null);
 	const [error, setError] = useState(null);
+	const managedLocations = storage.getLocations(true);
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		if (loading) return;
@@ -3865,7 +4090,7 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 		const validationError = validateInquiryFields({
 			fullName,
 			phone,
-			email,
+			email: "",
 			emailRequired: false
 		});
 		if (validationError) {
@@ -3874,17 +4099,16 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 		}
 		const trimmedName = fullName.trim();
 		const trimmedPhone = phone.trim();
-		const trimmedEmail = email.trim();
+		const trimmedLocation = preferredLocation.trim();
 		setLoading(true);
 		try {
-			const summaryMessage = `[Homepage Hero Banner] Property Type: ${propertyType} | Preferred Location: ${preferredLocation.trim() || "Not specified"} | Budget: ${budgetRange}`;
+			const summaryMessage = `[Homepage Hero Banner] Interested In: ${interestedIn} | Preferred Location: ${trimmedLocation || "Not specified"} | Budget: ${budgetRange}`;
 			const data = await submitPublicInquiry({
 				fullName: trimmedName,
 				phone: trimmedPhone,
-				email: trimmedEmail || void 0,
-				propertyType,
+				propertyType: interestedIn,
 				budgetRange,
-				preferredLocation: preferredLocation.trim() || void 0,
+				preferredLocation: trimmedLocation || void 0,
 				preferredContactMethod: "phone",
 				sourceForm: "hero",
 				message: summaryMessage,
@@ -3894,17 +4118,17 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 			storage.createInquiry({
 				clientName: trimmedName,
 				phone: trimmedPhone,
-				email: trimmedEmail || "Not provided",
+				email: "Not provided",
 				preferredContactMethod: "phone",
 				investmentBudget: budgetRange,
-				propertyTitle: `Hero Inquiry (${propertyType})`,
+				propertyTitle: `Hero Enquiry (${interestedIn})`,
 				message: summaryMessage
 			});
 			setSuccessNote(data.message || null);
 			setSubmitted(true);
 			if (onInquirySubmitted && data.inquiryId) onInquirySubmitted(data.inquiryId);
 		} catch (err) {
-			const message = err instanceof Error ? err.message : "Unable to submit inquiry right now. Please try again or call +91 977-987-8303.";
+			const message = err instanceof Error ? err.message : "Unable to submit enquiry right now. Please try again or call +91 977-987-8303.";
 			setError(message);
 		} finally {
 			setLoading(false);
@@ -3914,39 +4138,38 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 		setSubmitted(false);
 		setFullName("");
 		setPhone("");
-		setEmail("");
-		setPropertyType("Any Asset Class");
-		setBudgetRange("Flexible / Consultation");
+		setInterestedIn("Residential");
 		setPreferredLocation("");
+		setBudgetRange("Flexible / Consultation");
 		setHoneypot("");
 		setSuccessNote(null);
 		setError(null);
 		formStartedAt.current = Date.now();
 	};
 	return /* @__PURE__ */ jsx("div", {
-		className: `bg-[#12161d]/95 backdrop-blur-xl border border-[#c5a059]/30 rounded-xl p-4 sm:p-5 shadow-2xl text-[#f7f5f2] ${className}`,
+		className: `bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-5 shadow-2xl shadow-[#0D2558]/15 text-[#0D2558] ${className}`,
 		children: submitted ? /* @__PURE__ */ jsxs("div", {
 			className: "py-6 px-3 text-center space-y-3 animate-fade-in",
 			children: [
 				/* @__PURE__ */ jsx("div", {
-					className: "w-12 h-12 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/40 flex items-center justify-center mx-auto text-[#c5a059]",
+					className: "w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600",
 					children: /* @__PURE__ */ jsx(CheckCircle2, { className: "w-6 h-6" })
 				}),
 				/* @__PURE__ */ jsx("h3", {
-					className: "font-serif text-xl sm:text-2xl font-normal text-[#f7f5f2] tracking-wide",
-					children: "Inquiry Registered"
+					className: "text-xl font-extrabold text-[#0D2558]",
+					children: "Enquiry Registered"
 				}),
 				/* @__PURE__ */ jsxs("p", {
-					className: "text-xs text-[#cbd5e1] leading-relaxed max-w-xs mx-auto",
+					className: "text-xs text-slate-600 leading-relaxed max-w-xs mx-auto",
 					children: [
 						"Thank you, ",
 						/* @__PURE__ */ jsx("strong", {
-							className: "text-[#f7f5f2] font-semibold",
+							className: "text-[#0D2558] font-bold",
 							children: fullName
 						}),
 						".",
 						" ",
-						successNote || `Your property consultation request has been submitted to our senior advisory team. We will contact you at ${phone} shortly.`
+						successNote || `Your property enquiry has been submitted to our advisory team. We will contact you at ${phone} shortly.`
 					]
 				}),
 				/* @__PURE__ */ jsx("div", {
@@ -3954,8 +4177,8 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 					children: /* @__PURE__ */ jsx("button", {
 						type: "button",
 						onClick: handleReset,
-						className: "px-5 py-2 bg-[#181f2a] hover:bg-[#202836] border border-[#2a3442] hover:border-[#c5a059] text-xs font-mono uppercase tracking-wider text-[#c5a059] rounded-sm transition-colors cursor-pointer",
-						children: "Submit Another Inquiry"
+						className: "px-5 py-2 bg-[#0D2558] hover:bg-[#163B8C] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-colors cursor-pointer",
+						children: "Submit Another Enquiry"
 					})
 				})
 			]
@@ -3981,170 +4204,161 @@ var HeroInquiryForm = ({ className = "", onInquirySubmitted }) => {
 					})]
 				}),
 				/* @__PURE__ */ jsxs("div", {
-					className: "border-b border-[#252f3e] pb-2.5",
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "inline-flex items-center gap-1.5 text-[9px] font-mono tracking-[0.2em] text-[#c5a059] uppercase font-semibold",
-							children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Priority Consultation" })]
-						}),
-						/* @__PURE__ */ jsx("h3", {
-							className: "font-serif text-lg sm:text-xl font-normal text-[#f7f5f2] tracking-wide mt-0.5",
-							children: "Property Inquiry"
-						}),
-						/* @__PURE__ */ jsx("p", {
-							className: "text-[11px] text-[#8a909a] mt-0.5 leading-snug",
-							children: "Connect with our advisory desk for private allocations."
-						})
-					]
+					className: "border-b border-slate-100 pb-2.5",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "inline-flex items-center gap-1.5 text-[10px] tracking-[0.16em] text-[#DC1F26] uppercase font-extrabold",
+						children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsx("span", { children: "Quick Property Enquiry" })]
+					}), /* @__PURE__ */ jsx("h3", {
+						className: "text-lg font-extrabold text-[#0D2558] mt-0.5 leading-snug",
+						children: "Speak With an Advisor"
+					})]
 				}),
 				error && /* @__PURE__ */ jsxs("div", {
 					role: "alert",
-					className: "p-2.5 bg-red-950/70 border border-red-500/50 rounded-sm text-red-200 text-xs flex items-start gap-2",
-					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
-						className: "leading-tight",
+					className: "p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-start gap-2",
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-[#DC1F26] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
+						className: "leading-tight font-medium",
 						children: error
 					})]
 				}),
 				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
-					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
+					htmlFor: "hero-enquiry-name",
+					className: "text-[11px] font-bold text-slate-600 block mb-1",
 					children: ["Full Name ", /* @__PURE__ */ jsx("span", {
-						className: "text-[#c5a059]",
+						className: "text-[#DC1F26]",
 						children: "*"
 					})]
 				}), /* @__PURE__ */ jsx("input", {
+					id: "hero-enquiry-name",
 					type: "text",
 					required: true,
 					value: fullName,
 					onChange: (e) => setFullName(e.target.value),
-					placeholder: "e.g. Vikramjit Singh",
+					placeholder: "Enter your full name",
 					disabled: loading,
-					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
+					className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-3 py-2 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all disabled:opacity-50"
 				})] }),
 				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
-					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Phone Number ", /* @__PURE__ */ jsx("span", {
-						className: "text-[#c5a059]",
+					htmlFor: "hero-enquiry-mobile",
+					className: "text-[11px] font-bold text-slate-600 block mb-1",
+					children: ["Mobile Number ", /* @__PURE__ */ jsx("span", {
+						className: "text-[#DC1F26]",
 						children: "*"
 					})]
 				}), /* @__PURE__ */ jsx("input", {
+					id: "hero-enquiry-mobile",
 					type: "tel",
 					required: true,
 					value: phone,
 					onChange: (e) => setPhone(e.target.value),
 					placeholder: "+91 977-987-8303",
 					disabled: loading,
-					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
+					className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-3 py-2 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all tabular-nums disabled:opacity-50"
 				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
-					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Email Address ", /* @__PURE__ */ jsx("span", {
-						className: "text-[#64748b] lowercase text-[9px]",
-						children: "(optional)"
-					})]
-				}), /* @__PURE__ */ jsx("input", {
-					type: "email",
-					value: email,
-					onChange: (e) => setEmail(e.target.value),
-					placeholder: "client@familyoffice.com",
-					disabled: loading,
-					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
-				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: "Property Type"
-				}), /* @__PURE__ */ jsxs("select", {
-					value: propertyType,
-					onChange: (e) => setPropertyType(e.target.value),
-					disabled: loading,
-					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-2.5 py-1.5 text-xs text-[#f7f5f2] focus:outline-none transition-all cursor-pointer disabled:opacity-50",
-					children: [
-						/* @__PURE__ */ jsx("option", {
-							value: "Any Asset Class",
-							children: "Any Asset Class"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "Residential Villa / Estate",
-							children: "Residential Villa / Estate"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "Sky Penthouse / Duplex",
-							children: "Sky Penthouse / Duplex"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "Commercial Landmark",
-							children: "Commercial Landmark"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "Plots & Land Holdings",
-							children: "Plots & Land Holdings"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "New Development Project",
-							children: "New Development Project"
-						})
-					]
-				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: "Budget Range"
-				}), /* @__PURE__ */ jsxs("select", {
-					value: budgetRange,
-					onChange: (e) => setBudgetRange(e.target.value),
-					disabled: loading,
-					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-2.5 py-1.5 text-xs text-[#f7f5f2] focus:outline-none transition-all cursor-pointer disabled:opacity-50",
-					children: [
-						/* @__PURE__ */ jsx("option", {
-							value: "Flexible / Consultation",
-							children: "Flexible / Consultation"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "Under ₹1 Cr",
-							children: "Under ₹1 Cr"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "₹1 Cr – ₹5 Cr",
-							children: "₹1 Cr – ₹5 Cr"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "₹5 Cr – ₹20 Cr",
-							children: "₹5 Cr – ₹20 Cr"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "₹20 Cr – ₹50 Cr",
-							children: "₹20 Cr – ₹50 Cr"
-						}),
-						/* @__PURE__ */ jsx("option", {
-							value: "₹50 Cr+",
-							children: "₹50 Cr+ (Trophy Asset)"
-						})
-					]
-				})] }),
-				/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
-					className: "text-[10px] font-mono uppercase tracking-wider text-[#8a909a] block mb-1",
-					children: ["Preferred Location ", /* @__PURE__ */ jsx("span", {
-						className: "text-[#64748b] lowercase text-[9px]",
-						children: "(optional)"
-					})]
-				}), /* @__PURE__ */ jsx("input", {
-					type: "text",
-					value: preferredLocation,
-					onChange: (e) => setPreferredLocation(e.target.value),
-					placeholder: "e.g. IT City Mohali, Sector 82 A",
-					disabled: loading,
-					className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm px-3 py-1.5 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none transition-all disabled:opacity-50"
-				})] }),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5",
+					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
+						htmlFor: "hero-enquiry-interest",
+						className: "text-[11px] font-bold text-slate-600 block mb-1",
+						children: "Interested In"
+					}), /* @__PURE__ */ jsxs("select", {
+						id: "hero-enquiry-interest",
+						value: interestedIn,
+						onChange: (e) => setInterestedIn(e.target.value),
+						disabled: loading,
+						className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-2.5 py-2 text-xs text-[#0D2558] font-semibold focus:outline-none transition-all cursor-pointer disabled:opacity-50",
+						children: [
+							/* @__PURE__ */ jsx("option", {
+								value: "Residential",
+								children: "Residential"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "Commercial",
+								children: "Commercial"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "Plots",
+								children: "Plots"
+							})
+						]
+					})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
+						htmlFor: "hero-enquiry-budget",
+						className: "text-[11px] font-bold text-slate-600 block mb-1",
+						children: "Budget Range"
+					}), /* @__PURE__ */ jsxs("select", {
+						id: "hero-enquiry-budget",
+						value: budgetRange,
+						onChange: (e) => setBudgetRange(e.target.value),
+						disabled: loading,
+						className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-2.5 py-2 text-xs text-[#0D2558] font-semibold focus:outline-none transition-all cursor-pointer disabled:opacity-50",
+						children: [
+							/* @__PURE__ */ jsx("option", {
+								value: "Flexible / Consultation",
+								children: "Any Budget"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "Under ₹1 Cr",
+								children: "Under ₹1 Cr"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "₹1 Cr – ₹5 Cr",
+								children: "₹1 Cr – ₹5 Cr"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "₹5 Cr – ₹20 Cr",
+								children: "₹5 Cr – ₹20 Cr"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "₹20 Cr – ₹50 Cr",
+								children: "₹20 Cr – ₹50 Cr"
+							}),
+							/* @__PURE__ */ jsx("option", {
+								value: "₹50 Cr+",
+								children: "₹50 Cr+"
+							})
+						]
+					})] })]
+				}),
+				/* @__PURE__ */ jsxs("div", { children: [
+					/* @__PURE__ */ jsx("label", {
+						htmlFor: "hero-enquiry-location",
+						className: "text-[11px] font-bold text-slate-600 block mb-1",
+						children: "Preferred Location"
+					}),
+					/* @__PURE__ */ jsx("input", {
+						id: "hero-enquiry-location",
+						type: "text",
+						list: "hero-location-suggestions",
+						value: preferredLocation,
+						onChange: (e) => setPreferredLocation(e.target.value),
+						placeholder: "e.g. Mohali, Zirakpur, New Chandigarh",
+						disabled: loading,
+						className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-3 py-2 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all disabled:opacity-50"
+					}),
+					managedLocations.length > 0 && /* @__PURE__ */ jsx("datalist", {
+						id: "hero-location-suggestions",
+						children: managedLocations.map((loc) => /* @__PURE__ */ jsx("option", { value: loc.name }, loc.id))
+					})
+				] }),
 				/* @__PURE__ */ jsx("div", {
 					className: "pt-1",
 					children: /* @__PURE__ */ jsxs("button", {
 						type: "submit",
 						disabled: loading,
-						className: "w-full py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] active:bg-[#b38e47] text-[#0c0f12] font-semibold text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-[#c5a059]/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50",
-						children: [/* @__PURE__ */ jsx("span", { children: loading ? "Submitting Inquiry..." : "Submit Inquiry" }), !loading && /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+						className: "w-full py-2.5 bg-[#DC1F26] hover:bg-[#B91C1C] active:bg-[#991B1B] text-white font-bold text-xs uppercase tracking-[0.12em] rounded-xl transition-all shadow-md shadow-[#DC1F26]/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50",
+						children: [/* @__PURE__ */ jsx("span", { children: loading ? "Submitting Enquiry..." : "Submit Enquiry" }), !loading && /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
 					})
 				}),
-				/* @__PURE__ */ jsx("div", {
-					className: "text-[10px] text-[#6b7280] text-center pt-0.5 font-mono",
-					children: "100% Confidential · Direct Line: 977-987-8303"
+				/* @__PURE__ */ jsxs("div", {
+					className: "text-[10px] text-slate-500 text-center font-medium",
+					children: [
+						"100% Confidential · Direct Line:",
+						" ",
+						/* @__PURE__ */ jsx("span", {
+							className: "text-[#0D2558] font-bold",
+							children: "977-987-8303"
+						})
+					]
 				})
 			]
 		})
@@ -4182,13 +4396,16 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 		updateScrollability();
 		const el = scrollRef.current;
 		if (!el) return;
-		const resizeObserver = new ResizeObserver(() => {
-			updateScrollability();
-		});
-		resizeObserver.observe(el);
+		let resizeObserver = null;
+		if (typeof ResizeObserver !== "undefined") {
+			resizeObserver = new ResizeObserver(() => {
+				updateScrollability();
+			});
+			resizeObserver.observe(el);
+		}
 		window.addEventListener("resize", updateScrollability);
 		return () => {
-			resizeObserver.disconnect();
+			resizeObserver?.disconnect();
 			window.removeEventListener("resize", updateScrollability);
 		};
 	}, [updateScrollability, locations]);
@@ -4285,17 +4502,17 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 	return /* @__PURE__ */ jsx("div", {
 		className: `w-full ${className}`,
 		children: /* @__PURE__ */ jsxs("div", {
-			className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#202732]",
+			className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200",
 			children: [/* @__PURE__ */ jsxs("div", {
 				className: "flex items-center gap-2 shrink-0",
 				children: [
-					/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }),
+					/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#DC1F26] shrink-0" }),
 					/* @__PURE__ */ jsx("span", {
-						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] font-medium whitespace-nowrap",
+						className: "text-xs font-bold uppercase tracking-[0.14em] text-[#0D2558] whitespace-nowrap",
 						children: "Explore by Location"
 					}),
 					categoryTitle && /* @__PURE__ */ jsxs("span", {
-						className: "text-[11px] font-mono text-[#8a909a] hidden md:inline whitespace-nowrap",
+						className: "text-xs text-slate-500 hidden md:inline whitespace-nowrap",
 						children: ["· ", categoryTitle]
 					})
 				]
@@ -4307,15 +4524,15 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 						onClick: () => scrollByOffset(-220),
 						"aria-label": "Scroll locations left",
 						disabled: !canScrollLeft,
-						className: `hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollLeft ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-20 pointer-events-none"}`,
-						children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-3.5 h-3.5" })
+						className: `hidden sm:flex shrink-0 items-center justify-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-[#0D2558] transition-all cursor-pointer z-10 ${canScrollLeft ? "hover:border-[#0D2558] hover:bg-[#F4F7FC] opacity-100 shadow-xs" : "opacity-30 pointer-events-none"}`,
+						children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
 					}),
 					/* @__PURE__ */ jsxs("div", {
 						className: "relative min-w-0 flex-1 overflow-hidden py-1",
 						children: [
 							canScrollLeft && /* @__PURE__ */ jsx("div", {
 								"aria-hidden": "true",
-								className: "pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0c0f12] via-[#0c0f12]/90 to-transparent z-[5]"
+								className: "pointer-events-none absolute left-0 top-0 bottom-0 w-8 sm:w-10 bg-gradient-to-r from-white via-white/90 to-transparent z-[5]"
 							}),
 							/* @__PURE__ */ jsxs("div", {
 								ref: scrollRef,
@@ -4324,22 +4541,22 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 								onMouseMove: handleMouseMove,
 								onMouseUp: handleMouseUpOrLeave,
 								onMouseLeave: handleMouseUpOrLeave,
-								className: "flex items-center gap-2 overflow-x-auto overflow-y-hidden flex-nowrap scroll-smooth select-none touch-pan-x cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
-								style: {
-									scrollbarWidth: "none",
-									msOverflowStyle: "none"
-								},
+								className: "flex items-center gap-2 overflow-x-auto overflow-y-hidden flex-nowrap scroll-smooth select-none touch-pan-x cursor-grab active:cursor-grabbing no-scrollbar",
 								children: [/* @__PURE__ */ jsxs("button", {
 									type: "button",
 									"data-active": selectedLocation === "all" || !selectedLocation ? "true" : "false",
 									onClick: () => handleTabClick("all"),
-									className: `px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${selectedLocation === "all" || !selectedLocation ? "bg-[#c5a059] text-[#0c0f12] font-bold border-[#c5a059] shadow-sm" : "bg-[#12161d] text-[#8a909a] hover:text-[#f7f5f2] border-[#222a36] hover:border-[#384557]"}`,
+									className: `px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${selectedLocation === "all" || !selectedLocation ? "bg-[#0D2558] text-white border-[#0D2558] shadow-sm" : "bg-[#F7F9FC] text-slate-600 hover:text-[#0D2558] border-slate-200 hover:border-[#163B8C]/40"}`,
 									children: [
-										/* @__PURE__ */ jsx(Globe, { className: "w-3 h-3" }),
+										/* @__PURE__ */ jsx(Globe, { className: "w-3.5 h-3.5" }),
 										/* @__PURE__ */ jsx("span", { children: "All Locations" }),
-										totalAllCount !== void 0 && /* @__PURE__ */ jsx("span", {
-											className: `text-[10px] font-mono px-1 rounded ${selectedLocation === "all" || !selectedLocation ? "bg-black/20 text-black" : "text-[#64748b]"}`,
-											children: totalAllCount
+										totalAllCount !== void 0 && /* @__PURE__ */ jsxs("span", {
+											className: `text-[11px] tabular-nums ml-0.5 ${selectedLocation === "all" || !selectedLocation ? "text-blue-200" : "text-slate-400"}`,
+											children: [
+												"(",
+												totalAllCount,
+												")"
+											]
 										})
 									]
 								}), locations.map((loc) => {
@@ -4349,17 +4566,21 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 										type: "button",
 										"data-active": isSelected ? "true" : "false",
 										onClick: () => handleTabClick(loc.slug || loc.id),
-										className: `px-3.5 py-1.5 rounded-sm text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${isSelected ? "bg-[#c5a059] text-[#0c0f12] font-bold border-[#c5a059] shadow-sm" : "bg-[#12161d] text-[#8a909a] hover:text-[#f7f5f2] border-[#222a36] hover:border-[#384557]"}`,
-										children: [/* @__PURE__ */ jsx("span", { children: loc.name }), count !== void 0 && /* @__PURE__ */ jsx("span", {
-											className: `text-[10px] font-mono px-1 rounded ${isSelected ? "bg-black/20 text-black" : "text-[#64748b]"}`,
-											children: count
+										className: `px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 border min-w-max ${isSelected ? "bg-[#DC1F26] text-white border-[#DC1F26] shadow-sm" : "bg-[#F7F9FC] text-slate-600 hover:text-[#0D2558] border-slate-200 hover:border-[#163B8C]/40"}`,
+										children: [/* @__PURE__ */ jsx("span", { children: loc.name }), count !== void 0 && /* @__PURE__ */ jsxs("span", {
+											className: `text-[11px] tabular-nums ${isSelected ? "text-red-100" : "text-slate-400"}`,
+											children: [
+												"(",
+												count,
+												")"
+											]
 										})]
 									}, loc.id);
 								})]
 							}),
 							canScrollRight && /* @__PURE__ */ jsx("div", {
 								"aria-hidden": "true",
-								className: "pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0c0f12] via-[#0c0f12]/90 to-transparent z-[5]"
+								className: "pointer-events-none absolute right-0 top-0 bottom-0 w-8 sm:w-10 bg-gradient-to-l from-white via-white/90 to-transparent z-[5]"
 							})
 						]
 					}),
@@ -4368,8 +4589,8 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 						onClick: () => scrollByOffset(220),
 						"aria-label": "Scroll locations right",
 						disabled: !canScrollRight,
-						className: `hidden sm:flex shrink-0 items-center justify-center w-7 h-7 rounded-sm bg-[#12161d] border border-[#222a36] text-[#c5a059] transition-all cursor-pointer z-10 ${canScrollRight ? "hover:border-[#c5a059] hover:bg-[#181f2a] opacity-100 shadow-sm" : "opacity-20 pointer-events-none"}`,
-						children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-3.5 h-3.5" })
+						className: `hidden sm:flex shrink-0 items-center justify-center w-8 h-8 rounded-lg bg-white border border-slate-200 text-[#0D2558] transition-all cursor-pointer z-10 ${canScrollRight ? "hover:border-[#0D2558] hover:bg-[#F4F7FC] opacity-100 shadow-xs" : "opacity-30 pointer-events-none"}`,
+						children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
 					})
 				]
 			})]
@@ -4377,12 +4598,14 @@ var LocationTabs = ({ selectedLocation, onSelectLocation, properties, className 
 	});
 };
 // src/utils/heroSlides.ts
-var DEFAULT_HERO_IMAGE_URL = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85";
+var DEFAULT_HERO_VIDEO_URL = "/assets/aistudio/buildsmore-drone-hero_7194a756.mp4";
+var DEFAULT_HERO_FALLBACK_IMAGE_URL = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85";
 var DEFAULT_HERO_HEADING = "Architectural Landmarks & Private Havens";
 var DEFAULT_HERO_DESCRIPTION = "Representing the world’s most significant residential estates, sky penthouses, and commercial trophy assets with automated multi-registry synchronization.";
 var DEFAULT_HERO_SLIDE = {
 	id: "default-hero-slide",
-	imageUrl: DEFAULT_HERO_IMAGE_URL,
+	imageUrl: DEFAULT_HERO_VIDEO_URL,
+	mediaType: "video",
 	heading: DEFAULT_HERO_HEADING,
 	description: DEFAULT_HERO_DESCRIPTION,
 	displayOrder: 0,
@@ -4394,7 +4617,16 @@ function isValidHeroImageUrl(url) {
 	return clean.startsWith("/") || /^https?:\/\//i.test(clean);
 }
 /**
-* A slide is considered complete when all 3 editable fields (Banner Image, Heading, Description)
+* Detects whether a hero banner media URL points to a supported HTML5 video asset.
+*/
+function isHeroVideoUrl(url) {
+	const clean = (url || "").trim();
+	if (!clean) return false;
+	const withoutQuery = clean.split(/[?#]/)[0].toLowerCase();
+	return /\.(mp4|webm|mov|m4v|ogv)$/i.test(withoutQuery);
+}
+/**
+* A slide is considered complete when all 3 editable fields (Banner Image/Video, Heading, Description)
 * are present and non-empty.
 */
 function isHeroSlideComplete(slide) {
@@ -4413,20 +4645,23 @@ function resolveActiveHeroSlides(slides) {
 		const orderB = Number.isFinite(Number(b.displayOrder)) ? Number(b.displayOrder) : 0;
 		if (orderA !== orderB) return orderA - orderB;
 		return (new Date(a.createdAt || 0).getTime() || 0) - (new Date(b.createdAt || 0).getTime() || 0);
-	}).filter((s) => isHeroSlideComplete(s)).map((s, idx) => ({
-		id: s.id,
-		imageUrl: s.imageUrl.trim(),
-		heading: s.heading.trim(),
-		description: s.description.trim(),
-		displayOrder: idx,
-		isDefault: false
-	}));
+	}).filter((s) => isHeroSlideComplete(s)).map((s, idx) => {
+		const cleanUrl = s.imageUrl.trim();
+		return {
+			id: s.id,
+			imageUrl: cleanUrl,
+			mediaType: isHeroVideoUrl(cleanUrl) ? "video" : "image",
+			heading: s.heading.trim(),
+			description: s.description.trim(),
+			displayOrder: idx,
+			isDefault: false
+		};
+	});
 	if (completeSlides.length === 0) return [DEFAULT_HERO_SLIDE];
 	return completeSlides;
 }
 // src/pages/HomePage.tsx
-var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectProperty, onNavigate, savedIds, onToggleSave }) => {
-	const { formatPrice } = useCurrency();
+var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectProperty, onNavigate, onOpenInquiry, savedIds, onToggleSave }) => {
 	const activeSlides = useMemo(() => resolveActiveHeroSlides(heroSlides), [heroSlides]);
 	const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 	const [hasSlideTransitioned, setHasSlideTransitioned] = useState(false);
@@ -4435,6 +4670,7 @@ var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectP
 	const safeSlideIndex = activeSlideIndex < activeSlides.length ? activeSlideIndex : 0;
 	const currentHeroSlide = activeSlides[safeSlideIndex] || activeSlides[0];
 	const hasMultipleSlides = activeSlides.length > 1;
+	const isCurrentVideo = currentHeroSlide.mediaType === "video" && !failedSlideIds[currentHeroSlide.id];
 	useEffect(() => {
 		if (activeSlideIndex >= activeSlides.length) setActiveSlideIndex(0);
 	}, [activeSlides.length, activeSlideIndex]);
@@ -4460,196 +4696,154 @@ var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectP
 		}
 	};
 	const [selectedLocation, setSelectedLocation] = useState("all");
-	const [heroLocation, setHeroLocation] = useState("");
+	const [heroLocation, setHeroLocation] = useState("all");
 	const [heroCategory, setHeroCategory] = useState("All");
 	const [heroMaxPrice, setHeroMaxPrice] = useState("all");
+	const managedLocations = storage.getLocations(true);
 	const publishedProperties = properties.filter((p) => p.status === "Published");
+	const MAX_HOMEPAGE_FEATURED_PROPERTIES = 12;
 	const trophyProperties = trophyHoldings && trophyHoldings.length > 0 ? trophyHoldings.filter((p) => p.status === "Published") : storage.getTrophyHoldings();
-	const displayTrophyProperties = trophyProperties.length > 0 ? trophyProperties : properties.filter((p) => p.featured || p.isTrophyHolding).slice(0, 3);
+	const displayTrophyProperties = trophyProperties.length > 0 ? trophyProperties.slice(0, MAX_HOMEPAGE_FEATURED_PROPERTIES) : publishedProperties.filter((p) => p.featured || p.isTrophyHolding).slice(0, MAX_HOMEPAGE_FEATURED_PROPERTIES);
 	const selectedLocObject = selectedLocation !== "all" ? storage.getLocationBySlug(selectedLocation) || storage.getLocationById(selectedLocation) : null;
 	const selectedLocationName = selectedLocObject ? selectedLocObject.name : selectedLocation;
-	const displayProperties = selectedLocation === "all" ? displayTrophyProperties : publishedProperties.filter((p) => {
+	const displayProperties = (selectedLocation === "all" ? displayTrophyProperties.length > 0 ? displayTrophyProperties : publishedProperties : publishedProperties.filter((p) => {
 		if (p.locationId && selectedLocObject && p.locationId === selectedLocObject.id) return true;
 		if (p.city && p.city.toLowerCase() === selectedLocationName.toLowerCase()) return true;
 		if (selectedLocObject?.aliases && selectedLocObject.aliases.length > 0) return selectedLocObject.aliases.some((a) => p.city && p.city.toLowerCase().includes(a) || p.locality && p.locality.toLowerCase().includes(a) || p.address && p.address.toLowerCase().includes(a));
 		return false;
-	});
+	})).slice(0, MAX_HOMEPAGE_FEATURED_PROPERTIES);
 	const curatedCollections = collections && collections.length > 0 ? collections.filter((c) => c.status === "Published") : storage.getCollections(false);
-	properties.filter((p) => p.isNewDevelopment || p.category === "New Projects").slice(0, 2);
 	const handleHeroSearch = (e) => {
 		e.preventDefault();
-		onNavigate("/properties");
+		const params = new URLSearchParams();
+		if (heroCategory && heroCategory !== "All") params.set("category", heroCategory);
+		if (heroLocation && heroLocation !== "all") params.set("location", heroLocation);
+		if (heroMaxPrice && heroMaxPrice !== "all") params.set("budget", heroMaxPrice);
+		const qs = params.toString();
+		onNavigate(qs ? `/properties?${qs}` : "/properties");
+	};
+	const handleEnquireAction = () => {
+		if (onOpenInquiry) {
+			onOpenInquiry();
+			return;
+		}
+		if (typeof document !== "undefined") document.getElementById("homepage-inquiry")?.scrollIntoView({ behavior: "smooth" });
 	};
 	return /* @__PURE__ */ jsxs("div", {
-		className: "space-y-24 pb-20",
+		className: "bg-white text-[#0D2558]",
 		children: [
 			/* @__PURE__ */ jsxs("section", {
-				className: "relative min-h-[90vh] flex flex-col justify-center items-center px-6 pt-16 pb-24 overflow-hidden",
+				className: `relative overflow-hidden border-b border-slate-200/70 ${isCurrentVideo ? "bg-[#091A3E]" : "bg-[#F4F8FD]"}`,
 				onMouseEnter: () => setIsHeroPaused(true),
 				onMouseLeave: () => setIsHeroPaused(false),
 				onFocusCapture: () => setIsHeroPaused(true),
 				onBlurCapture: (e) => {
 					if (!e.currentTarget.contains(e.relatedTarget)) setIsHeroPaused(false);
 				},
-				children: [
-					/* @__PURE__ */ jsxs("div", {
-						className: "absolute inset-0 z-0 overflow-hidden pointer-events-none",
-						children: [
-							/* @__PURE__ */ jsxs("div", {
-								className: "hero-cinematic-stage absolute inset-0",
-								children: [activeSlides.map((slide, idx) => {
-									const isActive = idx === safeSlideIndex;
-									const resolvedSrc = failedSlideIds[slide.id] ? DEFAULT_HERO_IMAGE_URL : slide.imageUrl;
-									return /* @__PURE__ */ jsx("img", {
-										src: resolvedSrc,
-										alt: slide.heading || "BUILDsmore Luxury Architecture",
-										onError: () => {
-											if (!failedSlideIds[slide.id]) setFailedSlideIds((prev) => ({
-												...prev,
-												[slide.id]: true
-											}));
-										},
-										className: `absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.4] transition-opacity duration-1000 ease-in-out ${isActive ? "opacity-100" : "opacity-0"}`
-									}, slide.id);
-								}), /* @__PURE__ */ jsxs("div", {
-									className: "hero-living-sky-mask absolute inset-0 overflow-hidden",
-									"aria-hidden": "true",
-									children: [
-										/* @__PURE__ */ jsx("div", { className: "hero-sun-glow" }),
-										/* @__PURE__ */ jsx("div", { className: "hero-light-rays-primary" }),
-										/* @__PURE__ */ jsx("div", { className: "hero-light-rays-secondary" }),
-										/* @__PURE__ */ jsx("div", { className: "hero-cloud-haze" }),
-										/* @__PURE__ */ jsx("div", { className: "hero-cloud-layer-far" }),
-										/* @__PURE__ */ jsx("div", { className: "hero-cloud-layer-near" })
-									]
-								})]
-							}),
-							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-[#0c0f12]/30" }),
-							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-radial-gradient from-transparent via-transparent to-[#0c0f12]/80" })
-						]
-					}),
-					/* @__PURE__ */ jsxs("div", {
-						className: "relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-10 items-center",
+				children: [/* @__PURE__ */ jsxs("div", {
+					className: "absolute inset-0 z-0 overflow-hidden pointer-events-none",
+					children: [
+						/* @__PURE__ */ jsxs("div", {
+							className: `absolute inset-0 ${isCurrentVideo ? "" : "hero-cinematic-stage"}`,
+							children: [activeSlides.map((slide, idx) => {
+								const isActive = idx === safeSlideIndex;
+								const isFailed = Boolean(failedSlideIds[slide.id]);
+								if (slide.mediaType === "video" && !isFailed) return /* @__PURE__ */ jsx("video", {
+									src: slide.imageUrl,
+									autoPlay: true,
+									muted: true,
+									loop: true,
+									playsInline: true,
+									preload: isActive ? "auto" : "metadata",
+									"aria-label": slide.heading || "BUILDsmore Luxury Architecture Video",
+									ref: (el) => {
+										if (!el) return;
+										el.muted = true;
+										if (isActive) {
+											const playPromise = el.play();
+											if (playPromise && typeof playPromise.catch === "function") playPromise.catch(() => {});
+										} else el.pause();
+									},
+									onError: () => {
+										if (!failedSlideIds[slide.id]) setFailedSlideIds((prev) => ({
+											...prev,
+											[slide.id]: true
+										}));
+									},
+									className: `absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out ${isActive ? "opacity-100" : "opacity-0"}`
+								}, slide.id);
+								const imageSrc = isFailed ? DEFAULT_HERO_FALLBACK_IMAGE_URL : slide.imageUrl;
+								return /* @__PURE__ */ jsx("img", {
+									src: imageSrc,
+									alt: slide.heading || "BUILDsmore Luxury Architecture",
+									onError: () => {
+										if (!failedSlideIds[slide.id]) setFailedSlideIds((prev) => ({
+											...prev,
+											[slide.id]: true
+										}));
+									},
+									className: `absolute inset-0 w-full h-full object-cover object-right md:object-center transition-opacity duration-1000 ease-in-out ${isActive ? "opacity-100" : "opacity-0"}`
+								}, slide.id);
+							}), !isCurrentVideo && /* @__PURE__ */ jsxs("div", {
+								className: "hero-living-sky-mask absolute inset-0 overflow-hidden",
+								"aria-hidden": "true",
+								children: [
+									/* @__PURE__ */ jsx("div", { className: "hero-sun-glow" }),
+									/* @__PURE__ */ jsx("div", { className: "hero-light-rays-primary" }),
+									/* @__PURE__ */ jsx("div", { className: "hero-light-rays-secondary" }),
+									/* @__PURE__ */ jsx("div", { className: "hero-cloud-haze" }),
+									/* @__PURE__ */ jsx("div", { className: "hero-cloud-layer-far" }),
+									/* @__PURE__ */ jsx("div", { className: "hero-cloud-layer-near" })
+								]
+							})]
+						}),
+						isCurrentVideo ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-r from-[#091A3E]/72 via-[#091A3E]/38 to-[#091A3E]/18" }), /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#091A3E]/55 via-transparent to-[#091A3E]/20" })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-r from-[#F7FAFF] via-[#F7FAFF]/90 lg:via-[#F7FAFF]/78 to-[#0D2558]/10" }), /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0D2558]/25 via-transparent to-white/40" })] }),
+						/* @__PURE__ */ jsxs("div", {
+							"aria-hidden": "true",
+							className: "hidden lg:block absolute top-0 right-0 w-44 h-64 pointer-events-none overflow-hidden",
+							children: [/* @__PURE__ */ jsx("div", { className: "absolute -top-6 -right-16 w-48 h-72 bg-[#0D2558] rotate-[30deg] shadow-lg" }), /* @__PURE__ */ jsx("div", { className: "absolute -top-8 -right-12 w-3 h-72 bg-[#DC1F26] rotate-[30deg]" })]
+						})
+					]
+				}), /* @__PURE__ */ jsxs("div", {
+					className: "relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-14",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-10 items-center",
 						children: [/* @__PURE__ */ jsxs("div", {
-							className: "lg:col-span-8 xl:col-span-9 space-y-6 text-center lg:text-left",
+							className: "lg:col-span-7 space-y-5",
 							children: [
 								/* @__PURE__ */ jsxs("div", {
-									className: "flex flex-col items-center lg:items-start justify-center gap-3",
-									children: [/* @__PURE__ */ jsx("img", {
-										src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
-										alt: "BUILDsmore Logo",
-										className: "w-16 h-16 sm:w-20 sm:h-20 rounded-sm object-cover border border-[#c5a059]/50 shadow-2xl"
-									}), /* @__PURE__ */ jsx("div", {
-										className: "inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-[#c5a059] font-medium border-b border-[#c5a059]/40 pb-1.5",
-										children: /* @__PURE__ */ jsx("span", { children: "BUILDsmore · Let's Grow Together" })
+									className: "inline-flex items-center gap-3",
+									children: [/* @__PURE__ */ jsx("span", { className: "w-8 h-[2.5px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+										className: `text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.16em] pb-0.5 ${isCurrentVideo ? "text-sky-200 border-b border-white/30 drop-shadow-xs" : "text-[#163B8C] border-b border-[#163B8C]/25"}`,
+										children: "Premium Real Estate Solutions"
 									})]
 								}),
 								/* @__PURE__ */ jsxs("div", {
-									className: `space-y-6 ${hasSlideTransitioned ? "hero-slide-copy-enter" : ""}`,
+									className: `space-y-4 ${hasSlideTransitioned ? "hero-slide-copy-enter" : ""}`,
 									children: [/* @__PURE__ */ jsx("h1", {
-										className: "font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-normal text-[#f7f5f2] tracking-tight leading-[1.08] text-balance",
+										className: `text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] font-extrabold tracking-tight leading-[1.08] text-balance ${isCurrentVideo ? "text-white drop-shadow-md" : "text-[#0D2558]"}`,
 										children: currentHeroSlide.heading
 									}), /* @__PURE__ */ jsx("p", {
-										className: "text-sm sm:text-base md:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto lg:mx-0 leading-relaxed",
+										className: `text-sm sm:text-base lg:text-lg font-medium max-w-xl leading-relaxed ${isCurrentVideo ? "text-white/90 drop-shadow-sm" : "text-slate-700"}`,
 										children: currentHeroSlide.description
 									})]
 								}, currentHeroSlide.id),
-								/* @__PURE__ */ jsx("div", {
-									className: "pt-4 w-full max-w-3xl mx-auto lg:mx-0",
-									children: /* @__PURE__ */ jsxs("form", {
-										onSubmit: handleHeroSearch,
-										className: "bg-[#12161d]/90 backdrop-blur-xl border border-[#2b3543] p-3 sm:p-4 rounded-sm shadow-2xl grid grid-cols-1 sm:grid-cols-12 gap-3 text-left",
-										children: [
-											/* @__PURE__ */ jsxs("div", {
-												className: "sm:col-span-5 relative",
-												children: [/* @__PURE__ */ jsx("label", {
-													className: "text-[10px] uppercase tracking-wider text-[#8a909a] font-mono block mb-1",
-													children: "Global Enclave or City"
-												}), /* @__PURE__ */ jsxs("div", {
-													className: "relative",
-													children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059] absolute left-3 top-1/2 -translate-y-1/2" }), /* @__PURE__ */ jsx("input", {
-														type: "text",
-														value: heroLocation,
-														onChange: (e) => setHeroLocation(e.target.value),
-														placeholder: "e.g. Mallorca, Mayfair, Aspen, Zurich...",
-														className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-9 pr-3 py-2 text-xs text-[#f7f5f2] placeholder-[#64748b] focus:outline-none"
-													})]
-												})]
-											}),
-											/* @__PURE__ */ jsxs("div", {
-												className: "sm:col-span-3",
-												children: [/* @__PURE__ */ jsx("label", {
-													className: "text-[10px] uppercase tracking-wider text-[#8a909a] font-mono block mb-1",
-													children: "Asset Class"
-												}), /* @__PURE__ */ jsxs("select", {
-													value: heroCategory,
-													onChange: (e) => setHeroCategory(e.target.value),
-													className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-													children: [
-														/* @__PURE__ */ jsx("option", {
-															value: "All",
-															children: "All Categories"
-														}),
-														/* @__PURE__ */ jsx("option", {
-															value: "Residential",
-															children: "Residential"
-														}),
-														/* @__PURE__ */ jsx("option", {
-															value: "Commercial",
-															children: "Commercial"
-														}),
-														/* @__PURE__ */ jsx("option", {
-															value: "Plots/Land",
-															children: "Plots & Vineyards"
-														}),
-														/* @__PURE__ */ jsx("option", {
-															value: "New Projects",
-															children: "New Developments"
-														})
-													]
-												})]
-											}),
-											/* @__PURE__ */ jsxs("div", {
-												className: "sm:col-span-4 flex items-end gap-2",
-												children: [/* @__PURE__ */ jsxs("div", {
-													className: "flex-1",
-													children: [/* @__PURE__ */ jsx("label", {
-														className: "text-[10px] uppercase tracking-wider text-[#8a909a] font-mono block mb-1",
-														children: "Price Range"
-													}), /* @__PURE__ */ jsxs("select", {
-														value: heroMaxPrice,
-														onChange: (e) => setHeroMaxPrice(e.target.value),
-														className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
-														children: [
-															/* @__PURE__ */ jsx("option", {
-																value: "all",
-																children: "Any Valuation"
-															}),
-															/* @__PURE__ */ jsx("option", {
-																value: "under_5cr",
-																children: "Up to ₹5 Cr"
-															}),
-															/* @__PURE__ */ jsx("option", {
-																value: "5cr_20cr",
-																children: "₹5 Cr – ₹20 Cr"
-															}),
-															/* @__PURE__ */ jsx("option", {
-																value: "over_20cr",
-																children: "₹20 Cr+"
-															})
-														]
-													})]
-												}), /* @__PURE__ */ jsx("button", {
-													type: "submit",
-													className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm transition-all flex items-center justify-center shrink-0 h-[34px] cursor-pointer",
-													children: /* @__PURE__ */ jsx(Search, { className: "w-4 h-4" })
-												})]
-											})
-										]
-									})
+								/* @__PURE__ */ jsxs("div", {
+									className: "flex flex-wrap items-center gap-3.5 pt-1",
+									children: [/* @__PURE__ */ jsxs(AppLink, {
+										href: "/properties",
+										onNavigate,
+										className: "inline-flex items-center gap-2.5 px-7 py-3.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-sm font-bold rounded-full shadow-lg shadow-[#DC1F26]/25 transition-all cursor-pointer group",
+										children: [/* @__PURE__ */ jsx("span", { children: "Explore Properties" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4 group-hover:translate-x-0.5 transition-transform" })]
+									}), /* @__PURE__ */ jsxs("button", {
+										type: "button",
+										onClick: handleEnquireAction,
+										className: "inline-flex items-center gap-2.5 px-6 py-3.5 bg-white/95 hover:bg-[#0D2558] text-[#0D2558] hover:text-white border border-[#0D2558]/25 hover:border-[#0D2558] text-sm font-bold rounded-full shadow-sm transition-all cursor-pointer",
+										children: [/* @__PURE__ */ jsx(PhoneCall, { className: "w-4 h-4 text-[#DC1F26]" }), /* @__PURE__ */ jsx("span", { children: "Private Consultation" })]
+									})]
 								}),
 								hasMultipleSlides && /* @__PURE__ */ jsxs("div", {
-									className: "pt-2 flex items-center justify-center lg:justify-start gap-4",
+									className: "pt-2 flex items-center gap-3.5",
 									"aria-label": "Hero banner slide navigation",
 									children: [
 										/* @__PURE__ */ jsxs("div", {
@@ -4658,13 +4852,13 @@ var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectP
 												type: "button",
 												onClick: () => handleGoToSlide(safeSlideIndex - 1),
 												"aria-label": "Previous hero slide",
-												className: "w-8 h-8 rounded-sm bg-[#12161d]/80 hover:bg-[#1a222d] border border-[#2b3543] hover:border-[#c5a059]/70 text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer",
+												className: "w-8 h-8 rounded-full bg-white/90 hover:bg-[#0D2558] border border-slate-200 hover:border-[#0D2558] text-[#0D2558] hover:text-white flex items-center justify-center shadow-xs transition-colors cursor-pointer",
 												children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
 											}), /* @__PURE__ */ jsx("button", {
 												type: "button",
 												onClick: () => handleGoToSlide(safeSlideIndex + 1),
 												"aria-label": "Next hero slide",
-												className: "w-8 h-8 rounded-sm bg-[#12161d]/80 hover:bg-[#1a222d] border border-[#2b3543] hover:border-[#c5a059]/70 text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors cursor-pointer",
+												className: "w-8 h-8 rounded-full bg-white/90 hover:bg-[#0D2558] border border-slate-200 hover:border-[#0D2558] text-[#0D2558] hover:text-white flex items-center justify-center shadow-xs transition-colors cursor-pointer",
 												children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
 											})]
 										}),
@@ -4680,15 +4874,16 @@ var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectP
 													"aria-selected": isCurrent,
 													"aria-label": `Go to slide ${idx + 1}: ${slide.heading}`,
 													onClick: () => handleGoToSlide(idx),
-													className: `h-1.5 rounded-full transition-all duration-300 cursor-pointer ${isCurrent ? "w-8 bg-[#c5a059]" : "w-2 bg-white/30 hover:bg-white/60"}`
+													className: `h-2 rounded-full transition-all duration-300 cursor-pointer ${isCurrent ? "w-8 bg-[#DC1F26]" : isCurrentVideo ? "w-2 bg-white/50 hover:bg-white/80" : "w-2 bg-[#0D2558]/25 hover:bg-[#0D2558]/50"}`
 												}, slide.id);
 											})
 										}),
 										/* @__PURE__ */ jsxs("span", {
-											className: "text-[11px] font-mono text-[#8a909a] tabular-nums",
+											className: `text-xs font-semibold tabular-nums ${isCurrentVideo ? "text-white/85" : "text-slate-600"}`,
 											children: [
 												String(safeSlideIndex + 1).padStart(2, "0"),
-												" / ",
+												" /",
+												" ",
 												String(activeSlides.length).padStart(2, "0")
 											]
 										})
@@ -4696,227 +4891,516 @@ var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectP
 								})
 							]
 						}), /* @__PURE__ */ jsx("div", {
-							className: "lg:col-span-4 xl:col-span-3 w-full max-w-md mx-auto lg:max-w-none",
+							className: "lg:col-span-5 xl:col-span-4 xl:col-start-9 w-full max-w-md mx-auto lg:max-w-none",
 							children: /* @__PURE__ */ jsx(HeroInquiryForm, {})
 						})]
-					}),
-					/* @__PURE__ */ jsxs("div", {
-						className: "relative z-10 w-full max-w-5xl mx-auto mt-16 pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center",
+					}), /* @__PURE__ */ jsx("div", {
+						className: "mt-8 lg:mt-10 max-w-5xl mx-auto",
+						children: /* @__PURE__ */ jsxs("form", {
+							onSubmit: handleHeroSearch,
+							className: "bg-white rounded-2xl shadow-xl shadow-[#0D2558]/10 border border-slate-200/90 p-3 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-0 items-center",
+							children: [
+								/* @__PURE__ */ jsxs("div", {
+									className: "md:col-span-3 px-3 py-1.5 md:border-r border-slate-200",
+									children: [/* @__PURE__ */ jsxs("label", {
+										htmlFor: "hero-search-category",
+										className: "text-[11px] font-semibold text-slate-500 flex items-center gap-1.5 mb-0.5",
+										children: [/* @__PURE__ */ jsx(Home, { className: "w-3.5 h-3.5 text-[#0D2558]" }), /* @__PURE__ */ jsx("span", { children: "Property Type" })]
+									}), /* @__PURE__ */ jsxs("select", {
+										id: "hero-search-category",
+										value: heroCategory,
+										onChange: (e) => setHeroCategory(e.target.value),
+										className: "w-full bg-transparent text-sm font-bold text-[#0D2558] focus:outline-none cursor-pointer",
+										children: [
+											/* @__PURE__ */ jsx("option", {
+												value: "All",
+												children: "All Types"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "Residential",
+												children: "Residential"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "Commercial",
+												children: "Commercial"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "Plots/Land",
+												children: "Plots & Land"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "New Projects",
+												children: "New Projects"
+											})
+										]
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: "md:col-span-3 px-3 py-1.5 md:border-r border-slate-200",
+									children: [/* @__PURE__ */ jsxs("label", {
+										htmlFor: "hero-search-location",
+										className: "text-[11px] font-semibold text-slate-500 flex items-center gap-1.5 mb-0.5",
+										children: [/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#0D2558]" }), /* @__PURE__ */ jsx("span", { children: "Location" })]
+									}), /* @__PURE__ */ jsxs("select", {
+										id: "hero-search-location",
+										value: heroLocation,
+										onChange: (e) => setHeroLocation(e.target.value),
+										className: "w-full bg-transparent text-sm font-bold text-[#0D2558] focus:outline-none cursor-pointer",
+										children: [/* @__PURE__ */ jsx("option", {
+											value: "all",
+											children: "All Locations"
+										}), managedLocations.map((loc) => /* @__PURE__ */ jsx("option", {
+											value: loc.slug,
+											children: loc.name
+										}, loc.id))]
+									})]
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: "md:col-span-3 px-3 py-1.5",
+									children: [/* @__PURE__ */ jsxs("label", {
+										htmlFor: "hero-search-budget",
+										className: "text-[11px] font-semibold text-slate-500 flex items-center gap-1.5 mb-0.5",
+										children: [/* @__PURE__ */ jsx(IndianRupee, { className: "w-3.5 h-3.5 text-[#0D2558]" }), /* @__PURE__ */ jsx("span", { children: "Budget" })]
+									}), /* @__PURE__ */ jsxs("select", {
+										id: "hero-search-budget",
+										value: heroMaxPrice,
+										onChange: (e) => setHeroMaxPrice(e.target.value),
+										className: "w-full bg-transparent text-sm font-bold text-[#0D2558] focus:outline-none cursor-pointer",
+										children: [
+											/* @__PURE__ */ jsx("option", {
+												value: "all",
+												children: "Any Budget"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "under_5cr",
+												children: "Up to ₹5 Cr"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "5cr_20cr",
+												children: "₹5 Cr – ₹20 Cr"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "20cr_50cr",
+												children: "₹20 Cr – ₹50 Cr"
+											}),
+											/* @__PURE__ */ jsx("option", {
+												value: "over_50cr",
+												children: "₹50 Cr+"
+											})
+										]
+									})]
+								}),
+								/* @__PURE__ */ jsx("div", {
+									className: "md:col-span-3 md:pl-3",
+									children: /* @__PURE__ */ jsxs("button", {
+										type: "submit",
+										className: "w-full py-3.5 px-5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-sm font-bold rounded-xl shadow-md shadow-[#DC1F26]/20 transition-all flex items-center justify-center gap-2 cursor-pointer",
+										children: [/* @__PURE__ */ jsx(Search, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Search Properties" })]
+									})
+								})
+							]
+						})
+					})]
+				})]
+			}),
+			/* @__PURE__ */ jsx("section", {
+				className: "bg-white border-b border-slate-200/80",
+				children: /* @__PURE__ */ jsx("div", {
+					className: "max-w-7xl mx-auto px-4 sm:px-6 py-7",
+					children: /* @__PURE__ */ jsxs("div", {
+						className: "grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 lg:divide-x divide-slate-200 gap-y-5 lg:gap-y-0",
 						children: [
-							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "font-serif text-2xl sm:text-3xl font-bold text-white block tracking-tight font-mono tabular-nums",
-								children: "₹32,000+ Cr"
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-xs text-[#8a909a] tracking-wider uppercase font-mono mt-1 block",
-								children: "Active Portfolio Assets"
-							})] }),
-							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "font-serif text-2xl sm:text-3xl font-bold text-white block tracking-tight font-mono tabular-nums",
-								children: "60+"
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-xs text-[#8a909a] tracking-wider uppercase font-mono mt-1 block",
-								children: "Synchronized Portals"
-							})] }),
-							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "font-serif text-2xl sm:text-3xl font-bold text-white block tracking-tight font-mono tabular-nums",
-								children: "100%"
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-xs text-[#8a909a] tracking-wider uppercase font-mono mt-1 block",
-								children: "Verified Legal Title"
-							})] }),
-							/* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("a", {
-								href: "tel:9779878303",
-								className: "block group cursor-pointer",
-								children: [/* @__PURE__ */ jsx("span", {
-									className: "font-serif text-2xl sm:text-3xl font-bold text-white group-hover:text-[#c5a059] transition-colors block tracking-tight font-mono tabular-nums",
-									children: "9779878303"
-								}), /* @__PURE__ */ jsx("span", {
-									className: "text-xs text-[#c5a059] tracking-wider uppercase font-mono mt-1 block",
-									children: "Direct Advisory Hotline"
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center justify-center gap-3.5 px-4 py-1",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-11 h-11 rounded-xl bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center shrink-0",
+									children: /* @__PURE__ */ jsx(Gem, { className: "w-5 h-5" })
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "text-left",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "text-sm font-bold text-[#0D2558] leading-snug block",
+										children: "Premium"
+									}), /* @__PURE__ */ jsx("span", {
+										className: "text-sm font-bold text-[#0D2558] leading-snug block",
+										children: "Properties"
+									})]
 								})]
-							}) })
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center justify-center gap-3.5 px-4 py-1",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-11 h-11 rounded-xl bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center shrink-0",
+									children: /* @__PURE__ */ jsx(ShieldCheck, { className: "w-5 h-5" })
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "text-left",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "text-sm font-bold text-[#0D2558] leading-snug block",
+										children: "Trusted by"
+									}), /* @__PURE__ */ jsx("span", {
+										className: "text-sm font-bold text-[#0D2558] leading-snug block",
+										children: "Clients"
+									})]
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center justify-center gap-3.5 px-4 py-1",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-11 h-11 rounded-xl bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center shrink-0",
+									children: /* @__PURE__ */ jsx(Handshake, { className: "w-5 h-5" })
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "text-left",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "text-sm font-bold text-[#0D2558] leading-snug block",
+										children: "Expert Advisory"
+									}), /* @__PURE__ */ jsx("span", {
+										className: "text-xs text-slate-500 font-medium block",
+										children: "RERA & Title Verified"
+									})]
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center justify-center gap-3.5 px-4 py-1",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-11 h-11 rounded-xl bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center shrink-0",
+									children: /* @__PURE__ */ jsx(TrendingUp, { className: "w-5 h-5" })
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "text-left",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "text-sm font-bold text-[#0D2558] leading-snug block",
+										children: "High Returns"
+									}), /* @__PURE__ */ jsx("span", {
+										className: "text-xs text-slate-500 font-medium block",
+										children: "Prime Growth Corridors"
+									})]
+								})]
+							})
+						]
+					})
+				})
+			}),
+			/* @__PURE__ */ jsxs("section", {
+				id: "trophy-holdings",
+				className: "max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:py-20 space-y-8",
+				children: [
+					/* @__PURE__ */ jsxs("div", {
+						className: "flex flex-col md:flex-row md:items-end justify-between gap-4",
+						children: [/* @__PURE__ */ jsxs("div", {
+							className: "space-y-2",
+							children: [/* @__PURE__ */ jsxs("div", {
+								className: "inline-flex items-center gap-2.5",
+								children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+									children: selectedLocation === "all" ? "Featured Properties" : `Location Focus · ${selectedLocationName}`
+								})]
+							}), /* @__PURE__ */ jsx("h2", {
+								className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] tracking-tight",
+								children: selectedLocation === "all" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+									"Explore Our ",
+									/* @__PURE__ */ jsx("span", {
+										className: "text-[#DC1F26]",
+										children: "Premium"
+									}),
+									" ",
+									/* @__PURE__ */ jsx("span", {
+										className: "text-[#163B8C]",
+										children: "Properties"
+									})
+								] }) : /* @__PURE__ */ jsxs(Fragment, { children: ["Trophy Holdings in ", /* @__PURE__ */ jsx("span", {
+									className: "text-[#DC1F26]",
+									children: selectedLocationName
+								})] })
+							})]
+						}), /* @__PURE__ */ jsxs(AppLink, {
+							href: "/properties",
+							onNavigate,
+							className: "inline-flex items-center gap-2 text-sm font-bold text-[#DC1F26] hover:text-[#B91C1C] transition-colors cursor-pointer group shrink-0",
+							children: [/* @__PURE__ */ jsxs("span", { children: [
+								"View All Properties (",
+								publishedProperties.length,
+								")"
+							] }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4 group-hover:translate-x-1 transition-transform" })]
+						})]
+					}),
+					/* @__PURE__ */ jsx(LocationTabs, {
+						selectedLocation,
+						onSelectLocation: setSelectedLocation,
+						properties: publishedProperties,
+						categoryTitle: "All Holdings"
+					}),
+					displayProperties.length > 0 ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("div", {
+						className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+						children: displayProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
+							property: prop,
+							onSelect: onSelectProperty,
+							isSaved: savedIds.includes(prop.id),
+							onToggleSave
+						}, prop.id))
+					}), /* @__PURE__ */ jsx("div", {
+						className: "pt-2 flex justify-center",
+						children: /* @__PURE__ */ jsxs(AppLink, {
+							href: "/properties",
+							onNavigate,
+							className: "inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#0D2558] hover:bg-[#DC1F26] text-white text-sm font-bold rounded-full shadow-md shadow-[#0D2558]/15 transition-all cursor-pointer group",
+							children: [/* @__PURE__ */ jsx("span", { children: "View All Properties" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4 group-hover:translate-x-0.5 transition-transform" })]
+						})
+					})] }) : /* @__PURE__ */ jsxs("div", {
+						className: "p-12 text-center bg-[#F7F9FC] border border-slate-200 rounded-2xl space-y-3",
+						children: [
+							/* @__PURE__ */ jsx(MapPin, { className: "w-8 h-8 text-[#DC1F26] mx-auto" }),
+							/* @__PURE__ */ jsxs("h3", {
+								className: "text-xl font-bold text-[#0D2558]",
+								children: ["No Published Assets Found in ", selectedLocationName]
+							}),
+							/* @__PURE__ */ jsxs("p", {
+								className: "text-sm text-slate-600 max-w-md mx-auto",
+								children: [
+									"Our acquisitions division is actively sourcing prime residential and commercial holdings in ",
+									selectedLocationName,
+									"."
+								]
+							}),
+							/* @__PURE__ */ jsx("button", {
+								type: "button",
+								onClick: () => setSelectedLocation("all"),
+								className: "mt-2 px-5 py-2.5 bg-[#0D2558] hover:bg-[#163B8C] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-colors cursor-pointer",
+								children: "Show All Locations"
+							})
 						]
 					})
 				]
 			}),
 			/* @__PURE__ */ jsx("section", {
-				className: "max-w-7xl mx-auto px-6 -mt-8",
-				children: /* @__PURE__ */ jsx(LocationTabs, {
-					selectedLocation,
-					onSelectLocation: setSelectedLocation,
-					properties: publishedProperties,
-					categoryTitle: "All Holdings"
+				className: "relative bg-[#0D2558] overflow-hidden",
+				children: /* @__PURE__ */ jsx("div", {
+					className: "max-w-7xl mx-auto",
+					children: /* @__PURE__ */ jsxs("div", {
+						className: "grid grid-cols-1 lg:grid-cols-12 items-stretch",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative hidden lg:block lg:col-span-3 min-h-[150px] overflow-hidden",
+								children: [
+									/* @__PURE__ */ jsx("img", {
+										src: "/assets/images/blog_tricity_skyline_1795014928867.jpg",
+										alt: "BUILDsmore Urban Skyline",
+										className: "absolute inset-0 w-full h-full object-cover"
+									}),
+									/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-[#0D2558]/35" }),
+									/* @__PURE__ */ jsx("div", {
+										"aria-hidden": "true",
+										className: "absolute top-0 -right-10 bottom-0 w-20 bg-[#0D2558] -skew-x-12 border-l-[5px] border-[#DC1F26]"
+									})
+								]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "lg:col-span-6 px-6 py-9 sm:py-10 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4 items-center sm:divide-x divide-white/15",
+								children: [
+									/* @__PURE__ */ jsxs("div", {
+										className: "flex items-center justify-center sm:justify-start gap-3.5 sm:px-3",
+										children: [/* @__PURE__ */ jsx("div", {
+											className: "w-11 h-11 rounded-xl bg-white/10 text-sky-300 flex items-center justify-center shrink-0",
+											children: /* @__PURE__ */ jsx(Building2, { className: "w-5 h-5" })
+										}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+											className: "text-2xl sm:text-3xl font-extrabold text-white block leading-none tabular-nums",
+											children: "500+"
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-xs text-slate-300 font-medium mt-1 block",
+											children: "Properties Listed"
+										})] })]
+									}),
+									/* @__PURE__ */ jsxs("div", {
+										className: "flex items-center justify-center sm:justify-start gap-3.5 sm:px-5",
+										children: [/* @__PURE__ */ jsx("div", {
+											className: "w-11 h-11 rounded-xl bg-white/10 text-indigo-300 flex items-center justify-center shrink-0",
+											children: /* @__PURE__ */ jsx(Users, { className: "w-5 h-5" })
+										}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+											className: "text-2xl sm:text-3xl font-extrabold text-white block leading-none tabular-nums",
+											children: "1,000+"
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-xs text-slate-300 font-medium mt-1 block",
+											children: "Happy Clients"
+										})] })]
+									}),
+									/* @__PURE__ */ jsxs("div", {
+										className: "flex items-center justify-center sm:justify-start gap-3.5 sm:px-5",
+										children: [/* @__PURE__ */ jsx("div", {
+											className: "w-11 h-11 rounded-xl bg-white/10 text-amber-300 flex items-center justify-center shrink-0",
+											children: /* @__PURE__ */ jsx(Award, { className: "w-5 h-5" })
+										}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+											className: "text-2xl sm:text-3xl font-extrabold text-white block leading-none tabular-nums",
+											children: "15+"
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-xs text-slate-300 font-medium mt-1 block",
+											children: "Years of Trust"
+										})] })]
+									})
+								]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative lg:col-span-3 bg-[#DC1F26] px-6 py-8 lg:py-9 flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center justify-center gap-4 text-center sm:text-left",
+								children: [
+									/* @__PURE__ */ jsx("div", {
+										"aria-hidden": "true",
+										className: "hidden lg:block absolute top-0 -left-8 bottom-0 w-16 bg-[#DC1F26] -skew-x-12"
+									}),
+									/* @__PURE__ */ jsxs("div", {
+										className: "relative z-10",
+										children: [/* @__PURE__ */ jsx("span", {
+											className: "text-base sm:text-lg font-extrabold text-white leading-tight block",
+											children: "Invest Smart."
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-base sm:text-lg font-extrabold text-white leading-tight block",
+											children: "Grow Confident."
+										})]
+									}),
+									/* @__PURE__ */ jsxs(AppLink, {
+										href: "/contact",
+										onNavigate,
+										className: "relative z-10 inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-[#DC1F26] text-xs font-extrabold rounded-full shadow-md transition-all cursor-pointer shrink-0",
+										children: [/* @__PURE__ */ jsx("span", { children: "Contact Us" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+									})
+								]
+							})
+						]
+					})
 				})
 			}),
-			/* @__PURE__ */ jsxs("section", {
-				className: "max-w-7xl mx-auto px-6",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4",
-					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-2",
-						children: selectedLocation === "all" ? "Curated Highlights" : `Location Focus · ${selectedLocationName}`
-					}), /* @__PURE__ */ jsx("h2", {
-						className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
-						children: selectedLocation === "all" ? "Trophy Holdings of the Season" : `Trophy Holdings in ${selectedLocationName}`
-					})] }), /* @__PURE__ */ jsxs(AppLink, {
-						href: "/properties",
-						onNavigate,
-						className: "flex items-center gap-2 text-xs uppercase tracking-widest text-[#c5a059] hover:text-[#d4af5f] transition-colors cursor-pointer group",
-						children: [/* @__PURE__ */ jsxs("span", { children: [
-							"Explore Complete Portfolio (",
-							properties.length,
-							")"
-						] }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" })]
-					})]
-				}), displayProperties.length > 0 ? /* @__PURE__ */ jsx("div", {
-					className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-					children: displayProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
-						property: prop,
-						onSelect: onSelectProperty,
-						isSaved: savedIds.includes(prop.id),
-						onToggleSave
-					}, prop.id))
-				}) : /* @__PURE__ */ jsxs("div", {
-					className: "p-12 text-center bg-[#101419] border border-[#202732] rounded-sm space-y-3",
-					children: [
-						/* @__PURE__ */ jsx(MapPin, { className: "w-8 h-8 text-[#c5a059] mx-auto opacity-70" }),
-						/* @__PURE__ */ jsxs("h3", {
-							className: "font-serif text-xl font-normal text-white",
-							children: ["No Published Assets Found in ", selectedLocationName]
-						}),
-						/* @__PURE__ */ jsxs("p", {
-							className: "text-xs text-[#8a909a] max-w-md mx-auto",
+			curatedCollections.length > 0 && /* @__PURE__ */ jsx("section", {
+				className: "bg-[#F7F9FC] border-b border-slate-200/80 py-16 lg:py-20",
+				children: /* @__PURE__ */ jsxs("div", {
+					className: "max-w-7xl mx-auto px-4 sm:px-6",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4",
+						children: [/* @__PURE__ */ jsxs("div", {
+							className: "space-y-2",
 							children: [
-								"Our acquisitions division is actively sourcing prime residential and commercial holdings in ",
-								selectedLocationName,
-								"."
-							]
-						}),
-						/* @__PURE__ */ jsx("button", {
-							onClick: () => setSelectedLocation("all"),
-							className: "mt-2 px-4 py-2 bg-[#1b222d] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono uppercase tracking-wider rounded-sm transition-colors cursor-pointer",
-							children: "Show All Locations"
-						})
-					]
-				})]
-			}),
-			/* @__PURE__ */ jsxs("section", {
-				className: "max-w-7xl mx-auto px-6",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "mb-10 text-center max-w-2xl mx-auto",
-					children: [
-						/* @__PURE__ */ jsx("span", {
-							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-2",
-							children: "Asset Categorization"
-						}),
-						/* @__PURE__ */ jsx("h2", {
-							className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
-							children: "Curated Investment Collections"
-						}),
-						/* @__PURE__ */ jsx("p", {
-							className: "text-sm text-[#8a909a] mt-2",
-							children: "Targeted portfolio discovery across prime residential, commercial, acreage, and development classes."
-						})
-					]
-				}), /* @__PURE__ */ jsx("div", {
-					className: "grid grid-cols-1 md:grid-cols-12 gap-6",
-					children: curatedCollections.map((col, index) => {
-						const colSpanClass = index % 4 === 0 || index % 4 === 3 ? "md:col-span-7" : "md:col-span-5";
-						return /* @__PURE__ */ jsxs(AppLink, {
-							href: `/collection/${encodeURIComponent(col.slug)}`,
-							onNavigate,
-							className: `${colSpanClass} block relative h-96 rounded-sm overflow-hidden group cursor-pointer border border-[#202732] bg-[#12161d] hover:border-[#c5a059]/40 transition-all duration-300`,
-							children: [
-								/* @__PURE__ */ jsx("img", {
-									src: col.coverImageUrl || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
-									alt: col.title,
-									className: "w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-[0.55]"
-								}),
-								/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" }),
 								/* @__PURE__ */ jsxs("div", {
-									className: "absolute top-4 right-4 bg-[#0c0f12]/80 backdrop-blur-md px-3 py-1 rounded-sm border border-[#262f3c] text-[11px] font-mono text-[#c5a059] flex items-center gap-1.5",
-									children: [/* @__PURE__ */ jsx(Layers, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: [col.propertyIds?.length || 0, " Assets"] })]
+									className: "inline-flex items-center gap-2.5",
+									children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+										className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+										children: "Asset Categorization"
+									})]
 								}),
-								/* @__PURE__ */ jsxs("div", {
-									className: "absolute bottom-6 left-6 right-6",
-									children: [
-										/* @__PURE__ */ jsx("span", {
-											className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059]",
-											children: col.subtitle || "Investment Collection"
-										}),
-										/* @__PURE__ */ jsx("h3", {
-											className: "font-serif text-2xl font-medium text-white mt-1 group-hover:text-[#c5a059] transition-colors",
-											children: col.title
-										}),
-										/* @__PURE__ */ jsx("p", {
-											className: "text-xs text-[#cbd5e1] mt-1.5 max-w-md line-clamp-2",
-											children: col.description
-										}),
-										/* @__PURE__ */ jsxs("div", {
-											className: "mt-3 inline-flex items-center gap-1.5 text-xs text-[#c5a059] font-medium group-hover:translate-x-1 transition-transform",
-											children: ["View Collection ", /* @__PURE__ */ jsx(ChevronRight, { className: "w-3.5 h-3.5" })]
-										})
-									]
+								/* @__PURE__ */ jsxs("h2", {
+									className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] tracking-tight",
+									children: ["Curated Investment ", /* @__PURE__ */ jsx("span", {
+										className: "text-[#163B8C]",
+										children: "Collections"
+									})]
+								}),
+								/* @__PURE__ */ jsx("p", {
+									className: "text-sm text-slate-600 max-w-xl",
+									children: "Targeted portfolio discovery across prime residential, commercial, plots, and new development asset classes."
 								})
 							]
-						}, col.id);
-					})
-				})]
+						}), /* @__PURE__ */ jsxs(AppLink, {
+							href: "/properties",
+							onNavigate,
+							className: "inline-flex items-center gap-1.5 text-sm font-bold text-[#163B8C] hover:text-[#DC1F26] transition-colors cursor-pointer shrink-0",
+							children: [/* @__PURE__ */ jsx("span", { children: "Browse Full Catalog" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4" })]
+						})]
+					}), /* @__PURE__ */ jsx("div", {
+						className: "grid grid-cols-1 md:grid-cols-12 gap-6",
+						children: curatedCollections.map((col, index) => {
+							const colSpanClass = index % 4 === 0 || index % 4 === 3 ? "md:col-span-7" : "md:col-span-5";
+							return /* @__PURE__ */ jsxs(AppLink, {
+								href: `/collection/${encodeURIComponent(col.slug)}`,
+								onNavigate,
+								className: `${colSpanClass} block relative h-80 sm:h-96 rounded-2xl overflow-hidden group cursor-pointer border border-slate-200 bg-[#0D2558] shadow-sm hover:shadow-xl transition-all duration-300`,
+								children: [
+									/* @__PURE__ */ jsx("img", {
+										src: col.coverImageUrl || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80",
+										alt: col.title,
+										className: "w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+									}),
+									/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0D2558]/95 via-[#0D2558]/40 to-transparent" }),
+									/* @__PURE__ */ jsxs("div", {
+										className: "absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-[#0D2558] flex items-center gap-1.5 shadow-sm",
+										children: [/* @__PURE__ */ jsx(Layers, { className: "w-3.5 h-3.5 text-[#DC1F26]" }), /* @__PURE__ */ jsxs("span", { children: [col.propertyIds?.length || 0, " Assets"] })]
+									}),
+									/* @__PURE__ */ jsxs("div", {
+										className: "absolute bottom-6 left-6 right-6",
+										children: [
+											/* @__PURE__ */ jsx("span", {
+												className: "text-[11px] font-bold uppercase tracking-[0.14em] text-sky-200",
+												children: col.subtitle || "Investment Collection"
+											}),
+											/* @__PURE__ */ jsx("h3", {
+												className: "text-2xl font-extrabold text-white mt-1 group-hover:text-sky-200 transition-colors",
+												children: col.title
+											}),
+											/* @__PURE__ */ jsx("p", {
+												className: "text-xs sm:text-sm text-slate-200 mt-1.5 max-w-md line-clamp-2",
+												children: col.description
+											}),
+											/* @__PURE__ */ jsxs("div", {
+												className: "mt-3.5 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#DC1F26] group-hover:bg-[#B91C1C] px-4 py-2 rounded-full transition-colors",
+												children: [/* @__PURE__ */ jsx("span", { children: "View Collection" }), /* @__PURE__ */ jsx(ChevronRight, { className: "w-3.5 h-3.5" })]
+											})
+										]
+									})
+								]
+							}, col.id);
+						})
+					})]
+				})
 			}),
 			/* @__PURE__ */ jsx("section", {
-				className: "max-w-7xl mx-auto px-6",
+				className: "max-w-7xl mx-auto px-4 sm:px-6 py-16 lg:py-20",
 				children: /* @__PURE__ */ jsx("div", {
-					className: "bg-[#12161d] border border-[#242b36] p-8 md:p-12 rounded-sm",
+					className: "bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden",
 					children: /* @__PURE__ */ jsxs("div", {
-						className: "grid grid-cols-1 lg:grid-cols-2 gap-10 items-center",
+						className: "grid grid-cols-1 lg:grid-cols-2 items-center",
 						children: [/* @__PURE__ */ jsxs("div", {
-							className: "space-y-6",
+							className: "p-8 md:p-12 space-y-6",
 							children: [
-								/* @__PURE__ */ jsx("span", {
-									className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059]",
-									children: "Featured New Development"
+								/* @__PURE__ */ jsxs("div", {
+									className: "inline-flex items-center gap-2.5",
+									children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+										className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+										children: "Featured New Development"
+									})]
 								}),
 								/* @__PURE__ */ jsx("h2", {
-									className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2] leading-tight",
+									className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] leading-tight tracking-tight",
 									children: "The Aurora Residences Zürichberg"
 								}),
 								/* @__PURE__ */ jsx("p", {
-									className: "text-sm text-[#9ca3af] leading-relaxed font-light",
+									className: "text-sm text-slate-600 leading-relaxed",
 									children: "A limited commission of eight carbon-neutral private residences overlooking Lake Zurich and the Swiss Alps. Integrating deep geothermal heating, private solariums, and five-star hospitality concierge managed by The Dolder Grand."
 								}),
 								/* @__PURE__ */ jsxs("div", {
-									className: "grid grid-cols-2 gap-4 py-2 border-y border-[#1f2631] text-xs",
+									className: "grid grid-cols-2 gap-4 py-4 border-y border-slate-200 text-xs",
 									children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-										className: "text-[#737a85] font-mono uppercase block",
+										className: "text-slate-500 font-semibold uppercase tracking-wider block",
 										children: "Delivery"
 									}), /* @__PURE__ */ jsx("span", {
-										className: "text-[#f7f5f2] font-semibold",
+										className: "text-[#0D2558] font-bold text-sm mt-0.5 block",
 										children: "Q4 2026 Active Construction"
 									})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-										className: "text-[#737a85] font-mono uppercase block",
+										className: "text-slate-500 font-semibold uppercase tracking-wider block",
 										children: "Starting From"
 									}), /* @__PURE__ */ jsx("span", {
-										className: "text-[#c5a059] font-mono font-semibold",
+										className: "text-[#DC1F26] font-extrabold text-sm mt-0.5 block tabular-nums",
 										children: "€18,900,000"
 									})] })]
 								}),
 								/* @__PURE__ */ jsxs("div", {
-									className: "flex flex-wrap items-center gap-4",
-									children: [/* @__PURE__ */ jsx(AppLink, {
+									className: "flex flex-wrap items-center gap-3.5",
+									children: [/* @__PURE__ */ jsxs(AppLink, {
 										href: "/property/the-aurora-residences-zurichberg-switzerland",
 										onNavigate,
-										className: "inline-block px-6 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-all cursor-pointer",
-										children: "View Residence Dossier"
+										className: "inline-flex items-center gap-2 px-6 py-3 bg-[#0D2558] hover:bg-[#163B8C] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer shadow-sm",
+										children: [/* @__PURE__ */ jsx("span", { children: "View Residence Dossier" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
 									}), /* @__PURE__ */ jsx(AppLink, {
 										href: "/contact",
 										onNavigate,
-										className: "inline-block px-6 py-2.5 bg-[#181f2a] hover:bg-[#202937] text-[#f7f5f2] text-xs uppercase tracking-wider font-medium rounded-sm border border-[#2b3646] transition-all cursor-pointer",
-										children: "Register Early Interest"
+										className: "inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-[#F7F9FC] text-[#0D2558] border border-slate-300 text-xs font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer",
+										children: /* @__PURE__ */ jsx("span", { children: "Register Early Interest" })
 									})]
 								})
 							]
 						}), /* @__PURE__ */ jsx("div", {
-							className: "relative aspect-[4/3] rounded-sm overflow-hidden border border-[#242b36]",
+							className: "relative h-72 sm:h-96 lg:h-full min-h-[340px] bg-slate-100",
 							children: /* @__PURE__ */ jsx("img", {
 								src: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=80",
 								alt: "The Aurora Residences",
@@ -4927,108 +5411,58 @@ var HomePage = ({ properties, collections, trophyHoldings, heroSlides, onSelectP
 				})
 			}),
 			/* @__PURE__ */ jsxs("section", {
-				className: "max-w-7xl mx-auto px-6",
+				id: "homepage-inquiry",
+				className: "relative overflow-hidden bg-gradient-to-b from-white via-[#F5F9FF] to-[#EBF2FC] border-t border-slate-200/80 py-16 lg:py-20",
 				children: [/* @__PURE__ */ jsxs("div", {
-					className: "text-center max-w-2xl mx-auto mb-12",
-					children: [
-						/* @__PURE__ */ jsx("span", {
-							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-2",
-							children: "Discreet Representation"
-						}),
-						/* @__PURE__ */ jsx("h2", {
-							className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
-							children: "Private Client Wealth Advisory"
-						}),
-						/* @__PURE__ */ jsx("p", {
-							className: "text-sm text-[#8a909a] mt-2",
-							children: "Comprehensive acquisition, disposal, and cross-border portfolio structuring for sovereign entities and family offices."
-						})
-					]
-				}), /* @__PURE__ */ jsxs("div", {
-					className: "grid grid-cols-1 md:grid-cols-3 gap-8",
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "p-8 bg-[#101419] border border-[#202732] rounded-sm space-y-4",
-							children: [
-								/* @__PURE__ */ jsx("div", {
-									className: "w-10 h-10 rounded-sm bg-[#161c24] border border-[#263140] flex items-center justify-center text-[#c5a059]",
-									children: /* @__PURE__ */ jsx(Lock, { className: "w-5 h-5" })
-								}),
-								/* @__PURE__ */ jsx("h3", {
-									className: "font-serif text-xl font-medium text-[#f7f5f2]",
-									children: "Strict Confidentiality & NDA"
-								}),
-								/* @__PURE__ */ jsx("p", {
-									className: "text-xs text-[#8a909a] leading-relaxed",
-									children: "Every mandate operates under sovereign-grade non-disclosure protocols. Ultra-prime off-market properties are shared solely with pre-vetted family offices."
-								})
-							]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "p-8 bg-[#101419] border border-[#202732] rounded-sm space-y-4",
-							children: [
-								/* @__PURE__ */ jsx("div", {
-									className: "w-10 h-10 rounded-sm bg-[#161c24] border border-[#263140] flex items-center justify-center text-[#c5a059]",
-									children: /* @__PURE__ */ jsx(TrendingUp, { className: "w-5 h-5" })
-								}),
-								/* @__PURE__ */ jsx("h3", {
-									className: "font-serif text-xl font-medium text-[#f7f5f2]",
-									children: "Multi-Source Network Sync"
-								}),
-								/* @__PURE__ */ jsx("p", {
-									className: "text-xs text-[#8a909a] leading-relaxed",
-									children: "Consolidating listings across 60+ European and Middle Eastern WordPress partner registries into one verified, deduplicated database with live price diffing."
-								})
-							]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "p-8 bg-[#101419] border border-[#202732] rounded-sm space-y-4",
-							children: [
-								/* @__PURE__ */ jsx("div", {
-									className: "w-10 h-10 rounded-sm bg-[#161c24] border border-[#263140] flex items-center justify-center text-[#c5a059]",
-									children: /* @__PURE__ */ jsx(KeyRound, { className: "w-5 h-5" })
-								}),
-								/* @__PURE__ */ jsx("h3", {
-									className: "font-serif text-xl font-medium text-[#f7f5f2]",
-									children: "Title & Covenants Audit"
-								}),
-								/* @__PURE__ */ jsx("p", {
-									className: "text-xs text-[#8a909a] leading-relaxed",
-									children: "Independent architectural, zoning, and legal title review performed before any property enters the BUILDsmore central registry."
-								})
-							]
-						})
-					]
-				})]
-			}),
-			/* @__PURE__ */ jsx("section", {
-				className: "max-w-5xl mx-auto px-6",
-				children: /* @__PURE__ */ jsxs("div", {
-					className: "relative overflow-hidden bg-gradient-to-r from-[#141a22] to-[#10141a] border border-[#2a3646] p-10 md:p-14 rounded-sm text-center space-y-6",
-					children: [
-						/* @__PURE__ */ jsx("span", {
-							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059]",
-							children: "Private Consultation"
-						}),
-						/* @__PURE__ */ jsx("h2", {
-							className: "font-serif text-3xl sm:text-4xl font-normal text-white max-w-xl mx-auto",
-							children: "Schedule a Confidential Consultation with a Senior Advisor"
-						}),
-						/* @__PURE__ */ jsx("p", {
-							className: "text-xs sm:text-sm text-[#9ca3af] max-w-lg mx-auto",
-							children: "Whether seeking an off-market acquisition in Port d'Andratx or divesting a commercial asset in Mayfair, our principals are at your disposal."
-						}),
-						/* @__PURE__ */ jsx("div", {
-							className: "pt-2",
-							children: /* @__PURE__ */ jsx(AppLink, {
-								href: "/contact",
-								onNavigate,
-								className: "inline-block px-8 py-3 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all cursor-pointer shadow-lg",
-								children: "Contact Concierge Desk"
+					"aria-hidden": "true",
+					className: "absolute inset-x-0 bottom-0 h-56 opacity-[0.12] pointer-events-none select-none overflow-hidden",
+					children: [/* @__PURE__ */ jsx("img", {
+						src: "/assets/images/blog_tricity_skyline_1795014928867.jpg",
+						alt: "",
+						className: "w-full h-full object-cover object-bottom grayscale contrast-125"
+					}), /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-transparent via-[#F5F9FF]/60 to-[#F5F9FF]" })]
+				}), /* @__PURE__ */ jsx("div", {
+					className: "relative z-10 max-w-7xl mx-auto px-4 sm:px-6",
+					children: /* @__PURE__ */ jsxs("div", {
+						className: "max-w-2xl space-y-5",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "inline-flex items-center gap-2.5",
+								children: [/* @__PURE__ */ jsx("span", { className: "w-8 h-[2.5px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+									children: "Let's Build Your Future"
+								})]
+							}),
+							/* @__PURE__ */ jsxs("h2", {
+								className: "text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0D2558] tracking-tight leading-[1.12]",
+								children: ["Get in Touch with ", /* @__PURE__ */ jsx("span", {
+									className: "text-[#DC1F26]",
+									children: "Buildsmore"
+								})]
+							}),
+							/* @__PURE__ */ jsx("p", {
+								className: "text-sm sm:text-base text-slate-600 max-w-xl leading-relaxed",
+								children: "Our team is here to help you find the perfect property or investment opportunity across Mohali, Zirakpur, Dera Bassi, New Chandigarh, and prime global enclaves."
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-wrap items-center gap-4 pt-2",
+								children: [/* @__PURE__ */ jsxs(AppLink, {
+									href: "/contact",
+									onNavigate,
+									className: "inline-flex items-center gap-2.5 px-7 py-3.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-sm font-bold rounded-full shadow-lg shadow-[#DC1F26]/20 transition-all cursor-pointer",
+									children: [/* @__PURE__ */ jsx("span", { children: "Enquire Now" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4" })]
+								}), /* @__PURE__ */ jsxs("a", {
+									href: "tel:9779878303",
+									className: "inline-flex items-center gap-2.5 px-6 py-3.5 bg-white hover:bg-[#0D2558] text-[#0D2558] hover:text-white border border-slate-200 hover:border-[#0D2558] text-sm font-bold rounded-full shadow-xs transition-all cursor-pointer",
+									children: [/* @__PURE__ */ jsx(Phone, { className: "w-4 h-4 text-[#DC1F26]" }), /* @__PURE__ */ jsx("span", {
+										className: "tabular-nums",
+										children: "977-987-8303"
+									})]
+								})]
 							})
-						})
-					]
-				})
+						]
+					})
+				})]
 			})
 		]
 	});
@@ -5044,7 +5478,7 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 	];
 	const priceOptions = [
 		{
-			label: "All Price Tiers",
+			label: "Any Budget",
 			value: "all"
 		},
 		{
@@ -5070,25 +5504,25 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 			value: "any"
 		},
 		{
-			label: "4+ Suites",
+			label: "3+ Beds",
+			value: "3"
+		},
+		{
+			label: "4+ Beds",
 			value: "4"
 		},
 		{
-			label: "6+ Suites",
+			label: "6+ Beds",
 			value: "6"
-		},
-		{
-			label: "8+ Suites",
-			value: "8"
 		}
 	];
 	const sortOptions = [
 		{
-			label: "Recently Added (Latest First)",
+			label: "Recently Added",
 			value: "newest"
 		},
 		{
-			label: "Featured Portfolio",
+			label: "Featured Properties",
 			value: "featured"
 		},
 		{
@@ -5106,24 +5540,26 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 	];
 	const hasActiveFilters = filters.searchQuery.trim() !== "" || filters.category !== "All" || filters.priceRange !== "all" || filters.bedrooms !== "any" || filters.sortBy !== "newest";
 	return /* @__PURE__ */ jsxs("div", {
-		className: "bg-[#101419] border border-[#202732] p-5 rounded-sm mb-8 space-y-4 shadow-lg",
+		className: "bg-white border border-slate-200/90 p-5 rounded-2xl mb-8 space-y-4 shadow-[0_8px_28px_rgba(13,37,88,0.06)]",
 		children: [/* @__PURE__ */ jsxs("div", {
 			className: "grid grid-cols-1 md:grid-cols-12 gap-3 items-center",
 			children: [
 				/* @__PURE__ */ jsxs("div", {
 					className: "md:col-span-5 relative",
 					children: [
-						/* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }),
+						/* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }),
 						/* @__PURE__ */ jsx("input", {
 							type: "text",
 							value: filters.searchQuery,
 							onChange: (e) => onChange({ searchQuery: e.target.value }),
-							placeholder: "Search by city, country, architecture, or title...",
-							className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm pl-10 pr-4 py-2.5 text-xs text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
+							placeholder: "Search by city, sector, project, or title...",
+							className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl pl-10 pr-8 py-2.5 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-colors"
 						}),
 						filters.searchQuery && /* @__PURE__ */ jsx("button", {
+							type: "button",
 							onClick: () => onChange({ searchQuery: "" }),
-							className: "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8a909a] hover:text-[#f7f5f2]",
+							"aria-label": "Clear search query",
+							className: "absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-[#0D2558] cursor-pointer",
 							children: "×"
 						})
 					]
@@ -5133,10 +5569,10 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 					children: /* @__PURE__ */ jsx("select", {
 						value: filters.priceRange,
 						onChange: (e) => onChange({ priceRange: e.target.value }),
-						className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
+						"aria-label": "Budget Range",
+						className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-[#0D2558] font-medium focus:outline-none cursor-pointer",
 						children: priceOptions.map((opt) => /* @__PURE__ */ jsx("option", {
 							value: opt.value,
-							className: "bg-[#161b22] text-[#f7f5f2]",
 							children: opt.label
 						}, opt.value))
 					})
@@ -5146,10 +5582,10 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 					children: /* @__PURE__ */ jsx("select", {
 						value: filters.bedrooms,
 						onChange: (e) => onChange({ bedrooms: e.target.value }),
-						className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
+						"aria-label": "Bedrooms",
+						className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-[#0D2558] font-medium focus:outline-none cursor-pointer",
 						children: bedroomOptions.map((opt) => /* @__PURE__ */ jsx("option", {
 							value: opt.value,
-							className: "bg-[#161b22] text-[#f7f5f2]",
 							children: opt.label
 						}, opt.value))
 					})
@@ -5159,35 +5595,36 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 					children: /* @__PURE__ */ jsx("select", {
 						value: filters.sortBy,
 						onChange: (e) => onChange({ sortBy: e.target.value }),
-						className: "w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
+						"aria-label": "Sort properties",
+						className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-[#0D2558] font-medium focus:outline-none cursor-pointer",
 						children: sortOptions.map((opt) => /* @__PURE__ */ jsx("option", {
 							value: opt.value,
-							className: "bg-[#161b22] text-[#f7f5f2]",
 							children: opt.label
 						}, opt.value))
 					})
 				})
 			]
 		}), /* @__PURE__ */ jsxs("div", {
-			className: "flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#1c232d]",
+			className: "flex flex-wrap items-center justify-between gap-4 pt-3.5 border-t border-slate-100",
 			children: [/* @__PURE__ */ jsx("div", {
-				className: "flex flex-wrap items-center gap-1.5",
+				className: "flex flex-wrap items-center gap-2",
 				children: categories.map((cat) => {
 					const isActive = filters.category === cat;
 					return /* @__PURE__ */ jsx("button", {
+						type: "button",
 						onClick: () => onChange({ category: cat }),
-						className: `px-3 py-1.5 text-xs tracking-wider uppercase rounded-sm transition-all cursor-pointer font-medium ${isActive ? "bg-[#c5a059] text-[#0c0f12] font-semibold shadow-sm" : "bg-[#161b22] text-[#9ca3af] hover:text-[#f7f5f2] border border-[#262f3d]"}`,
-						children: cat === "All" ? "All Classes" : cat
+						className: `px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${isActive ? "bg-[#DC1F26] text-white shadow-sm" : "bg-[#F7F9FC] text-slate-600 hover:text-[#0D2558] border border-slate-200"}`,
+						children: cat === "All" ? "All Types" : cat
 					}, cat);
 				})
 			}), /* @__PURE__ */ jsxs("div", {
-				className: "flex items-center gap-4 text-xs text-[#8a909a]",
+				className: "flex items-center gap-4 text-xs text-slate-500",
 				children: [
 					/* @__PURE__ */ jsxs("span", {
-						className: "font-mono tabular-nums text-[#d1d5db]",
+						className: "tabular-nums font-medium",
 						children: [
 							/* @__PURE__ */ jsx("strong", {
-								className: "text-[#f7f5f2]",
+								className: "text-[#0D2558]",
 								children: totalResults
 							}),
 							" ",
@@ -5196,21 +5633,24 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 						]
 					}),
 					hasActiveFilters && /* @__PURE__ */ jsxs("button", {
+						type: "button",
 						onClick: onReset,
-						className: "flex items-center gap-1 text-xs text-[#c5a059] hover:underline cursor-pointer",
-						children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3 h-3" }), "Reset Filters"]
+						className: "inline-flex items-center gap-1 text-xs font-semibold text-[#DC1F26] hover:underline cursor-pointer",
+						children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }), "Reset Filters"]
 					}),
 					/* @__PURE__ */ jsxs("div", {
-						className: "flex items-center border border-[#262f3d] rounded-sm p-0.5 bg-[#161b22]",
+						className: "flex items-center border border-slate-200 rounded-lg p-0.5 bg-[#F7F9FC]",
 						children: [/* @__PURE__ */ jsx("button", {
+							type: "button",
 							onClick: () => onChange({ viewMode: "grid" }),
 							"aria-label": "Grid View",
-							className: `p-1.5 rounded-sm transition-colors cursor-pointer ${filters.viewMode === "grid" ? "bg-[#c5a059] text-[#0c0f12]" : "text-[#8a909a] hover:text-[#f7f5f2]"}`,
+							className: `p-1.5 rounded-md transition-colors cursor-pointer ${filters.viewMode === "grid" ? "bg-[#0D2558] text-white" : "text-slate-500 hover:text-[#0D2558]"}`,
 							children: /* @__PURE__ */ jsx(LayoutGrid, { className: "w-3.5 h-3.5" })
 						}), /* @__PURE__ */ jsx("button", {
+							type: "button",
 							onClick: () => onChange({ viewMode: "list" }),
 							"aria-label": "List View",
-							className: `p-1.5 rounded-sm transition-colors cursor-pointer ${filters.viewMode === "list" ? "bg-[#c5a059] text-[#0c0f12]" : "text-[#8a909a] hover:text-[#f7f5f2]"}`,
+							className: `p-1.5 rounded-md transition-colors cursor-pointer ${filters.viewMode === "list" ? "bg-[#0D2558] text-white" : "text-slate-500 hover:text-[#0D2558]"}`,
 							children: /* @__PURE__ */ jsx(List, { className: "w-3.5 h-3.5" })
 						})]
 					})
@@ -5220,28 +5660,29 @@ var PropertyFilterBar = ({ filters, onChange, onReset, totalResults }) => {
 	});
 };
 // src/components/common/Breadcrumbs.tsx
-var Breadcrumbs = ({ items, onNavigate, align = "left", className = "" }) => {
+var Breadcrumbs = ({ items, onNavigate, align = "left", variant, className = "" }) => {
 	if (!items || items.length === 0) return null;
+	const isDark = (variant ?? (align === "center" ? "dark" : "light")) === "dark";
 	return /* @__PURE__ */ jsx("nav", {
 		"aria-label": "Breadcrumb",
 		className: `${align === "center" ? "flex justify-center" : ""} ${className}`,
 		children: /* @__PURE__ */ jsx("ol", {
-			className: `flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-[#8a909a] ${align === "center" ? "justify-center font-mono uppercase tracking-wider" : ""}`,
+			className: `flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs font-medium ${isDark ? "text-blue-200/90" : "text-slate-500"} ${align === "center" ? "justify-center tracking-wide" : ""}`,
 			children: items.map((item, idx) => {
 				const isLast = idx === items.length - 1;
 				return /* @__PURE__ */ jsxs("li", {
 					className: "inline-flex items-center gap-1.5 sm:gap-2",
 					children: [idx > 0 && /* @__PURE__ */ jsx(ChevronRight, {
-						className: "w-3 h-3 text-[#4b5563] shrink-0",
+						className: `w-3.5 h-3.5 shrink-0 ${isDark ? "text-blue-300/60" : "text-slate-400"}`,
 						"aria-hidden": "true"
 					}), item.href && !isLast ? /* @__PURE__ */ jsx(AppLink, {
 						href: item.href,
 						onNavigate,
-						className: align === "center" ? "text-[#c5a059] hover:underline transition-colors" : "hover:text-[#f7f5f2] transition-colors",
+						className: isDark ? "text-white/90 hover:text-white underline-offset-4 hover:underline transition-colors" : "text-slate-600 hover:text-[#DC1F26] transition-colors",
 						children: item.label
 					}) : /* @__PURE__ */ jsx("span", {
 						"aria-current": isLast ? "page" : void 0,
-						className: isLast ? "text-[#f7f5f2] font-medium truncate max-w-[240px] sm:max-w-xs" : "text-[#8a909a]",
+						className: isLast ? `${isDark ? "text-white" : "text-[#0D2558]"} font-semibold truncate max-w-[240px] sm:max-w-xs` : isDark ? "text-blue-200/80" : "text-slate-500",
 						children: item.label
 					})]
 				}, `${item.label}-${idx}`);
@@ -5250,20 +5691,35 @@ var Breadcrumbs = ({ items, onNavigate, align = "left", className = "" }) => {
 	});
 };
 // src/pages/PropertiesPage.tsx
-var ITEMS_PER_PAGE = 6;
-var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onToggleSave, initialCategory = "All" }) => {
+var ITEMS_PER_PAGE = 8;
+var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onToggleSave, initialCategory = "All", initialLocation = "all", initialPriceRange = "all", initialSearchQuery = "" }) => {
 	const { formatPrice } = useCurrency();
 	const [filters, setFilters] = useState({
-		searchQuery: "",
+		searchQuery: initialSearchQuery,
 		category: initialCategory,
-		priceRange: "all",
+		priceRange: initialPriceRange,
 		bedrooms: "any",
 		sortBy: "newest",
 		viewMode: "grid"
 	});
 	const [currentPage, setCurrentPage] = useState(1);
 	const [showSavedOnly, setShowSavedOnly] = useState(false);
-	const [selectedLocation, setSelectedLocation] = useState("all");
+	const [selectedLocation, setSelectedLocation] = useState(initialLocation || "all");
+	useEffect(() => {
+		setFilters((prev) => ({
+			...prev,
+			category: initialCategory,
+			priceRange: initialPriceRange || "all",
+			searchQuery: initialSearchQuery || ""
+		}));
+		setSelectedLocation(initialLocation || "all");
+		setCurrentPage(1);
+	}, [
+		initialCategory,
+		initialLocation,
+		initialPriceRange,
+		initialSearchQuery
+	]);
 	const handleFilterChange = (updates) => {
 		setFilters((prev) => ({
 			...prev,
@@ -5367,171 +5823,195 @@ var PropertiesPage = ({ properties, onSelectProperty, onNavigate, savedIds, onTo
 		properties,
 		filters,
 		showSavedOnly,
-		savedIds
+		savedIds,
+		selectedLocation
 	]);
 	const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 	const paginatedProperties = filteredProperties.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-	return /* @__PURE__ */ jsxs("div", {
-		className: "max-w-7xl mx-auto px-6 py-12 space-y-8",
-		children: [
-			/* @__PURE__ */ jsx(Breadcrumbs, {
-				items: [{
-					label: "Home",
-					href: "/"
-				}, { label: "Portfolio" }],
-				onNavigate
-			}),
-			/* @__PURE__ */ jsxs("div", {
-				className: "flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#202732]",
-				children: [/* @__PURE__ */ jsxs("div", { children: [
-					/* @__PURE__ */ jsx("span", {
-						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
-						children: "Prime Holdings Registry"
-					}),
-					/* @__PURE__ */ jsx("h1", {
-						className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2]",
-						children: "International Portfolio"
-					}),
-					/* @__PURE__ */ jsx("p", {
-						className: "text-xs text-[#8a909a] mt-1",
-						children: "Architectural residences, trophy commercial towers, and private vineyard estates worldwide."
-					})
-				] }), /* @__PURE__ */ jsx("div", {
-					className: "flex items-center gap-3",
-					children: /* @__PURE__ */ jsxs("button", {
-						onClick: () => setShowSavedOnly(!showSavedOnly),
-						className: `flex items-center gap-2 px-3 py-1.5 text-xs rounded-sm transition-colors cursor-pointer border ${showSavedOnly ? "bg-[#c5a059] text-[#0c0f12] font-semibold border-[#c5a059]" : "bg-[#14181d] text-[#9ca3af] hover:text-[#f7f5f2] border-[#242b35]"}`,
-						children: [/* @__PURE__ */ jsx(Bookmark, {
-							className: "w-3.5 h-3.5",
-							fill: showSavedOnly ? "currentColor" : "none"
-						}), /* @__PURE__ */ jsxs("span", { children: [
-							"Saved Portfolio (",
-							savedIds.length,
-							")"
-						] })]
-					})
-				})]
-			}),
-			/* @__PURE__ */ jsx(PropertyFilterBar, {
-				filters,
-				onChange: handleFilterChange,
-				onReset: handleReset,
-				totalResults: filteredProperties.length
-			}),
-			/* @__PURE__ */ jsx(LocationTabs, {
-				selectedLocation,
-				onSelectLocation: (loc) => {
-					setSelectedLocation(loc);
-					setCurrentPage(1);
-				},
-				properties: properties.filter((p) => filters.category === "All" || p.category === filters.category),
-				categoryTitle: filters.category === "All" ? "Portfolio" : filters.category
-			}),
-			paginatedProperties.length > 0 ? filters.viewMode === "grid" ? /* @__PURE__ */ jsx("div", {
-				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
-				children: paginatedProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
-					property: prop,
-					onSelect: onSelectProperty,
-					isSaved: savedIds.includes(prop.id),
-					onToggleSave
-				}, prop.id))
-			}) : /* @__PURE__ */ jsx("div", {
-				className: "space-y-4",
-				children: paginatedProperties.map((prop) => /* @__PURE__ */ jsxs(AppLink, {
-					href: `/property/${encodeURIComponent(prop.slug)}`,
-					onNavigate: () => onSelectProperty(prop),
-					className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-colors p-4 rounded-sm flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer group",
+	return /* @__PURE__ */ jsx("div", {
+		className: "bg-[#F7F9FC] min-h-screen",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8",
+			children: [
+				/* @__PURE__ */ jsx(Breadcrumbs, {
+					items: [{
+						label: "Home",
+						href: "/"
+					}, { label: "Portfolio" }],
+					onNavigate
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200",
 					children: [/* @__PURE__ */ jsxs("div", {
-						className: "flex items-center gap-4 w-full md:w-auto",
-						children: [/* @__PURE__ */ jsx("div", {
-							className: "w-24 h-20 shrink-0 bg-[#14181d] rounded-sm overflow-hidden",
-							children: (() => {
-								const primaryImg = getPrimaryPropertyImage(prop);
-								return primaryImg.url ? /* @__PURE__ */ jsx("img", {
-									src: primaryImg.url,
-									alt: prop.title,
-									className: `w-full h-full transition-transform ${primaryImg.isLogo ? "object-contain p-2 bg-[#0f141b]" : "object-cover group-hover:scale-105"}`
-								}) : null;
-							})()
-						}), /* @__PURE__ */ jsxs("div", { children: [
-							/* @__PURE__ */ jsxs("span", {
-								className: "text-[10px] uppercase tracking-wider text-[#c5a059] font-mono block",
-								children: [
-									prop.category,
-									" · ",
-									prop.city,
-									", ",
-									prop.country
-								]
+						className: "space-y-1.5",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "inline-flex items-center gap-2.5",
+								children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+									children: "Prime Holdings Registry"
+								})]
 							}),
-							/* @__PURE__ */ jsx("h3", {
-								className: "font-serif text-lg font-medium text-[#f7f5f2] group-hover:text-[#c5a059] transition-colors",
-								children: prop.title
+							/* @__PURE__ */ jsxs("h1", {
+								className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] tracking-tight",
+								children: ["Property ", /* @__PURE__ */ jsx("span", {
+									className: "text-[#DC1F26]",
+									children: "Portfolio"
+								})]
 							}),
-							/* @__PURE__ */ jsxs("p", {
-								className: "text-xs text-[#8a909a] font-mono mt-0.5",
-								children: [prop.bedrooms > 0 ? `${prop.bedrooms} Beds · ` : "", prop.interiorAreaSqFt ? `${prop.interiorAreaSqFt.toLocaleString()} sq ft` : ""]
+							/* @__PURE__ */ jsx("p", {
+								className: "text-sm text-slate-600",
+								children: "Verified residential estates, commercial landmarks, investment plots, and new developments."
 							})
-						] })]
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-between md:justify-end gap-6 w-full md:w-auto pt-3 md:pt-0 border-t md:border-0 border-[#1c232d]",
-						children: [/* @__PURE__ */ jsxs("div", {
-							className: "text-right",
-							children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[10px] text-[#737a85] uppercase block font-mono",
-								children: "Valuation"
-							}), /* @__PURE__ */ jsx("span", {
-								className: "font-mono text-base font-bold text-[#f7f5f2] tabular-nums",
-								children: formatPrice(prop.price, prop.currency)
-							})]
-						}), /* @__PURE__ */ jsxs("span", {
-							className: "px-3 py-1.5 bg-[#181f2a] group-hover:bg-[#c5a059] group-hover:text-[#0c0f12] text-xs font-semibold rounded-sm transition-colors text-[#d1d5db] flex items-center gap-1",
-							children: ["Inspect ", /* @__PURE__ */ jsx(ArrowRight, { className: "w-3 h-3" })]
-						})]
+						]
+					}), /* @__PURE__ */ jsx("div", {
+						className: "flex items-center gap-3",
+						children: /* @__PURE__ */ jsxs("button", {
+							type: "button",
+							onClick: () => {
+								setShowSavedOnly(!showSavedOnly);
+								setCurrentPage(1);
+							},
+							className: `flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all cursor-pointer border shadow-xs ${showSavedOnly ? "bg-[#DC1F26] text-white border-[#DC1F26]" : "bg-white text-[#0D2558] hover:border-[#0D2558] border-slate-200"}`,
+							children: [/* @__PURE__ */ jsx(Bookmark, {
+								className: "w-3.5 h-3.5",
+								fill: showSavedOnly ? "currentColor" : "none"
+							}), /* @__PURE__ */ jsxs("span", { children: [
+								"Saved Portfolio (",
+								savedIds.length,
+								")"
+							] })]
+						})
 					})]
-				}, prop.id))
-			}) : /* @__PURE__ */ jsxs("div", {
-				className: "text-center py-20 px-6 bg-[#101419] border border-[#202732] rounded-sm space-y-4 max-w-xl mx-auto my-12",
-				children: [
-					/* @__PURE__ */ jsx(Building2, { className: "w-12 h-12 text-[#64748b] mx-auto" }),
-					/* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-2xl font-medium text-[#f7f5f2]",
-						children: "No Holdings Match Your Criteria"
-					}),
-					/* @__PURE__ */ jsx("p", {
-						className: "text-xs text-[#8a909a] leading-relaxed max-w-sm mx-auto",
-						children: "Try adjusting your location, price boundaries, or bedroom thresholds to explore other available assets."
-					}),
-					/* @__PURE__ */ jsxs("button", {
-						onClick: handleReset,
-						className: "inline-flex items-center gap-2 px-5 py-2 bg-[#c5a059] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm hover:bg-[#d4af5f] transition-colors cursor-pointer",
-						children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }), "Clear All Filters"]
-					})
-				]
-			}),
-			totalPages > 1 && /* @__PURE__ */ jsxs("div", {
-				className: "flex items-center justify-center gap-2 pt-8 border-t border-[#1c232d]",
-				children: [
-					/* @__PURE__ */ jsx("button", {
-						onClick: () => setCurrentPage((p) => Math.max(1, p - 1)),
-						disabled: currentPage === 1,
-						className: "px-3 py-1.5 text-xs text-[#9ca3af] disabled:opacity-40 hover:text-white bg-[#14181d] border border-[#242b35] rounded-sm cursor-pointer disabled:cursor-not-allowed",
-						children: "Previous"
-					}),
-					Array.from({ length: totalPages }).map((_, idx) => /* @__PURE__ */ jsx("button", {
-						onClick: () => setCurrentPage(idx + 1),
-						className: `w-8 h-8 text-xs font-mono rounded-sm transition-colors cursor-pointer ${currentPage === idx + 1 ? "bg-[#c5a059] text-[#0c0f12] font-bold" : "bg-[#14181d] text-[#9ca3af] hover:text-white border border-[#242b35]"}`,
-						children: idx + 1
-					}, idx + 1)),
-					/* @__PURE__ */ jsx("button", {
-						onClick: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
-						disabled: currentPage === totalPages,
-						className: "px-3 py-1.5 text-xs text-[#9ca3af] disabled:opacity-40 hover:text-white bg-[#14181d] border border-[#242b35] rounded-sm cursor-pointer disabled:cursor-not-allowed",
-						children: "Next"
-					})
-				]
-			})
-		]
+				}),
+				/* @__PURE__ */ jsx(PropertyFilterBar, {
+					filters,
+					onChange: handleFilterChange,
+					onReset: handleReset,
+					totalResults: filteredProperties.length
+				}),
+				/* @__PURE__ */ jsx(LocationTabs, {
+					selectedLocation,
+					onSelectLocation: (loc) => {
+						setSelectedLocation(loc);
+						setCurrentPage(1);
+					},
+					properties: properties.filter((p) => filters.category === "All" || p.category === filters.category),
+					categoryTitle: filters.category === "All" ? "Portfolio" : filters.category
+				}),
+				paginatedProperties.length > 0 ? filters.viewMode === "grid" ? /* @__PURE__ */ jsx("div", {
+					className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+					children: paginatedProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
+						property: prop,
+						onSelect: onSelectProperty,
+						isSaved: savedIds.includes(prop.id),
+						onToggleSave
+					}, prop.id))
+				}) : /* @__PURE__ */ jsx("div", {
+					className: "space-y-4",
+					children: paginatedProperties.map((prop) => /* @__PURE__ */ jsxs(AppLink, {
+						href: `/property/${encodeURIComponent(prop.slug)}`,
+						onNavigate: () => onSelectProperty(prop),
+						className: "bg-white border border-slate-200/90 hover:border-[#163B8C]/40 hover:shadow-md transition-all p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer group",
+						children: [/* @__PURE__ */ jsxs("div", {
+							className: "flex items-center gap-4 w-full md:w-auto",
+							children: [/* @__PURE__ */ jsx("div", {
+								className: "w-28 h-20 shrink-0 bg-slate-100 rounded-xl overflow-hidden",
+								children: (() => {
+									const primaryImg = getPrimaryPropertyImage(prop);
+									return primaryImg.url ? /* @__PURE__ */ jsx("img", {
+										src: primaryImg.url,
+										alt: prop.title,
+										className: `w-full h-full transition-transform duration-500 ${primaryImg.isLogo ? "object-contain p-2 bg-[#0f141b]" : "object-cover group-hover:scale-105"}`
+									}) : null;
+								})()
+							}), /* @__PURE__ */ jsxs("div", { children: [
+								/* @__PURE__ */ jsx("span", {
+									className: "text-[11px] uppercase tracking-wider text-[#163B8C] font-bold block",
+									children: prop.category
+								}),
+								/* @__PURE__ */ jsx("h3", {
+									className: "text-base sm:text-lg font-extrabold text-[#0D2558] group-hover:text-[#163B8C] transition-colors",
+									children: prop.title
+								}),
+								/* @__PURE__ */ jsxs("p", {
+									className: "text-xs text-slate-500 flex items-center gap-1 mt-0.5",
+									children: [
+										/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#DC1F26] shrink-0" }),
+										/* @__PURE__ */ jsxs("span", { children: [
+											prop.city,
+											", ",
+											prop.country
+										] }),
+										prop.bedrooms > 0 ? ` · ${prop.bedrooms} Beds` : "",
+										prop.interiorAreaSqFt ? ` · ${prop.interiorAreaSqFt.toLocaleString()} Sq.Ft` : ""
+									]
+								})
+							] })]
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center justify-between md:justify-end gap-6 w-full md:w-auto pt-3 md:pt-0 border-t md:border-0 border-slate-100",
+							children: [/* @__PURE__ */ jsxs("div", {
+								className: "text-left md:text-right",
+								children: [/* @__PURE__ */ jsx("span", {
+									className: "text-[10px] text-slate-400 uppercase font-bold block",
+									children: "Valuation"
+								}), /* @__PURE__ */ jsx("span", {
+									className: "text-base font-extrabold text-[#0D2558] tabular-nums",
+									children: formatPrice(prop.price, prop.currency)
+								})]
+							}), /* @__PURE__ */ jsxs("span", {
+								className: "px-4 py-2 bg-[#0D2558] group-hover:bg-[#DC1F26] text-white text-xs font-bold rounded-full transition-colors flex items-center gap-1.5 shrink-0",
+								children: [/* @__PURE__ */ jsx("span", { children: "Inspect" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+							})]
+						})]
+					}, prop.id))
+				}) : /* @__PURE__ */ jsxs("div", {
+					className: "text-center py-20 px-6 bg-white border border-slate-200 rounded-2xl space-y-4 max-w-xl mx-auto my-12 shadow-xs",
+					children: [
+						/* @__PURE__ */ jsx(Building2, { className: "w-12 h-12 text-[#163B8C]/40 mx-auto" }),
+						/* @__PURE__ */ jsx("h3", {
+							className: "text-2xl font-extrabold text-[#0D2558]",
+							children: "No Holdings Match Your Criteria"
+						}),
+						/* @__PURE__ */ jsx("p", {
+							className: "text-sm text-slate-600 leading-relaxed max-w-sm mx-auto",
+							children: "Try adjusting your location, price boundaries, or bedroom thresholds to explore other available assets."
+						}),
+						/* @__PURE__ */ jsxs("button", {
+							type: "button",
+							onClick: handleReset,
+							className: "inline-flex items-center gap-2 px-6 py-2.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-colors cursor-pointer",
+							children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Clear All Filters" })]
+						})
+					]
+				}),
+				totalPages > 1 && /* @__PURE__ */ jsxs("div", {
+					className: "flex items-center justify-center gap-2 pt-8 border-t border-slate-200",
+					children: [
+						/* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => setCurrentPage((p) => Math.max(1, p - 1)),
+							disabled: currentPage === 1,
+							className: "px-4 py-2 text-xs font-bold text-[#0D2558] disabled:opacity-40 hover:bg-slate-100 bg-white border border-slate-200 rounded-full cursor-pointer disabled:cursor-not-allowed transition-colors",
+							children: "Previous"
+						}),
+						Array.from({ length: totalPages }).map((_, idx) => /* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => setCurrentPage(idx + 1),
+							className: `w-9 h-9 text-xs font-bold rounded-full transition-colors cursor-pointer ${currentPage === idx + 1 ? "bg-[#DC1F26] text-white shadow-sm" : "bg-white text-[#0D2558] hover:bg-slate-100 border border-slate-200"}`,
+							children: idx + 1
+						}, idx + 1)),
+						/* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
+							disabled: currentPage === totalPages,
+							className: "px-4 py-2 text-xs font-bold text-[#0D2558] disabled:opacity-40 hover:bg-slate-100 bg-white border border-slate-200 rounded-full cursor-pointer disabled:cursor-not-allowed transition-colors",
+							children: "Next"
+						})
+					]
+				})
+			]
+		})
 	});
 };
 // src/components/property/BrochureModal.tsx
@@ -5547,49 +6027,56 @@ var BrochureModal = ({ property, isOpen, onClose }) => {
 		setTimeout(() => setDownloaded(false), 3e3);
 	};
 	return /* @__PURE__ */ jsx("div", {
-		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto",
+		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1F4B]/75 backdrop-blur-sm overflow-y-auto",
 		children: /* @__PURE__ */ jsxs("div", {
-			className: "relative w-full max-w-4xl bg-[#0f1318] border border-[#2c3645] text-[#f7f5f2] rounded-sm shadow-2xl overflow-hidden my-8",
+			className: "relative w-full max-w-4xl bg-white border border-slate-200 text-[#0D2558] rounded-2xl shadow-2xl overflow-hidden my-8",
 			children: [/* @__PURE__ */ jsxs("div", {
-				className: "flex items-center justify-between px-6 py-4 bg-[#141a22] border-b border-[#242c38]",
+				className: "flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-[#0D2558] text-white",
 				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-3",
-					children: [/* @__PURE__ */ jsx("img", {
-						src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
-						alt: "BUILDsmore",
-						className: "w-9 h-9 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm"
+					children: [/* @__PURE__ */ jsx("div", {
+						className: "p-0.5 rounded-lg bg-[#0c0f12] border border-[#c5a059]/60",
+						children: /* @__PURE__ */ jsx("img", {
+							src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
+							alt: "BUILDsmore",
+							className: "w-9 h-9 rounded-md object-cover block"
+						})
 					}), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "font-serif text-base tracking-widest text-[#c5a059] uppercase font-bold block leading-none",
+						className: "text-base tracking-tight text-white font-extrabold block leading-none",
 						children: "BUILDsmore"
 					}), /* @__PURE__ */ jsx("span", {
-						className: "text-[9px] text-[#8a909a] font-mono uppercase mt-0.5 block",
+						className: "text-[10px] text-sky-200 font-semibold uppercase mt-0.5 block",
 						children: "Let's Grow Together · Concierge: 977-987-8303"
 					})] })]
 				}), /* @__PURE__ */ jsxs("div", {
-					className: "flex items-center gap-3",
+					className: "flex items-center gap-2.5",
 					children: [
 						/* @__PURE__ */ jsxs("button", {
+							type: "button",
 							onClick: handlePrint,
-							className: "flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#d1d5db] hover:text-[#f7f5f2] bg-[#1a212c] rounded-sm transition-colors cursor-pointer",
+							className: "flex items-center gap-1.5 px-3.5 py-2 text-xs text-white bg-white/15 hover:bg-white/25 font-semibold rounded-full transition-colors cursor-pointer",
 							children: [/* @__PURE__ */ jsx(Printer, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Print Dossier" })]
 						}),
 						/* @__PURE__ */ jsxs("button", {
+							type: "button",
 							onClick: handleDownload,
-							className: "flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#0c0f12] bg-[#c5a059] hover:bg-[#d4af5f] font-medium rounded-sm transition-colors cursor-pointer",
+							className: "flex items-center gap-1.5 px-4 py-2 text-xs text-white bg-[#DC1F26] hover:bg-[#B91C1C] font-bold rounded-full transition-colors cursor-pointer",
 							children: [downloaded ? /* @__PURE__ */ jsx(CheckCircle2, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx(Download, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: downloaded ? "Brochure Generated" : "Save PDF" })]
 						}),
 						/* @__PURE__ */ jsx("button", {
+							type: "button",
 							onClick: onClose,
-							className: "p-1.5 text-[#8a909a] hover:text-[#f7f5f2] rounded-sm transition-colors cursor-pointer",
+							className: "p-1.5 text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer",
+							"aria-label": "Close brochure",
 							children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
 						})
 					]
 				})]
 			}), /* @__PURE__ */ jsxs("div", {
-				className: "p-8 space-y-8 max-h-[80vh] overflow-y-auto",
+				className: "p-6 sm:p-8 space-y-8 max-h-[80vh] overflow-y-auto",
 				children: [
 					/* @__PURE__ */ jsxs("div", {
-						className: "relative aspect-[16/9] w-full overflow-hidden rounded-sm bg-[#181f29]",
+						className: "relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-slate-100",
 						children: [
 							(() => {
 								const primaryImg = getPrimaryPropertyImage(property);
@@ -5599,22 +6086,22 @@ var BrochureModal = ({ property, isOpen, onClose }) => {
 									className: `w-full h-full ${primaryImg.isLogo ? "object-contain p-10 bg-[#0f141b]" : "object-cover"}`
 								});
 							})(),
-							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" }),
+							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0D2558]/90 via-[#0D2558]/20 to-transparent" }),
 							/* @__PURE__ */ jsxs("div", {
-								className: "absolute bottom-6 left-6 right-6 flex items-end justify-between",
+								className: "absolute bottom-5 left-5 right-5 flex flex-col sm:flex-row sm:items-end justify-between gap-3",
 								children: [/* @__PURE__ */ jsxs("div", { children: [
 									/* @__PURE__ */ jsx("span", {
-										className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
+										className: "text-[11px] font-bold uppercase tracking-[0.16em] text-sky-200 block mb-1",
 										children: "Confidential Property Dossier"
 									}),
 									/* @__PURE__ */ jsx("h2", {
-										className: "font-serif text-3xl font-medium text-white",
+										className: "text-2xl sm:text-3xl font-extrabold text-white",
 										children: property.title
 									}),
 									/* @__PURE__ */ jsxs("p", {
-										className: "text-xs text-[#d1d5db] flex items-center gap-1.5 mt-1",
+										className: "text-xs text-slate-200 flex items-center gap-1.5 mt-1",
 										children: [
-											/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
+											/* @__PURE__ */ jsx(MapPin, { className: "w-3.5 h-3.5 text-[#DC1F26]" }),
 											property.address,
 											", ",
 											property.city,
@@ -5623,12 +6110,12 @@ var BrochureModal = ({ property, isOpen, onClose }) => {
 										]
 									})
 								] }), /* @__PURE__ */ jsxs("div", {
-									className: "text-right",
+									className: "sm:text-right",
 									children: [/* @__PURE__ */ jsx("span", {
-										className: "text-xs text-[#9ca3af] uppercase tracking-wider block font-mono",
+										className: "text-[11px] text-sky-200 uppercase tracking-wider block font-bold",
 										children: "Valuation"
 									}), /* @__PURE__ */ jsx("span", {
-										className: "font-serif text-2xl font-bold text-white font-mono tabular-nums",
+										className: "text-2xl font-extrabold text-white tabular-nums",
 										children: formatPrice(property.price, property.currency)
 									})]
 								})]
@@ -5636,80 +6123,83 @@ var BrochureModal = ({ property, isOpen, onClose }) => {
 						]
 					}),
 					/* @__PURE__ */ jsxs("div", {
-						className: "grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[#141922] border border-[#242b36] rounded-sm text-center",
+						className: "grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[#F7F9FC] border border-slate-200 rounded-xl text-center",
 						children: [
 							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
+								className: "text-[11px] text-slate-500 uppercase tracking-wider font-bold block",
 								children: "Bedrooms"
 							}), /* @__PURE__ */ jsx("span", {
-								className: "text-lg font-semibold text-[#f7f5f2] font-mono",
+								className: "text-lg font-extrabold text-[#0D2558]",
 								children: property.bedrooms || "Bespoke"
 							})] }),
 							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
+								className: "text-[11px] text-slate-500 uppercase tracking-wider font-bold block",
 								children: "Bathrooms"
 							}), /* @__PURE__ */ jsx("span", {
-								className: "text-lg font-semibold text-[#f7f5f2] font-mono",
+								className: "text-lg font-extrabold text-[#0D2558]",
 								children: property.bathrooms || "En-Suite"
 							})] }),
 							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
+								className: "text-[11px] text-slate-500 uppercase tracking-wider font-bold block",
 								children: "Interior Living"
 							}), /* @__PURE__ */ jsx("span", {
-								className: "text-lg font-semibold text-[#f7f5f2] font-mono",
-								children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} sq ft` : "Commercial"
+								className: "text-lg font-extrabold text-[#0D2558]",
+								children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} Sq.Ft` : "Commercial"
 							})] }),
 							/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block",
+								className: "text-[11px] text-slate-500 uppercase tracking-wider font-bold block",
 								children: "Energy Rating"
 							}), /* @__PURE__ */ jsx("span", {
-								className: "text-lg font-semibold text-[#c5a059] font-mono",
+								className: "text-lg font-extrabold text-[#DC1F26]",
 								children: property.energyRating || "A+ Certified"
 							})] })
 						]
 					}),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-xl font-medium text-[#f7f5f2] mb-3",
+						className: "text-xl font-extrabold text-[#0D2558] mb-2.5",
 						children: "Architectural Overview & Narrative"
 					}), /* @__PURE__ */ jsx("p", {
-						className: "text-sm text-[#9ca3af] leading-relaxed font-light",
+						className: "text-sm text-slate-600 leading-relaxed",
 						children: property.description
 					})] }),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-lg font-medium text-[#f7f5f2] mb-3",
+						className: "text-lg font-extrabold text-[#0D2558] mb-3",
 						children: "Technical Specifications & Building Covenants"
 					}), /* @__PURE__ */ jsx("div", {
 						className: "grid grid-cols-1 md:grid-cols-2 gap-3 text-xs",
 						children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxs("div", {
-							className: "flex justify-between py-2 border-b border-[#202732]",
+							className: "flex justify-between py-2 border-b border-slate-200",
 							children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[#8a909a] font-mono",
+								className: "text-slate-500 font-semibold",
 								children: key
 							}), /* @__PURE__ */ jsx("span", {
-								className: "text-[#f7f5f2] font-medium text-right",
+								className: "text-[#0D2558] font-bold text-right",
 								children: val
 							})]
 						}, key))
 					})] }),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-lg font-medium text-[#f7f5f2] mb-3",
+						className: "text-lg font-extrabold text-[#0D2558] mb-3",
 						children: "Private Amenities & Estate Features"
 					}), /* @__PURE__ */ jsx("div", {
-						className: "grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs text-[#d1d5db]",
+						className: "grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs text-slate-700",
 						children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxs("div", {
-							className: "flex items-center gap-2 py-1",
-							children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: amenity })]
+							className: "flex items-center gap-2 py-1 font-medium",
+							children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-[#163B8C] shrink-0" }), /* @__PURE__ */ jsx("span", { children: amenity })]
 						}, idx))
 					})] }),
 					/* @__PURE__ */ jsxs("div", {
-						className: "pt-6 border-t border-[#202732] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#6b7280]",
-						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", { children: "BUILDsmore Private Portfolio Advisory · Direct Hotline: 977-987-8303 · info@buildsmoremohali.com" }), /* @__PURE__ */ jsx("p", {
+						className: "pt-6 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500",
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", {
+							className: "font-semibold text-[#0D2558]",
+							children: "BUILDsmore Private Portfolio Advisory · Direct Hotline: 977-987-8303 · info@buildsmoremohali.com"
+						}), /* @__PURE__ */ jsx("p", {
 							className: "mt-0.5",
 							children: "Strictly confidential. Issued for private client inspection only under mutual NDA."
 						})] }), /* @__PURE__ */ jsx("div", {
 							className: "text-right",
 							children: /* @__PURE__ */ jsx("span", {
-								className: "font-serif text-[#c5a059] tracking-widest uppercase",
+								className: "px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold uppercase tracking-wider text-[11px]",
 								children: "Verified Title Deed"
 							})
 						})]
@@ -5732,18 +6222,21 @@ var MortgageCalculator = ({ propertyPrice }) => {
 	const monthlyPayment = monthlyRate > 0 && totalMonths > 0 ? loanPrincipal * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1) : 0;
 	const estimatedTransferDuty = propertyPrice * .05;
 	return /* @__PURE__ */ jsxs("div", {
-		className: "bg-[#12161d] border border-[#222b37] p-6 rounded-sm space-y-6",
+		className: "bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-xs space-y-6",
 		children: [
 			/* @__PURE__ */ jsxs("div", {
-				className: "flex items-center justify-between pb-4 border-b border-[#202733]",
+				className: "flex items-center justify-between pb-4 border-b border-slate-100",
 				children: [/* @__PURE__ */ jsxs("div", {
 					className: "flex items-center gap-2.5",
-					children: [/* @__PURE__ */ jsx(Calculator, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-lg font-medium text-[#f7f5f2]",
+					children: [/* @__PURE__ */ jsx("div", {
+						className: "w-8 h-8 rounded-lg bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center",
+						children: /* @__PURE__ */ jsx(Calculator, { className: "w-4 h-4" })
+					}), /* @__PURE__ */ jsx("h3", {
+						className: "text-lg font-extrabold text-[#0D2558]",
 						children: "Private Wealth Financing Estimator"
 					})]
 				}), /* @__PURE__ */ jsx("span", {
-					className: "text-[11px] font-mono text-[#8a909a] uppercase tracking-wider",
+					className: "text-[11px] font-bold text-[#163B8C] uppercase tracking-wider",
 					children: "Private Bank Terms"
 				})]
 			}),
@@ -5756,10 +6249,10 @@ var MortgageCalculator = ({ propertyPrice }) => {
 							/* @__PURE__ */ jsxs("div", {
 								className: "flex justify-between text-xs",
 								children: [/* @__PURE__ */ jsx("span", {
-									className: "text-[#8a909a]",
+									className: "text-slate-600 font-medium",
 									children: "Equity Down Payment"
 								}), /* @__PURE__ */ jsxs("span", {
-									className: "text-[#f7f5f2] font-mono font-semibold",
+									className: "text-[#0D2558] font-extrabold",
 									children: [downPaymentPercent, "%"]
 								})]
 							}),
@@ -5770,10 +6263,10 @@ var MortgageCalculator = ({ propertyPrice }) => {
 								step: "5",
 								value: downPaymentPercent,
 								onChange: (e) => setDownPaymentPercent(parseInt(e.target.value, 10)),
-								className: "w-full accent-[#c5a059] cursor-pointer"
+								className: "w-full accent-[#DC1F26] cursor-pointer"
 							}),
 							/* @__PURE__ */ jsx("div", {
-								className: "text-[11px] font-mono text-[#737a85] text-right tabular-nums",
+								className: "text-[11px] font-semibold text-slate-500 text-right tabular-nums",
 								children: formatPrice(downPaymentAmount)
 							})
 						]
@@ -5784,10 +6277,10 @@ var MortgageCalculator = ({ propertyPrice }) => {
 							/* @__PURE__ */ jsxs("div", {
 								className: "flex justify-between text-xs",
 								children: [/* @__PURE__ */ jsx("span", {
-									className: "text-[#8a909a]",
-									children: "Interest Rate (Fixed/LTV)"
+									className: "text-slate-600 font-medium",
+									children: "Interest Rate"
 								}), /* @__PURE__ */ jsxs("span", {
-									className: "text-[#f7f5f2] font-mono font-semibold",
+									className: "text-[#0D2558] font-extrabold",
 									children: [interestRate, "%"]
 								})]
 							}),
@@ -5798,10 +6291,10 @@ var MortgageCalculator = ({ propertyPrice }) => {
 								step: "0.1",
 								value: interestRate,
 								onChange: (e) => setInterestRate(parseFloat(e.target.value)),
-								className: "w-full accent-[#c5a059] cursor-pointer"
+								className: "w-full accent-[#DC1F26] cursor-pointer"
 							}),
 							/* @__PURE__ */ jsx("div", {
-								className: "text-[11px] font-mono text-[#737a85] text-right",
+								className: "text-[11px] font-medium text-slate-500 text-right",
 								children: "Lombard & Structured Credit"
 							})
 						]
@@ -5811,16 +6304,16 @@ var MortgageCalculator = ({ propertyPrice }) => {
 						children: [/* @__PURE__ */ jsxs("div", {
 							className: "flex justify-between text-xs",
 							children: [/* @__PURE__ */ jsx("span", {
-								className: "text-[#8a909a]",
+								className: "text-slate-600 font-medium",
 								children: "Repayment Horizon"
 							}), /* @__PURE__ */ jsxs("span", {
-								className: "text-[#f7f5f2] font-mono font-semibold",
+								className: "text-[#0D2558] font-extrabold",
 								children: [loanTermYears, " Years"]
 							})]
 						}), /* @__PURE__ */ jsxs("select", {
 							value: loanTermYears,
 							onChange: (e) => setLoanTermYears(parseInt(e.target.value, 10)),
-							className: "w-full bg-[#181f2a] border border-[#283342] text-[#f7f5f2] text-xs rounded-sm px-3 py-1.5 focus:outline-none cursor-pointer",
+							className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] text-[#0D2558] font-semibold text-xs rounded-xl px-3 py-2 focus:outline-none cursor-pointer",
 							children: [
 								/* @__PURE__ */ jsx("option", {
 									value: "15",
@@ -5844,30 +6337,30 @@ var MortgageCalculator = ({ propertyPrice }) => {
 				]
 			}),
 			/* @__PURE__ */ jsxs("div", {
-				className: "grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-[#202733] bg-[#0e1217] p-4 rounded-sm",
+				className: "grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#F7F9FC] border border-slate-200/80 p-4 rounded-xl",
 				children: [
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block",
+						className: "text-[10px] uppercase font-bold tracking-wider text-slate-500 block",
 						children: "Estimated Monthly Service"
 					}), /* @__PURE__ */ jsxs("span", {
-						className: "text-xl font-bold font-serif text-[#c5a059] font-mono tabular-nums",
+						className: "text-xl font-extrabold text-[#DC1F26] tabular-nums",
 						children: [formatPrice(Math.round(monthlyPayment)), /* @__PURE__ */ jsx("span", {
-							className: "text-xs text-[#8a909a] font-sans font-normal ml-1",
+							className: "text-xs text-slate-500 font-medium ml-1",
 							children: "/mo"
 						})]
 					})] }),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block",
+						className: "text-[10px] uppercase font-bold tracking-wider text-slate-500 block",
 						children: "Loan Principal Amount"
 					}), /* @__PURE__ */ jsx("span", {
-						className: "text-sm font-semibold text-[#f7f5f2] font-mono tabular-nums",
+						className: "text-sm font-extrabold text-[#0D2558] tabular-nums block mt-1",
 						children: formatPrice(loanPrincipal)
 					})] }),
 					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block",
+						className: "text-[10px] uppercase font-bold tracking-wider text-slate-500 block",
 						children: "Est. Transfer & Legal Duty (5%)"
 					}), /* @__PURE__ */ jsx("span", {
-						className: "text-sm font-semibold text-[#f7f5f2] font-mono tabular-nums",
+						className: "text-sm font-extrabold text-[#0D2558] tabular-nums block mt-1",
 						children: formatPrice(estimatedTransferDuty)
 					})] })
 				]
@@ -6512,7 +7005,7 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 	const [email, setEmail] = useState("");
 	const [phone, setPhone] = useState("");
 	const [preferredContact, setPreferredContact] = useState("email");
-	const [investmentBudget, setInvestmentBudget] = useState("");
+	const [investmentBudget] = useState("");
 	const [tourDate, setTourDate] = useState("");
 	const [message, setMessage] = useState("");
 	const [honeypot, setHoneypot] = useState("");
@@ -6597,711 +7090,733 @@ var PropertyDetailPage = ({ property, onBack, onNavigateCategory, onNavigate, is
 			setTimeout(() => setShareCopied(false), 2500);
 		}
 	};
-	return /* @__PURE__ */ jsxs("div", {
-		className: "max-w-7xl mx-auto px-6 py-8 space-y-12",
-		children: [
-			/* @__PURE__ */ jsxs("div", {
-				className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202732] text-xs",
-				children: [/* @__PURE__ */ jsx(Breadcrumbs, {
-					items: [
-						{
-							label: "Home",
-							href: "/"
-						},
-						{
-							label: "Portfolio",
-							href: "/properties"
-						},
-						{
-							label: property.category,
-							href: getCategoryRoute(property.category)
-						},
-						{ label: property.title }
-					],
-					onNavigate: (targetPath) => {
-						if (onNavigate) onNavigate(targetPath);
-						else if (targetPath === "/properties") onBack();
-						else if (targetPath.startsWith("/category/")) onNavigateCategory(property.category);
-					}
-				}), /* @__PURE__ */ jsxs("div", {
-					className: "flex items-center gap-3",
-					children: [
-						/* @__PURE__ */ jsxs("button", {
-							onClick: () => setBrochureOpen(true),
-							className: "flex items-center gap-1.5 px-3 py-1.5 bg-[#14181d] border border-[#242b35] hover:border-[#c5a059] text-[#f7f5f2] rounded-sm transition-colors cursor-pointer",
-							children: [/* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Brochure" })]
-						}),
-						/* @__PURE__ */ jsxs("button", {
-							onClick: handleShare,
-							className: "flex items-center gap-1.5 px-3 py-1.5 bg-[#14181d] border border-[#242b35] hover:border-[#c5a059] text-[#f7f5f2] rounded-sm transition-colors cursor-pointer",
-							children: [/* @__PURE__ */ jsx(Share2, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: shareCopied ? "Link Copied" : "Share" })]
-						}),
-						/* @__PURE__ */ jsxs("button", {
-							onClick: (e) => onToggleSave(property.id, e),
-							className: `flex items-center gap-1.5 px-3 py-1.5 border rounded-sm transition-colors cursor-pointer ${isSaved ? "bg-[#c5a059] text-[#0c0f12] font-semibold border-[#c5a059]" : "bg-[#14181d] border-[#242b35] text-[#f7f5f2] hover:border-[#c5a059]"}`,
-							children: [/* @__PURE__ */ jsx(Bookmark, {
-								className: "w-3.5 h-3.5",
-								fill: isSaved ? "currentColor" : "none"
-							}), /* @__PURE__ */ jsx("span", { children: isSaved ? "Saved" : "Save" })]
-						})
-					]
-				})]
-			}),
-			/* @__PURE__ */ jsxs("div", {
-				className: "flex flex-col lg:flex-row lg:items-end justify-between gap-6",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "space-y-2 max-w-3xl",
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "flex flex-wrap items-center gap-2",
-							children: [
-								/* @__PURE__ */ jsxs("span", {
-									className: "text-xs uppercase font-mono tracking-[0.2em] text-[#c5a059] block",
-									children: [
-										property.propertyType,
-										" · ",
-										property.category
-									]
-								}),
-								property.developerName && /* @__PURE__ */ jsxs("span", {
-									className: "text-xs font-mono px-2.5 py-0.5 rounded-sm bg-[#161c24] border border-[#2a3442] text-[#c5a059] flex items-center gap-1",
-									children: [/* @__PURE__ */ jsx(Building, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: ["By ", property.developerName] })]
-								}),
-								property.reraNumber && /* @__PURE__ */ jsxs("span", {
-									className: "text-xs font-mono px-2.5 py-0.5 rounded-sm bg-[#111a14] border border-emerald-900/60 text-emerald-300 flex items-center gap-1",
-									children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3 h-3 text-emerald-400" }), /* @__PURE__ */ jsxs("span", { children: ["RERA: ", property.reraNumber] })]
-								})
-							]
-						}),
-						/* @__PURE__ */ jsx("h1", {
-							className: "font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#f7f5f2] leading-tight",
-							children: property.title
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "flex flex-wrap items-center gap-4 text-sm text-[#9ca3af] font-light",
-							children: [/* @__PURE__ */ jsxs("p", {
-								className: "flex items-center gap-2",
-								children: [/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsxs("span", { children: [
-									property.address,
-									property.locality ? `, ${property.locality}` : "",
-									", ",
-									property.city,
-									", ",
-									property.country
-								] })]
-							}), property.source?.sourceUrl && /* @__PURE__ */ jsxs("a", {
-								href: property.source.sourceUrl,
-								target: "_blank",
-								rel: "noopener noreferrer",
-								className: "text-xs text-[#c5a059] hover:underline flex items-center gap-1 font-mono",
-								children: [/* @__PURE__ */ jsx("span", { children: "Partner Source Website" }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3" })]
-							})]
-						})
-					]
-				}), /* @__PURE__ */ jsxs("div", {
-					className: "lg:text-right bg-[#12161d] p-5 rounded-sm border border-[#202732] shrink-0",
-					children: [
-						/* @__PURE__ */ jsx("span", {
-							className: "text-[11px] uppercase tracking-wider text-[#8a909a] font-mono block",
-							children: "Acquisition Asking Price"
-						}),
-						/* @__PURE__ */ jsx("span", {
-							className: "font-serif text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums",
-							children: formatPrice(property.price, property.currency)
-						}),
-						property.originalPriceText ? /* @__PURE__ */ jsxs("span", {
-							className: "text-[11px] text-[#737a85] font-mono block mt-1",
-							children: ["Source Listing: ", property.originalPriceText]
-						}) : /* @__PURE__ */ jsx("span", {
-							className: "text-[11px] text-[#737a85] font-mono block mt-1",
-							children: "Verified Direct Valuation (INR)"
-						})
-					]
-				})]
-			}),
-			/* @__PURE__ */ jsxs("div", {
-				className: "space-y-4",
-				children: [/* @__PURE__ */ jsxs("div", {
-					onClick: () => setLightboxOpen(true),
-					className: `relative aspect-[16/9] w-full max-h-[640px] rounded-sm overflow-hidden border border-[#242b35] cursor-zoom-in group ${isCurrentLogo ? "bg-[#0f141b]" : "bg-[#14181d]"}`,
-					children: [
-						/* @__PURE__ */ jsx("img", {
-							src: currentImage.url,
-							alt: currentImage.caption || property.title,
-							className: isCurrentLogo ? "w-full h-full object-contain p-12 transition-transform duration-500 group-hover:scale-[1.02]" : "w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-						}),
-						/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" }),
-						images.length > 1 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("button", {
-							onClick: (e) => {
-								e.stopPropagation();
-								setActiveImageIndex((prev) => prev > 0 ? prev - 1 : images.length - 1);
+	return /* @__PURE__ */ jsx("div", {
+		className: "bg-[#F7F9FC] min-h-screen",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10",
+			children: [
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 text-xs",
+					children: [/* @__PURE__ */ jsx(Breadcrumbs, {
+						items: [
+							{
+								label: "Home",
+								href: "/"
 							},
-							className: "absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-[#c5a059] text-white hover:text-black flex items-center justify-center transition-colors cursor-pointer",
-							"aria-label": "Previous photo",
-							children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-5 h-5" })
-						}), /* @__PURE__ */ jsx("button", {
-							onClick: (e) => {
-								e.stopPropagation();
-								setActiveImageIndex((prev) => prev < images.length - 1 ? prev + 1 : 0);
+							{
+								label: "Portfolio",
+								href: "/properties"
 							},
-							className: "absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-[#c5a059] text-white hover:text-black flex items-center justify-center transition-colors cursor-pointer",
-							"aria-label": "Next photo",
-							children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-5 h-5" })
-						})] }),
-						/* @__PURE__ */ jsxs("div", {
-							className: "absolute bottom-4 left-6 right-6 flex items-center justify-between text-xs text-white",
-							children: [/* @__PURE__ */ jsx("span", {
-								className: "font-light truncate max-w-md",
-								children: currentImage.caption || property.subtitle
-							}), /* @__PURE__ */ jsxs("span", {
-								className: "flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-sm font-mono text-[11px]",
+							{
+								label: property.category,
+								href: getCategoryRoute(property.category)
+							},
+							{ label: property.title }
+						],
+						onNavigate: (targetPath) => {
+							if (onNavigate) onNavigate(targetPath);
+							else if (targetPath === "/properties") onBack();
+							else if (targetPath.startsWith("/category/")) onNavigateCategory(property.category);
+						}
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "flex items-center gap-2.5",
+						children: [
+							/* @__PURE__ */ jsxs("button", {
+								type: "button",
+								onClick: () => setBrochureOpen(true),
+								className: "flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:border-[#0D2558] text-[#0D2558] font-semibold rounded-full transition-colors cursor-pointer shadow-xs",
+								children: [/* @__PURE__ */ jsx(FileText, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "Brochure" })]
+							}),
+							/* @__PURE__ */ jsxs("button", {
+								type: "button",
+								onClick: handleShare,
+								className: "flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:border-[#0D2558] text-[#0D2558] font-semibold rounded-full transition-colors cursor-pointer shadow-xs",
+								children: [/* @__PURE__ */ jsx(Share2, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: shareCopied ? "Link Copied" : "Share" })]
+							}),
+							/* @__PURE__ */ jsxs("button", {
+								type: "button",
+								onClick: (e) => onToggleSave(property.id, e),
+								className: `flex items-center gap-1.5 px-3.5 py-2 border font-bold rounded-full transition-colors cursor-pointer shadow-xs ${isSaved ? "bg-[#DC1F26] text-white border-[#DC1F26]" : "bg-white border-slate-200 text-[#0D2558] hover:border-[#DC1F26]"}`,
+								children: [/* @__PURE__ */ jsx(Bookmark, {
+									className: "w-3.5 h-3.5",
+									fill: isSaved ? "currentColor" : "none"
+								}), /* @__PURE__ */ jsx("span", { children: isSaved ? "Saved" : "Save" })]
+							})
+						]
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex flex-col lg:flex-row lg:items-end justify-between gap-6",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "space-y-2.5 max-w-3xl",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-wrap items-center gap-2",
 								children: [
-									/* @__PURE__ */ jsx(Maximize2, { className: "w-3.5 h-3.5" }),
-									activeImageIndex + 1,
-									" of ",
-									images.length
-								]
-							})]
-						})
-					]
-				}), images.length > 1 && /* @__PURE__ */ jsx("div", {
-					className: "flex items-center gap-3 overflow-x-auto pb-2",
-					children: images.map((img, idx) => /* @__PURE__ */ jsx("button", {
-						onClick: () => setActiveImageIndex(idx),
-						className: `relative w-28 h-20 shrink-0 rounded-sm overflow-hidden border-2 transition-all cursor-pointer ${activeImageIndex === idx ? "border-[#c5a059] opacity-100" : "border-[#242b35] opacity-50 hover:opacity-80"}`,
-						children: /* @__PURE__ */ jsx("img", {
-							src: img.url,
-							alt: `Thumbnail ${idx + 1}`,
-							className: "w-full h-full object-cover"
-						})
-					}, img.id || idx))
-				})]
-			}),
-			/* @__PURE__ */ jsxs("div", {
-				className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-6 bg-[#101419] border border-[#202732] rounded-sm text-center",
-				children: [
-					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
-						children: "Bedrooms"
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsx(Bed, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.bedrooms || "Bespoke" })]
-					})] }),
-					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
-						children: "Bathrooms"
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsx(Bath, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.bathrooms || "En-Suite" })]
-					})] }),
-					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
-						children: "Interior Living"
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsx(Maximize2, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} sq ft` : "Commercial" })]
-					})] }),
-					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
-						children: "Private Lot"
-					}), /* @__PURE__ */ jsx("div", {
-						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: /* @__PURE__ */ jsx("span", { children: property.lotSizeAcres ? `${property.lotSizeAcres} Acres` : "Urban" })
-					})] }),
-					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
-						children: "Secure Parking"
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#f7f5f2] font-mono",
-						children: [/* @__PURE__ */ jsx(Car, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsxs("span", { children: [property.parkingSpaces || 2, " Bays"] })]
-					})] }),
-					/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-[10px] uppercase font-mono tracking-wider text-[#8a909a] block mb-1",
-						children: "Energy Rating"
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-center gap-1.5 text-base font-semibold text-[#c5a059] font-mono",
-						children: [/* @__PURE__ */ jsx(Zap, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: property.energyRating || "A+" })]
-					})] })
-				]
-			}),
-			/* @__PURE__ */ jsxs("div", {
-				className: "grid grid-cols-1 lg:grid-cols-12 gap-12 items-start",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "lg:col-span-7 space-y-10",
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "space-y-4",
-							children: [/* @__PURE__ */ jsx("h2", {
-								className: "font-serif text-2xl font-normal text-[#f7f5f2]",
-								children: "Architectural Profile & Residence Overview"
-							}), /* @__PURE__ */ jsx("p", {
-								className: "text-sm text-[#cbd5e1] leading-relaxed font-light whitespace-pre-line",
-								children: property.description
-							})]
-						}),
-						property.highlights && property.highlights.length > 0 && /* @__PURE__ */ jsxs("div", {
-							className: "space-y-3 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxs("h3", {
-								className: "font-serif text-xl font-normal text-[#f7f5f2] flex items-center gap-2",
-								children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-4 h-4 text-[#c5a059]" }), "Key Architectural Highlights"]
-							}), /* @__PURE__ */ jsx("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5",
-								children: property.highlights.map((h, i) => /* @__PURE__ */ jsxs("div", {
-									className: "flex items-start gap-2 bg-[#12161d] p-3 rounded-sm border border-[#202732]",
-									children: [/* @__PURE__ */ jsx("span", {
-										className: "text-[#c5a059] font-mono font-bold text-xs mt-0.5",
-										children: "•"
-									}), /* @__PURE__ */ jsx("span", {
-										className: "text-xs text-[#e2e8f0] font-light leading-snug",
-										children: h
-									})]
-								}, i))
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsx("h3", {
-								className: "font-serif text-xl font-normal text-[#f7f5f2]",
-								children: "Verified Estate Amenities"
-							}), /* @__PURE__ */ jsx("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#d1d5db]",
-								children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxs("div", {
-									className: "flex items-center gap-2.5 p-2 bg-[#12161d] border border-[#202732] rounded-sm",
-									children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-4 h-4 text-[#c5a059] shrink-0" }), /* @__PURE__ */ jsx("span", { children: amenity })]
-								}, idx))
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsx("h3", {
-								className: "font-serif text-xl font-normal text-[#f7f5f2]",
-								children: "Building & Material Specifications"
-							}), /* @__PURE__ */ jsx("div", {
-								className: "bg-[#101419] border border-[#202732] rounded-sm p-4 text-xs divide-y divide-[#1c232d]",
-								children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxs("div", {
-									className: "flex justify-between py-2.5",
-									children: [/* @__PURE__ */ jsx("span", {
-										className: "text-[#8a909a] font-mono",
-										children: key
-									}), /* @__PURE__ */ jsx("span", {
-										className: "text-[#f7f5f2] font-medium text-right max-w-xs",
-										children: val
-									})]
-								}, key))
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxs("div", {
-								className: "flex items-center justify-between",
-								children: [/* @__PURE__ */ jsx("h3", {
-									className: "font-serif text-xl font-normal text-[#f7f5f2]",
-									children: "Location & Luxury Infrastructure"
-								}), /* @__PURE__ */ jsxs("span", {
-									className: "text-xs font-mono text-[#8a909a]",
-									children: [
-										property.coordinates.lat.toFixed(4),
-										"° N, ",
-										property.coordinates.lng.toFixed(4),
-										"° E"
-									]
-								})]
-							}), /* @__PURE__ */ jsxs("div", {
-								className: "relative aspect-[16/9] w-full rounded-sm overflow-hidden border border-[#242b35] bg-[#141a22] flex flex-col items-center justify-center p-8 text-center",
-								children: [
-									/* @__PURE__ */ jsx("div", { className: "absolute inset-0 opacity-20 bg-[radial-gradient(#c5a059_1px,transparent_1px)] [background-size:16px_16px]" }),
-									/* @__PURE__ */ jsxs("div", {
-										className: "relative z-10 space-y-3",
+									/* @__PURE__ */ jsxs("span", {
+										className: "px-3 py-1 rounded-full bg-[#0D2558] text-white text-[11px] font-bold uppercase tracking-wider",
 										children: [
-											/* @__PURE__ */ jsx("div", {
-												className: "w-12 h-12 rounded-full bg-[#c5a059]/20 border border-[#c5a059] flex items-center justify-center text-[#c5a059] mx-auto animate-pulse",
-												children: /* @__PURE__ */ jsx(Compass, { className: "w-6 h-6" })
-											}),
-											/* @__PURE__ */ jsxs("h4", {
-												className: "font-serif text-lg font-medium text-[#f7f5f2]",
-												children: [
-													property.city,
-													", ",
-													property.country
-												]
-											}),
-											/* @__PURE__ */ jsx("p", {
-												className: "text-xs text-[#8a909a] max-w-sm",
-												children: property.address
-											})
+											property.propertyType,
+											" · ",
+											property.category
 										]
 									}),
-									/* @__PURE__ */ jsxs("div", {
-										className: "absolute bottom-4 left-4 right-4 grid grid-cols-3 gap-2 text-[10px] text-[#cbd5e1] font-mono",
-										children: [
-											/* @__PURE__ */ jsxs("div", {
-												className: "bg-[#0c0f12]/80 backdrop-blur-sm p-2 rounded-sm border border-[#242b35] flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsx(Plane, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Private FBO: ~18 min" })]
-											}),
-											/* @__PURE__ */ jsxs("div", {
-												className: "bg-[#0c0f12]/80 backdrop-blur-sm p-2 rounded-sm border border-[#242b35] flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsx(Anchor, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Superyacht Marina: ~8 min" })]
-											}),
-											/* @__PURE__ */ jsxs("div", {
-												className: "bg-[#0c0f12]/80 backdrop-blur-sm p-2 rounded-sm border border-[#242b35] flex items-center gap-1.5",
-												children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Michelin Dining: ~5 min" })]
-											})
-										]
+									property.developerName && /* @__PURE__ */ jsxs("span", {
+										className: "text-xs font-semibold px-3 py-1 rounded-full bg-white border border-slate-200 text-[#163B8C] flex items-center gap-1.5",
+										children: [/* @__PURE__ */ jsx(Building, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsxs("span", { children: ["By ", property.developerName] })]
+									}),
+									property.reraNumber && /* @__PURE__ */ jsxs("span", {
+										className: "text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center gap-1.5",
+										children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-emerald-600" }), /* @__PURE__ */ jsxs("span", { children: ["RERA: ", property.reraNumber] })]
 									})
 								]
-							})]
-						}),
-						property.floorPlans && property.floorPlans.length > 0 && /* @__PURE__ */ jsxs("div", {
-							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxs("div", {
-								className: "flex items-center justify-between",
-								children: [/* @__PURE__ */ jsxs("h3", {
-									className: "font-serif text-xl font-normal text-[#f7f5f2] flex items-center gap-2",
-									children: [/* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Floor Plans & Master Site Layout" })]
-								}), /* @__PURE__ */ jsxs("span", {
-									className: "text-xs font-mono text-[#8a909a]",
-									children: [property.floorPlans.length, " Plans Available"]
+							}),
+							/* @__PURE__ */ jsx("h1", {
+								className: "text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0D2558] leading-tight tracking-tight",
+								children: property.title
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-wrap items-center gap-4 text-sm text-slate-600",
+								children: [/* @__PURE__ */ jsxs("p", {
+									className: "flex items-center gap-1.5",
+									children: [/* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-[#DC1F26] shrink-0" }), /* @__PURE__ */ jsxs("span", { children: [
+										property.address,
+										property.locality ? `, ${property.locality}` : "",
+										", ",
+										property.city,
+										",",
+										" ",
+										property.country
+									] })]
+								}), property.source?.sourceUrl && /* @__PURE__ */ jsxs("a", {
+									href: property.source.sourceUrl,
+									target: "_blank",
+									rel: "noopener noreferrer",
+									className: "text-xs text-[#163B8C] hover:text-[#DC1F26] font-bold flex items-center gap-1",
+									children: [/* @__PURE__ */ jsx("span", { children: "Partner Source Website" }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3" })]
 								})]
-							}), /* @__PURE__ */ jsx("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-								children: property.floorPlans.map((fp, i) => /* @__PURE__ */ jsxs("div", {
-									className: "bg-[#101419] border border-[#202732] rounded-sm overflow-hidden p-3 space-y-2",
-									children: [/* @__PURE__ */ jsx("div", {
-										className: "aspect-[4/3] bg-black/40 rounded-sm overflow-hidden border border-[#1a212b]",
-										children: /* @__PURE__ */ jsx("img", {
-											src: fp.imageUrl,
-											alt: fp.title,
-											className: "w-full h-full object-contain"
+							})
+						]
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "lg:text-right bg-white p-5 rounded-2xl border border-slate-200 shadow-sm shrink-0",
+						children: [
+							/* @__PURE__ */ jsx("span", {
+								className: "text-[11px] uppercase tracking-wider text-slate-500 font-bold block",
+								children: "Acquisition Asking Price"
+							}),
+							/* @__PURE__ */ jsx("span", {
+								className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] tabular-nums block mt-0.5",
+								children: formatPrice(property.price, property.currency)
+							}),
+							property.originalPriceText ? /* @__PURE__ */ jsxs("span", {
+								className: "text-[11px] text-slate-500 font-medium block mt-1",
+								children: ["Source Listing: ", property.originalPriceText]
+							}) : /* @__PURE__ */ jsx("span", {
+								className: "text-[11px] text-[#163B8C] font-semibold block mt-1",
+								children: "Verified Direct Valuation (INR)"
+							})
+						]
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "space-y-4",
+					children: [/* @__PURE__ */ jsxs("div", {
+						onClick: () => setLightboxOpen(true),
+						className: `relative aspect-[16/9] w-full max-h-[620px] rounded-2xl overflow-hidden border border-slate-200 shadow-sm cursor-zoom-in group ${isCurrentLogo ? "bg-[#0f141b]" : "bg-slate-100"}`,
+						children: [
+							/* @__PURE__ */ jsx("img", {
+								src: currentImage.url,
+								alt: currentImage.caption || property.title,
+								className: isCurrentLogo ? "w-full h-full object-contain p-12 transition-transform duration-500 group-hover:scale-[1.02]" : "w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+							}),
+							/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0D2558]/60 via-transparent to-transparent pointer-events-none" }),
+							images.length > 1 && /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("button", {
+								type: "button",
+								onClick: (e) => {
+									e.stopPropagation();
+									setActiveImageIndex((prev) => prev > 0 ? prev - 1 : images.length - 1);
+								},
+								className: "absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-[#DC1F26] text-[#0D2558] hover:text-white flex items-center justify-center shadow-md transition-colors cursor-pointer",
+								"aria-label": "Previous photo",
+								children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-5 h-5" })
+							}), /* @__PURE__ */ jsx("button", {
+								type: "button",
+								onClick: (e) => {
+									e.stopPropagation();
+									setActiveImageIndex((prev) => prev < images.length - 1 ? prev + 1 : 0);
+								},
+								className: "absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-[#DC1F26] text-[#0D2558] hover:text-white flex items-center justify-center shadow-md transition-colors cursor-pointer",
+								"aria-label": "Next photo",
+								children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-5 h-5" })
+							})] }),
+							/* @__PURE__ */ jsxs("div", {
+								className: "absolute bottom-4 left-5 right-5 flex items-center justify-between text-xs text-white",
+								children: [/* @__PURE__ */ jsx("span", {
+									className: "font-medium truncate max-w-md drop-shadow-xs",
+									children: currentImage.caption || property.subtitle
+								}), /* @__PURE__ */ jsxs("span", {
+									className: "flex items-center gap-1.5 bg-[#0D2558]/85 backdrop-blur-sm px-3 py-1 rounded-full font-bold text-[11px]",
+									children: [
+										/* @__PURE__ */ jsx(Maximize2, { className: "w-3.5 h-3.5" }),
+										activeImageIndex + 1,
+										" of ",
+										images.length
+									]
+								})]
+							})
+						]
+					}), images.length > 1 && /* @__PURE__ */ jsx("div", {
+						className: "flex items-center gap-3 overflow-x-auto pb-2",
+						children: images.map((img, idx) => /* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => setActiveImageIndex(idx),
+							className: `relative w-28 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${activeImageIndex === idx ? "border-[#DC1F26] opacity-100 shadow-sm" : "border-slate-200 opacity-65 hover:opacity-100"}`,
+							children: /* @__PURE__ */ jsx("img", {
+								src: img.url,
+								alt: `Thumbnail ${idx + 1}`,
+								className: "w-full h-full object-cover"
+							})
+						}, img.id || idx))
+					})]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 p-5 sm:p-6 bg-white border border-slate-200 rounded-2xl shadow-xs text-center",
+					children: [
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1",
+							children: "Bedrooms"
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center justify-center gap-1.5 text-base font-extrabold text-[#0D2558]",
+							children: [/* @__PURE__ */ jsx(Bed, { className: "w-4 h-4 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: property.bedrooms || "Bespoke" })]
+						})] }),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1",
+							children: "Bathrooms"
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center justify-center gap-1.5 text-base font-extrabold text-[#0D2558]",
+							children: [/* @__PURE__ */ jsx(Bath, { className: "w-4 h-4 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: property.bathrooms || "En-Suite" })]
+						})] }),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1",
+							children: "Interior Living"
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center justify-center gap-1.5 text-base font-extrabold text-[#0D2558]",
+							children: [/* @__PURE__ */ jsx(Maximize2, { className: "w-4 h-4 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} Sq.Ft` : "Commercial" })]
+						})] }),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1",
+							children: "Private Lot"
+						}), /* @__PURE__ */ jsx("div", {
+							className: "flex items-center justify-center gap-1.5 text-base font-extrabold text-[#0D2558]",
+							children: /* @__PURE__ */ jsx("span", { children: property.lotSizeAcres ? `${property.lotSizeAcres} Acres` : "Urban" })
+						})] }),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1",
+							children: "Secure Parking"
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center justify-center gap-1.5 text-base font-extrabold text-[#0D2558]",
+							children: [/* @__PURE__ */ jsx(Car, { className: "w-4 h-4 text-[#163B8C]" }), /* @__PURE__ */ jsxs("span", { children: [property.parkingSpaces || 2, " Bays"] })]
+						})] }),
+						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] uppercase font-bold tracking-wider text-slate-400 block mb-1",
+							children: "Energy Rating"
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "flex items-center justify-center gap-1.5 text-base font-extrabold text-[#DC1F26]",
+							children: [/* @__PURE__ */ jsx(Zap, { className: "w-4 h-4 text-[#DC1F26]" }), /* @__PURE__ */ jsx("span", { children: property.energyRating || "A+" })]
+						})] })
+					]
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "grid grid-cols-1 lg:grid-cols-12 gap-10 items-start",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "lg:col-span-7 space-y-8",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsx("h2", {
+									className: "text-2xl font-extrabold text-[#0D2558] tracking-tight",
+									children: "Architectural Profile & Residence Overview"
+								}), /* @__PURE__ */ jsx("p", {
+									className: "text-sm text-slate-600 leading-relaxed whitespace-pre-line",
+									children: property.description
+								})]
+							}),
+							property.highlights && property.highlights.length > 0 && /* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsxs("h3", {
+									className: "text-xl font-extrabold text-[#0D2558] flex items-center gap-2",
+									children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-5 h-5 text-[#DC1F26]" }), /* @__PURE__ */ jsx("span", { children: "Key Architectural Highlights" })]
+								}), /* @__PURE__ */ jsx("div", {
+									className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
+									children: property.highlights.map((h, i) => /* @__PURE__ */ jsxs("div", {
+										className: "flex items-start gap-2.5 bg-[#F7F9FC] p-3.5 rounded-xl border border-slate-200/80",
+										children: [/* @__PURE__ */ jsx("span", {
+											className: "text-[#DC1F26] font-extrabold text-sm leading-none mt-0.5",
+											children: "•"
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-xs sm:text-sm text-slate-700 leading-snug",
+											children: h
+										})]
+									}, i))
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsx("h3", {
+									className: "text-xl font-extrabold text-[#0D2558]",
+									children: "Verified Estate Amenities"
+								}), /* @__PURE__ */ jsx("div", {
+									className: "grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-700",
+									children: property.amenities.map((amenity, idx) => /* @__PURE__ */ jsxs("div", {
+										className: "flex items-center gap-2.5 p-3 bg-[#F7F9FC] border border-slate-200/80 rounded-xl font-medium",
+										children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-4 h-4 text-[#163B8C] shrink-0" }), /* @__PURE__ */ jsx("span", { children: amenity })]
+									}, idx))
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsx("h3", {
+									className: "text-xl font-extrabold text-[#0D2558]",
+									children: "Building & Material Specifications"
+								}), /* @__PURE__ */ jsx("div", {
+									className: "text-xs sm:text-sm divide-y divide-slate-100",
+									children: Object.entries(property.specifications).map(([key, val]) => /* @__PURE__ */ jsxs("div", {
+										className: "flex justify-between gap-4 py-3",
+										children: [/* @__PURE__ */ jsx("span", {
+											className: "text-slate-500 font-semibold",
+											children: key
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-[#0D2558] font-bold text-right max-w-xs",
+											children: val
+										})]
+									}, key))
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsxs("div", {
+									className: "flex items-center justify-between gap-3 flex-wrap",
+									children: [/* @__PURE__ */ jsx("h3", {
+										className: "text-xl font-extrabold text-[#0D2558]",
+										children: "Location & Luxury Infrastructure"
+									}), /* @__PURE__ */ jsxs("span", {
+										className: "text-xs font-semibold text-slate-500 tabular-nums",
+										children: [
+											property.coordinates.lat.toFixed(4),
+											"° N, ",
+											property.coordinates.lng.toFixed(4),
+											"° E"
+										]
+									})]
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "relative aspect-[16/9] w-full rounded-xl overflow-hidden border border-slate-200 bg-gradient-to-br from-[#0D2558] via-[#133378] to-[#0B1F4B] flex flex-col items-center justify-center p-8 text-center",
+									children: [
+										/* @__PURE__ */ jsx("div", { className: "absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:18px_18px]" }),
+										/* @__PURE__ */ jsxs("div", {
+											className: "relative z-10 space-y-2.5",
+											children: [
+												/* @__PURE__ */ jsx("div", {
+													className: "w-12 h-12 rounded-full bg-[#DC1F26]/20 border border-[#DC1F26] flex items-center justify-center text-white mx-auto",
+													children: /* @__PURE__ */ jsx(Compass, { className: "w-6 h-6" })
+												}),
+												/* @__PURE__ */ jsxs("h4", {
+													className: "text-lg font-extrabold text-white",
+													children: [
+														property.city,
+														", ",
+														property.country
+													]
+												}),
+												/* @__PURE__ */ jsx("p", {
+													className: "text-xs text-slate-200 max-w-sm",
+													children: property.address
+												})
+											]
+										}),
+										/* @__PURE__ */ jsxs("div", {
+											className: "absolute bottom-3 left-3 right-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-white font-semibold",
+											children: [
+												/* @__PURE__ */ jsxs("div", {
+													className: "bg-[#0B1F4B]/80 backdrop-blur-sm p-2 rounded-lg border border-white/15 flex items-center justify-center gap-1.5",
+													children: [/* @__PURE__ */ jsx(Plane, { className: "w-3.5 h-3.5 text-sky-300" }), /* @__PURE__ */ jsx("span", { children: "Airport Access: ~18 min" })]
+												}),
+												/* @__PURE__ */ jsxs("div", {
+													className: "bg-[#0B1F4B]/80 backdrop-blur-sm p-2 rounded-lg border border-white/15 flex items-center justify-center gap-1.5",
+													children: [/* @__PURE__ */ jsx(Anchor, { className: "w-3.5 h-3.5 text-sky-300" }), /* @__PURE__ */ jsx("span", { children: "Prime Corridor: ~8 min" })]
+												}),
+												/* @__PURE__ */ jsxs("div", {
+													className: "bg-[#0B1F4B]/80 backdrop-blur-sm p-2 rounded-lg border border-white/15 flex items-center justify-center gap-1.5",
+													children: [/* @__PURE__ */ jsx(Sparkles, { className: "w-3.5 h-3.5 text-sky-300" }), /* @__PURE__ */ jsx("span", { children: "Fine Dining & Retail: ~5 min" })]
+												})
+											]
 										})
-									}), /* @__PURE__ */ jsx("span", {
-										className: "text-xs text-white font-mono block truncate",
-										children: fp.title
+									]
+								})]
+							}),
+							property.floorPlans && property.floorPlans.length > 0 && /* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsxs("div", {
+									className: "flex items-center justify-between",
+									children: [/* @__PURE__ */ jsxs("h3", {
+										className: "text-xl font-extrabold text-[#0D2558] flex items-center gap-2",
+										children: [/* @__PURE__ */ jsx(Layers, { className: "w-5 h-5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "Floor Plans & Master Site Layout" })]
+									}), /* @__PURE__ */ jsxs("span", {
+										className: "text-xs font-bold text-[#163B8C]",
+										children: [property.floorPlans.length, " Plans Available"]
 									})]
-								}, i))
-							})]
-						}),
-						property.sourceSections && property.sourceSections.length > 0 && /* @__PURE__ */ jsxs("div", {
-							className: "space-y-4 pt-6 border-t border-[#1c232d]",
-							children: [/* @__PURE__ */ jsxs("h3", {
-								className: "font-serif text-xl font-normal text-[#f7f5f2] flex items-center gap-2",
-								children: [/* @__PURE__ */ jsx(Building, { className: "w-5 h-5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Verified Project Dossier" })]
-							}), /* @__PURE__ */ jsx("div", {
-								className: "space-y-3",
-								children: property.sourceSections.map((sec) => /* @__PURE__ */ jsxs("div", {
-									className: "p-4 bg-[#101419] border border-[#202732] rounded-sm space-y-1.5",
-									children: [/* @__PURE__ */ jsx("h4", {
-										className: "text-xs font-mono uppercase tracking-wider text-[#c5a059]",
-										children: sec.title
-									}), /* @__PURE__ */ jsx("p", {
-										className: "text-xs text-[#cbd5e1] leading-relaxed font-light",
-										children: sec.content
-									})]
-								}, sec.id))
-							})]
-						}),
-						/* @__PURE__ */ jsx("div", {
-							className: "pt-6 border-t border-[#1c232d]",
-							children: /* @__PURE__ */ jsx(MortgageCalculator, {
+								}), /* @__PURE__ */ jsx("div", {
+									className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+									children: property.floorPlans.map((fp, i) => /* @__PURE__ */ jsxs("div", {
+										className: "bg-[#F7F9FC] border border-slate-200 rounded-xl overflow-hidden p-3 space-y-2",
+										children: [/* @__PURE__ */ jsx("div", {
+											className: "aspect-[4/3] bg-white rounded-lg overflow-hidden border border-slate-200",
+											children: /* @__PURE__ */ jsx("img", {
+												src: fp.imageUrl,
+												alt: fp.title,
+												className: "w-full h-full object-contain"
+											})
+										}), /* @__PURE__ */ jsx("span", {
+											className: "text-xs text-[#0D2558] font-bold block truncate",
+											children: fp.title
+										})]
+									}, i))
+								})]
+							}),
+							property.sourceSections && property.sourceSections.length > 0 && /* @__PURE__ */ jsxs("div", {
+								className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4",
+								children: [/* @__PURE__ */ jsxs("h3", {
+									className: "text-xl font-extrabold text-[#0D2558] flex items-center gap-2",
+									children: [/* @__PURE__ */ jsx(Building, { className: "w-5 h-5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "Verified Project Dossier" })]
+								}), /* @__PURE__ */ jsx("div", {
+									className: "space-y-3",
+									children: property.sourceSections.map((sec) => /* @__PURE__ */ jsxs("div", {
+										className: "p-4 bg-[#F7F9FC] border border-slate-200 rounded-xl space-y-1.5",
+										children: [/* @__PURE__ */ jsx("h4", {
+											className: "text-xs font-extrabold uppercase tracking-wider text-[#163B8C]",
+											children: sec.title
+										}), /* @__PURE__ */ jsx("p", {
+											className: "text-xs sm:text-sm text-slate-600 leading-relaxed",
+											children: sec.content
+										})]
+									}, sec.id))
+								})]
+							}),
+							/* @__PURE__ */ jsx(MortgageCalculator, {
 								propertyPrice: property.price,
 								currency: property.currency
 							})
-						})
-					]
-				}), /* @__PURE__ */ jsx("div", {
-					className: "lg:col-span-5 lg:sticky lg:top-24",
-					children: /* @__PURE__ */ jsxs("div", {
-						className: "bg-[#12161d] border border-[#252f3e] p-6 rounded-sm shadow-xl space-y-6",
-						children: [
-							/* @__PURE__ */ jsxs("div", {
-								className: "border-b border-[#202733] pb-4",
-								children: [
-									/* @__PURE__ */ jsx("span", {
-										className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
-										children: "Private Client Advisory"
-									}),
-									/* @__PURE__ */ jsx("h3", {
-										className: "font-serif text-2xl font-medium text-[#f7f5f2]",
-										children: "Inquire or Schedule Inspection"
-									}),
-									/* @__PURE__ */ jsx("p", {
-										className: "text-xs text-[#8a909a] mt-1",
-										children: "Direct access to the appointed managing partner under strict non-disclosure."
-									})
-								]
-							}),
-							inquirySubmitted ? /* @__PURE__ */ jsxs("div", {
-								className: "p-6 bg-[#16221c] border border-emerald-500/30 rounded-sm text-center space-y-3",
-								children: [
-									/* @__PURE__ */ jsx(CheckCircle2, { className: "w-8 h-8 text-emerald-400 mx-auto" }),
-									/* @__PURE__ */ jsx("h4", {
-										className: "font-serif text-lg font-medium text-white",
-										children: "Inquiry Received"
-									}),
-									/* @__PURE__ */ jsxs("p", {
-										className: "text-xs text-[#a7f3d0] leading-relaxed",
-										children: [
-											"Thank you, ",
-											clientName,
-											".",
-											" ",
-											inquirySuccessNote || `Your confidential dossier request for ${property.title} has been registered with our advisory desk.`
-										]
-									}),
-									/* @__PURE__ */ jsx("button", {
-										onClick: () => {
-											setInquirySubmitted(false);
-											setInquirySuccessNote(null);
-											setInquiryError("");
-											setHoneypot("");
-											formStartedAt.current = Date.now();
-										},
-										className: "mt-2 text-xs text-[#c5a059] underline cursor-pointer",
-										children: "Submit Additional Request"
-									})
-								]
-							}) : /* @__PURE__ */ jsxs("form", {
-								onSubmit: handleInquirySubmit,
-								className: "space-y-4",
-								noValidate: true,
-								children: [
-									/* @__PURE__ */ jsxs("div", {
-										className: "sr-only",
-										"aria-hidden": "true",
-										children: [/* @__PURE__ */ jsx("label", {
-											htmlFor: "property-website-field",
-											children: "Website"
-										}), /* @__PURE__ */ jsx("input", {
-											id: "property-website-field",
-											type: "text",
-											name: "website",
-											tabIndex: -1,
-											autoComplete: "off",
-											value: honeypot,
-											onChange: (e) => setHoneypot(e.target.value)
-										})]
-									}),
-									inquiryError && /* @__PURE__ */ jsx("div", {
-										role: "alert",
-										className: "p-3 bg-red-950/40 border border-red-800 text-xs text-red-200 rounded-sm",
-										children: inquiryError
-									}),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
-										children: "Full Legal Name *"
-									}), /* @__PURE__ */ jsx("input", {
-										type: "text",
-										required: true,
-										value: clientName,
-										onChange: (e) => setClientName(e.target.value),
-										placeholder: "e.g. Lord Alistair Sterling / Elena Rostova",
-										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-									})] }),
-									/* @__PURE__ */ jsxs("div", {
-										className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-										children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
-											children: "Direct Email *"
-										}), /* @__PURE__ */ jsx("input", {
-											type: "email",
-											required: true,
-											value: email,
-											onChange: (e) => setEmail(e.target.value),
-											placeholder: "client@familyoffice.com",
-											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
-											children: "Phone / Mobile *"
-										}), /* @__PURE__ */ jsx("input", {
-											type: "tel",
-											required: true,
-											value: phone,
-											onChange: (e) => setPhone(e.target.value),
-											placeholder: "+44 20 7946 ...",
-											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none"
-										})] })]
-									}),
-									/* @__PURE__ */ jsxs("div", {
-										className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-										children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
-											children: "Contact Channel"
-										}), /* @__PURE__ */ jsxs("select", {
-											value: preferredContact,
-											onChange: (e) => setPreferredContact(e.target.value),
-											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer",
+						]
+					}), /* @__PURE__ */ jsx("div", {
+						className: "lg:col-span-5 lg:sticky lg:top-24",
+						children: /* @__PURE__ */ jsxs("div", {
+							className: "bg-white border border-slate-200 p-6 sm:p-7 rounded-2xl shadow-lg shadow-[#0D2558]/8 space-y-6",
+							children: [
+								/* @__PURE__ */ jsxs("div", {
+									className: "border-b border-slate-100 pb-4",
+									children: [
+										/* @__PURE__ */ jsx("span", {
+											className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#DC1F26] block mb-1",
+											children: "Private Client Advisory"
+										}),
+										/* @__PURE__ */ jsx("h3", {
+											className: "text-2xl font-extrabold text-[#0D2558]",
+											children: "Inquire or Schedule Inspection"
+										}),
+										/* @__PURE__ */ jsx("p", {
+											className: "text-xs text-slate-500 mt-1",
+											children: "Direct access to the appointed managing partner under strict non-disclosure."
+										})
+									]
+								}),
+								inquirySubmitted ? /* @__PURE__ */ jsxs("div", {
+									className: "p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-3",
+									children: [
+										/* @__PURE__ */ jsx(CheckCircle2, { className: "w-9 h-9 text-emerald-600 mx-auto" }),
+										/* @__PURE__ */ jsx("h4", {
+											className: "text-lg font-extrabold text-[#0D2558]",
+											children: "Inquiry Received"
+										}),
+										/* @__PURE__ */ jsxs("p", {
+											className: "text-xs text-slate-600 leading-relaxed",
 											children: [
-												/* @__PURE__ */ jsx("option", {
-													value: "email",
-													children: "Direct Email"
+												"Thank you, ",
+												/* @__PURE__ */ jsx("strong", {
+													className: "text-[#0D2558]",
+													children: clientName
 												}),
-												/* @__PURE__ */ jsx("option", {
-													value: "phone",
-													children: "Private Phone Call"
-												}),
-												/* @__PURE__ */ jsx("option", {
-													value: "whatsapp",
-													children: "Encrypted WhatsApp"
-												})
+												".",
+												" ",
+												inquirySuccessNote || `Your confidential dossier request for ${property.title} has been registered with our advisory desk.`
 											]
-										})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-											className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
-											children: "Target Inspection Date"
+										}),
+										/* @__PURE__ */ jsx("button", {
+											type: "button",
+											onClick: () => {
+												setInquirySubmitted(false);
+												setInquirySuccessNote(null);
+												setInquiryError("");
+												setHoneypot("");
+												formStartedAt.current = Date.now();
+											},
+											className: "mt-2 text-xs font-bold text-[#163B8C] hover:text-[#DC1F26] underline cursor-pointer",
+											children: "Submit Additional Request"
+										})
+									]
+								}) : /* @__PURE__ */ jsxs("form", {
+									onSubmit: handleInquirySubmit,
+									className: "space-y-4",
+									noValidate: true,
+									children: [
+										/* @__PURE__ */ jsxs("div", {
+											className: "sr-only",
+											"aria-hidden": "true",
+											children: [/* @__PURE__ */ jsx("label", {
+												htmlFor: "property-website-field",
+												children: "Website"
+											}), /* @__PURE__ */ jsx("input", {
+												id: "property-website-field",
+												type: "text",
+												name: "website",
+												tabIndex: -1,
+												autoComplete: "off",
+												value: honeypot,
+												onChange: (e) => setHoneypot(e.target.value)
+											})]
+										}),
+										inquiryError && /* @__PURE__ */ jsx("div", {
+											role: "alert",
+											className: "p-3 bg-red-50 border border-red-200 text-xs text-red-700 font-medium rounded-xl",
+											children: inquiryError
+										}),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+											className: "text-[11px] font-bold text-slate-600 block mb-1",
+											children: ["Full Legal Name ", /* @__PURE__ */ jsx("span", {
+												className: "text-[#DC1F26]",
+												children: "*"
+											})]
 										}), /* @__PURE__ */ jsx("input", {
-											type: "date",
-											value: tourDate,
-											onChange: (e) => setTourDate(e.target.value),
-											className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer"
-										})] })]
-									}),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										className: "text-[11px] font-mono text-[#8a909a] block mb-1 uppercase tracking-wider",
-										children: "Confidential Requirements / Message"
-									}), /* @__PURE__ */ jsx("textarea", {
-										rows: 3,
-										value: message,
-										onChange: (e) => setMessage(e.target.value),
-										placeholder: "Specify helicopter landing requirements, NDA requirements, or private viewing dates...",
-										className: "w-full bg-[#181f2a] border border-[#2a3442] focus:border-[#c5a059] rounded-sm p-3 text-xs text-[#f7f5f2] focus:outline-none resize-none"
-									})] }),
-									/* @__PURE__ */ jsxs("button", {
-										type: "submit",
-										disabled: inquirySubmitting,
-										className: "w-full py-3 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50",
-										children: [/* @__PURE__ */ jsx(Send, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: inquirySubmitting ? "Transmitting Request..." : "Transmit Confidential Inquiry" })]
-									}),
-									/* @__PURE__ */ jsx("p", {
-										className: "text-[10px] text-[#6b7280] text-center leading-normal",
-										children: "Transmissions are strictly encrypted under our mutual international privacy covenant."
-									})
-								]
-							}),
-							/* @__PURE__ */ jsxs("div", {
-								className: "pt-4 border-t border-[#202733] flex items-center justify-between gap-3",
-								children: [/* @__PURE__ */ jsxs("div", {
-									className: "flex items-center gap-3",
-									children: [/* @__PURE__ */ jsx("img", {
-										src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
-										alt: "Marcus Vance",
-										className: "w-10 h-10 rounded-full object-cover border border-[#c5a059]/40"
-									}), /* @__PURE__ */ jsxs("div", {
-										className: "text-xs",
-										children: [/* @__PURE__ */ jsx("span", {
-											className: "text-[#f7f5f2] font-medium block",
-											children: "Marcus Vance"
-										}), /* @__PURE__ */ jsx("span", {
-											className: "text-[#8a909a] text-[11px]",
-											children: "Managing Partner, Advisory"
+											type: "text",
+											required: true,
+											value: clientName,
+											onChange: (e) => setClientName(e.target.value),
+											placeholder: "e.g. Vikramjit Singh",
+											className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-3.5 py-2.5 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+										})] }),
+										/* @__PURE__ */ jsxs("div", {
+											className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
+											children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+												className: "text-[11px] font-bold text-slate-600 block mb-1",
+												children: ["Direct Email ", /* @__PURE__ */ jsx("span", {
+													className: "text-[#DC1F26]",
+													children: "*"
+												})]
+											}), /* @__PURE__ */ jsx("input", {
+												type: "email",
+												required: true,
+												value: email,
+												onChange: (e) => setEmail(e.target.value),
+												placeholder: "client@familyoffice.com",
+												className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-3.5 py-2.5 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+											})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+												className: "text-[11px] font-bold text-slate-600 block mb-1",
+												children: ["Phone / Mobile ", /* @__PURE__ */ jsx("span", {
+													className: "text-[#DC1F26]",
+													children: "*"
+												})]
+											}), /* @__PURE__ */ jsx("input", {
+												type: "tel",
+												required: true,
+												value: phone,
+												onChange: (e) => setPhone(e.target.value),
+												placeholder: "+91 977-987-8303",
+												className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-3.5 py-2.5 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+											})] })]
+										}),
+										/* @__PURE__ */ jsxs("div", {
+											className: "grid grid-cols-1 sm:grid-cols-2 gap-3",
+											children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
+												className: "text-[11px] font-bold text-slate-600 block mb-1",
+												children: "Contact Channel"
+											}), /* @__PURE__ */ jsxs("select", {
+												value: preferredContact,
+												onChange: (e) => setPreferredContact(e.target.value),
+												className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3 py-2.5 text-xs font-medium text-[#0D2558] focus:outline-none cursor-pointer",
+												children: [
+													/* @__PURE__ */ jsx("option", {
+														value: "email",
+														children: "Direct Email"
+													}),
+													/* @__PURE__ */ jsx("option", {
+														value: "phone",
+														children: "Private Phone Call"
+													}),
+													/* @__PURE__ */ jsx("option", {
+														value: "whatsapp",
+														children: "WhatsApp"
+													})
+												]
+											})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
+												className: "text-[11px] font-bold text-slate-600 block mb-1",
+												children: "Target Inspection Date"
+											}), /* @__PURE__ */ jsx("input", {
+												type: "date",
+												value: tourDate,
+												onChange: (e) => setTourDate(e.target.value),
+												className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3 py-2.5 text-xs font-medium text-[#0D2558] focus:outline-none cursor-pointer"
+											})] })]
+										}),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
+											className: "text-[11px] font-bold text-slate-600 block mb-1",
+											children: "Confidential Requirements / Message"
+										}), /* @__PURE__ */ jsx("textarea", {
+											rows: 3,
+											value: message,
+											onChange: (e) => setMessage(e.target.value),
+											placeholder: "Specify site visit preferences, financing questions, or bespoke requirements...",
+											className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl p-3 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none resize-none"
+										})] }),
+										/* @__PURE__ */ jsxs("button", {
+											type: "submit",
+											disabled: inquirySubmitting,
+											className: "w-full py-3.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs uppercase tracking-[0.14em] font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#DC1F26]/20 disabled:opacity-50",
+											children: [/* @__PURE__ */ jsx(Send, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: inquirySubmitting ? "Transmitting Request..." : "Transmit Confidential Inquiry" })]
+										}),
+										/* @__PURE__ */ jsx("p", {
+											className: "text-[11px] text-slate-500 text-center leading-normal",
+											children: "Transmissions are strictly confidential under our client privacy policy."
+										})
+									]
+								}),
+								/* @__PURE__ */ jsxs("div", {
+									className: "pt-4 border-t border-slate-100 flex items-center justify-between gap-3",
+									children: [/* @__PURE__ */ jsxs("div", {
+										className: "flex items-center gap-3",
+										children: [/* @__PURE__ */ jsx("img", {
+											src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80",
+											alt: "Marcus Vance",
+											className: "w-10 h-10 rounded-full object-cover border-2 border-[#0D2558]/20"
+										}), /* @__PURE__ */ jsxs("div", {
+											className: "text-xs",
+											children: [/* @__PURE__ */ jsx("span", {
+												className: "text-[#0D2558] font-bold block",
+												children: "Marcus Vance"
+											}), /* @__PURE__ */ jsx("span", {
+												className: "text-slate-500 text-[11px]",
+												children: "Managing Partner, Advisory"
+											})]
+										})]
+									}), /* @__PURE__ */ jsxs("a", {
+										href: "tel:9779878303",
+										className: "flex items-center gap-1.5 px-3 py-2 bg-[#0D2558] hover:bg-[#163B8C] text-white rounded-full text-xs font-bold transition-colors cursor-pointer",
+										title: "Direct Phone Call",
+										children: [/* @__PURE__ */ jsx(PhoneCall, { className: "w-3.5 h-3.5 text-sky-200" }), /* @__PURE__ */ jsx("span", {
+											className: "tabular-nums",
+											children: "9779878303"
 										})]
 									})]
-								}), /* @__PURE__ */ jsxs("a", {
-									href: "tel:9779878303",
-									className: "flex items-center gap-1.5 px-2.5 py-1.5 bg-[#181f2a] hover:bg-[#c5a059] hover:text-[#0c0f12] text-[#f7f5f2] border border-[#2a3442] rounded-sm text-xs font-mono transition-colors cursor-pointer",
-									title: "Direct Phone Call",
-									children: [/* @__PURE__ */ jsx(PhoneCall, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", {
-										className: "tabular-nums",
-										children: "9779878303"
-									})]
-								})]
-							})
-						]
-					})
-				})]
-			}),
-			similarProperties.length > 0 && /* @__PURE__ */ jsxs("div", {
-				className: "pt-16 border-t border-[#202732] space-y-6",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "flex items-end justify-between",
-					children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-						className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1",
-						children: "Comparative Assets"
-					}), /* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-2xl font-normal text-[#f7f5f2]",
-						children: "Similar Holdings in the Registry"
-					})] }), /* @__PURE__ */ jsx(AppLink, {
-						href: "/properties",
-						onNavigate: onNavigate || (() => onBack()),
-						className: "text-xs text-[#c5a059] hover:underline cursor-pointer",
-						children: "View Full Portfolio"
+								})
+							]
+						})
 					})]
-				}), /* @__PURE__ */ jsx("div", {
-					className: "grid grid-cols-1 md:grid-cols-3 gap-6",
-					children: similarProperties.map((p) => /* @__PURE__ */ jsxs(AppLink, {
-						href: `/property/${encodeURIComponent(p.slug)}`,
-						onNavigate: () => onSelectProperty(p),
-						className: "block bg-[#101419] border border-[#202732] hover:border-[#c5a059]/50 transition-colors p-3 rounded-sm cursor-pointer group",
-						children: [
-							/* @__PURE__ */ jsx("div", {
-								className: "aspect-[4/3] rounded-sm overflow-hidden mb-3 bg-[#14181d]",
-								children: (() => {
-									const simPrimary = getPrimaryPropertyImage(p);
-									return /* @__PURE__ */ jsx("img", {
-										src: simPrimary.url,
-										alt: p.title,
-										className: `w-full h-full transition-transform ${simPrimary.isLogo ? "object-contain p-6 bg-[#0f141b]" : "object-cover group-hover:scale-105"}`
-									});
-								})()
-							}),
-							/* @__PURE__ */ jsxs("span", {
-								className: "text-[10px] font-mono uppercase text-[#c5a059]",
-								children: [
-									p.city,
-									", ",
-									p.country
-								]
-							}),
-							/* @__PURE__ */ jsx("h4", {
-								className: "font-serif text-base font-medium text-[#f7f5f2] truncate group-hover:text-[#c5a059]",
-								children: p.title
-							}),
-							/* @__PURE__ */ jsx("p", {
-								className: "text-xs font-mono text-[#d1d5db] mt-1 tabular-nums",
-								children: formatPrice(p.price, p.currency)
-							})
-						]
-					}, p.id))
-				})]
-			}),
-			lightboxOpen && /* @__PURE__ */ jsxs("div", {
-				onClick: () => setLightboxOpen(false),
-				className: "fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 cursor-zoom-out",
-				children: [/* @__PURE__ */ jsx("img", {
-					src: currentImage.url,
-					alt: property.title,
-					className: "max-w-full max-h-[90vh] object-contain"
-				}), /* @__PURE__ */ jsx("button", {
+				}),
+				similarProperties.length > 0 && /* @__PURE__ */ jsxs("div", {
+					className: "pt-12 border-t border-slate-200 space-y-6",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex items-end justify-between",
+						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
+							className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#DC1F26] block mb-1",
+							children: "Comparative Assets"
+						}), /* @__PURE__ */ jsx("h3", {
+							className: "text-2xl font-extrabold text-[#0D2558]",
+							children: "Similar Holdings in the Registry"
+						})] }), /* @__PURE__ */ jsx(AppLink, {
+							href: "/properties",
+							onNavigate: onNavigate || (() => onBack()),
+							className: "text-xs font-bold text-[#DC1F26] hover:underline cursor-pointer",
+							children: "View Full Portfolio"
+						})]
+					}), /* @__PURE__ */ jsx("div", {
+						className: "grid grid-cols-1 md:grid-cols-3 gap-6",
+						children: similarProperties.map((p) => /* @__PURE__ */ jsxs(AppLink, {
+							href: `/property/${encodeURIComponent(p.slug)}`,
+							onNavigate: () => onSelectProperty(p),
+							className: "block bg-white border border-slate-200 hover:border-[#163B8C]/40 hover:shadow-lg transition-all p-3.5 rounded-2xl cursor-pointer group",
+							children: [
+								/* @__PURE__ */ jsx("div", {
+									className: "aspect-[4/3] rounded-xl overflow-hidden mb-3 bg-slate-100",
+									children: (() => {
+										const simPrimary = getPrimaryPropertyImage(p);
+										return /* @__PURE__ */ jsx("img", {
+											src: simPrimary.url,
+											alt: p.title,
+											className: `w-full h-full transition-transform duration-500 ${simPrimary.isLogo ? "object-contain p-6 bg-[#0f141b]" : "object-cover group-hover:scale-105"}`
+										});
+									})()
+								}),
+								/* @__PURE__ */ jsxs("span", {
+									className: "text-[11px] font-bold text-[#DC1F26] flex items-center gap-1",
+									children: [
+										/* @__PURE__ */ jsx(MapPin, { className: "w-3 h-3" }),
+										p.city,
+										", ",
+										p.country
+									]
+								}),
+								/* @__PURE__ */ jsx("h4", {
+									className: "text-base font-extrabold text-[#0D2558] truncate group-hover:text-[#163B8C] mt-0.5",
+									children: p.title
+								}),
+								/* @__PURE__ */ jsx("p", {
+									className: "text-sm font-extrabold text-[#0D2558] mt-1 tabular-nums",
+									children: formatPrice(p.price, p.currency)
+								})
+							]
+						}, p.id))
+					})]
+				}),
+				lightboxOpen && /* @__PURE__ */ jsxs("div", {
 					onClick: () => setLightboxOpen(false),
-					className: "absolute top-6 right-6 text-white text-lg font-mono bg-black/60 px-3 py-1 rounded-sm",
-					children: "Close [Esc]"
-				})]
-			}),
-			/* @__PURE__ */ jsx(BrochureModal, {
-				property,
-				isOpen: brochureOpen,
-				onClose: () => setBrochureOpen(false)
-			})
-		]
+					className: "fixed inset-0 z-50 bg-[#0B1F4B]/95 flex items-center justify-center p-4 cursor-zoom-out",
+					children: [/* @__PURE__ */ jsx("img", {
+						src: currentImage.url,
+						alt: property.title,
+						className: "max-w-full max-h-[90vh] object-contain rounded-xl"
+					}), /* @__PURE__ */ jsx("button", {
+						type: "button",
+						onClick: () => setLightboxOpen(false),
+						className: "absolute top-6 right-6 text-white text-sm font-bold bg-[#DC1F26] hover:bg-[#B91C1C] px-4 py-2 rounded-full cursor-pointer",
+						children: "Close"
+					})]
+				}),
+				/* @__PURE__ */ jsx(BrochureModal, {
+					property,
+					isOpen: brochureOpen,
+					onClose: () => setBrochureOpen(false)
+				})
+			]
+		})
 	});
 };
 // src/pages/CategoryPage.tsx
 var CATEGORY_INFO = {
-	"Residential": {
+	Residential: {
 		title: "Prime Residential Estates & Penthouses",
 		subtitle: "Waterfront architectural villas, alpine ski chalets, and skyline duplexes in premier global enclaves.",
 		heroImg: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1800&q=80"
 	},
-	"Commercial": {
+	Commercial: {
 		title: "Institutional Commercial Landmarks",
 		subtitle: "Freehold corporate headquarters, private banking flagships, and prime retail assets with index-linked covenants.",
 		heroImg: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1800&q=80"
 	},
 	"Plots/Land": {
-		title: "Prime Acreage & Heritage Terroirs",
-		subtitle: "Centuries-old Tuscan Brunello vineyards, coastal development peninsulas, and private sovereign estates.",
+		title: "Prime Acreage & Investment Plots",
+		subtitle: "Approved residential & commercial investment plots, development land banks, and private sovereign estates.",
 		heroImg: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1800&q=80"
 	},
 	"New Projects": {
 		title: "Architectural New Developments & Off-Plan",
-		subtitle: "Pritzker-laureate sustainable commissions, Minergie-P-ECO certified residences, and bespoke off-plan estates.",
+		subtitle: "Sustainable new commissions, certified luxury residences, and bespoke off-plan estates.",
 		heroImg: "https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1800&q=80"
 	}
 };
@@ -7325,17 +7840,17 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 		return categoryProperties.filter((p) => p.locationId && p.locationId === selectedLocation || p.city && p.city.toLowerCase().includes(qLoc) || p.locality && p.locality.toLowerCase().includes(qLoc) || p.address && p.address.toLowerCase().includes(qLoc));
 	}, [categoryProperties, selectedLocation]);
 	return /* @__PURE__ */ jsxs("div", {
-		className: "space-y-12 pb-20",
+		className: "bg-[#F7F9FC] min-h-screen pb-20",
 		children: [
 			/* @__PURE__ */ jsxs("div", {
-				className: "relative min-h-[380px] flex items-center justify-center px-6 overflow-hidden bg-[#101419]",
+				className: "relative min-h-[340px] flex items-center justify-center px-6 py-14 overflow-hidden bg-slate-900",
 				children: [
 					/* @__PURE__ */ jsx("img", {
 						src: info.heroImg,
 						alt: info.title,
-						className: "absolute inset-0 w-full h-full object-cover filter brightness-[0.35]"
+						className: "absolute inset-0 w-full h-full object-cover"
 					}),
-					/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/50 to-transparent" }),
+					/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-b from-slate-950/45 via-[#0D2558]/30 to-slate-950/55" }),
 					/* @__PURE__ */ jsxs("div", {
 						className: "relative z-10 max-w-4xl mx-auto text-center space-y-4",
 						children: [
@@ -7352,17 +7867,18 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 									{ label: category === "Plots/Land" ? "Plots & Land" : category === "New Projects" ? "New Developments" : category }
 								],
 								align: "center",
+								variant: "dark",
 								onNavigate: (path) => {
 									if (onNavigate) onNavigate(path);
 									else if (path === "/") onNavigateHome();
 								}
 							}),
 							/* @__PURE__ */ jsx("h1", {
-								className: "font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-white",
+								className: "text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-sm",
 								children: info.title
 							}),
 							/* @__PURE__ */ jsx("p", {
-								className: "text-sm text-[#cbd5e1] max-w-xl mx-auto font-light leading-relaxed",
+								className: "text-sm sm:text-base text-white/90 max-w-2xl mx-auto leading-relaxed drop-shadow-xs",
 								children: info.subtitle
 							})
 						]
@@ -7370,7 +7886,7 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 				]
 			}),
 			/* @__PURE__ */ jsx("div", {
-				className: "max-w-7xl mx-auto px-6 -mt-4",
+				className: "max-w-7xl mx-auto px-4 sm:px-6 pt-8",
 				children: /* @__PURE__ */ jsx(LocationTabs, {
 					selectedLocation,
 					onSelectLocation: setSelectedLocation,
@@ -7379,27 +7895,30 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 				})
 			}),
 			/* @__PURE__ */ jsxs("div", {
-				className: "max-w-7xl mx-auto px-6 space-y-6",
+				className: "max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-6",
 				children: [/* @__PURE__ */ jsxs("div", {
-					className: "flex items-center justify-between pb-4 border-b border-[#202732] text-xs font-mono text-[#8a909a]",
+					className: "flex items-center justify-between pb-4 border-b border-slate-200 text-xs font-semibold text-slate-500",
 					children: [/* @__PURE__ */ jsxs("span", { children: [
 						"Showing ",
 						/* @__PURE__ */ jsx("strong", {
-							className: "text-[#f7f5f2]",
+							className: "text-[#0D2558]",
 							children: filteredProperties.length
 						}),
 						" of",
 						" ",
 						/* @__PURE__ */ jsx("strong", {
-							className: "text-[#8a909a]",
+							className: "text-[#0D2558]",
 							children: categoryProperties.length
 						}),
 						" ",
 						category,
 						" assets"
-					] }), /* @__PURE__ */ jsx("span", { children: "Verified Registry Covenants" })]
+					] }), /* @__PURE__ */ jsx("span", {
+						className: "text-[#163B8C]",
+						children: "Verified Registry Covenants"
+					})]
 				}), filteredProperties.length > 0 ? /* @__PURE__ */ jsx("div", {
-					className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+					className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
 					children: filteredProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
 						property: prop,
 						onSelect: onSelectProperty,
@@ -7407,23 +7926,23 @@ var CategoryPage = ({ category, properties, onSelectProperty, onNavigateHome, on
 						onToggleSave
 					}, prop.id))
 				}) : /* @__PURE__ */ jsxs("div", {
-					className: "p-12 text-center bg-[#101419] border border-[#202732] rounded-sm space-y-3",
+					className: "p-12 text-center bg-white border border-slate-200 rounded-2xl space-y-3 shadow-xs",
 					children: [/* @__PURE__ */ jsxs("p", {
-						className: "text-xs text-[#8a909a]",
+						className: "text-sm text-slate-600",
 						children: [
 							"No ",
 							category,
 							" properties currently listed for this location."
 						]
 					}), selectedLocation !== "all" && /* @__PURE__ */ jsxs("button", {
+						type: "button",
 						onClick: () => setSelectedLocation("all"),
-						className: "inline-flex items-center gap-1.5 px-4 py-2 bg-[#1b222c] hover:bg-[#c5a059] hover:text-[#0c0f12] text-xs font-mono uppercase tracking-wider text-[#d1d5db] rounded-sm transition-colors cursor-pointer",
-						children: [
-							/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }),
+						className: "inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-colors cursor-pointer",
+						children: [/* @__PURE__ */ jsx(RotateCcw, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsxs("span", { children: [
 							"View All ",
 							category,
 							" Properties"
-						]
+						] })]
 					})]
 				})]
 			})
@@ -7544,10 +8063,10 @@ var ContactPage = ({ onNavigate }) => {
 		}
 	};
 	return /* @__PURE__ */ jsxs("div", {
-		className: "w-full bg-[#0c0f12] text-[#f7f5f2]",
+		className: "w-full bg-white text-[#0D2558]",
 		children: [
 			/* @__PURE__ */ jsxs("section", {
-				className: "relative w-full min-h-[290px] sm:min-h-[360px] lg:min-h-[420px] flex items-center justify-center overflow-hidden bg-[#101419] border-b border-[#1f2631]",
+				className: "relative w-full min-h-[290px] sm:min-h-[340px] lg:min-h-[380px] flex items-center justify-center overflow-hidden bg-slate-900",
 				children: [
 					/* @__PURE__ */ jsx("img", {
 						src: "/assets/images/contact_hero_estate_1795013193435.jpg",
@@ -7557,7 +8076,7 @@ var ContactPage = ({ onNavigate }) => {
 					}),
 					/* @__PURE__ */ jsx("div", {
 						"aria-hidden": "true",
-						className: "absolute inset-0 bg-gradient-to-b from-[#0c0f12]/80 via-[#0c0f12]/55 to-[#0c0f12]/90"
+						className: "absolute inset-0 bg-gradient-to-b from-slate-950/45 via-[#0D2558]/30 to-slate-950/55"
 					}),
 					/* @__PURE__ */ jsxs("div", {
 						className: "relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16 text-center space-y-4",
@@ -7568,14 +8087,15 @@ var ContactPage = ({ onNavigate }) => {
 									href: "/"
 								}, { label: "Contact" }],
 								align: "center",
+								variant: "dark",
 								onNavigate
 							}),
 							/* @__PURE__ */ jsx("h1", {
-								className: "font-serif text-3xl sm:text-5xl lg:text-[3.5rem] font-normal text-white tracking-tight leading-[1.1] text-balance",
+								className: "text-3xl sm:text-5xl lg:text-[3.25rem] font-extrabold text-white tracking-tight leading-[1.1] text-balance drop-shadow-sm",
 								children: "Get In Touch With Us"
 							}),
 							/* @__PURE__ */ jsx("p", {
-								className: "text-sm sm:text-base text-[#e2e5ea] max-w-xl mx-auto leading-relaxed font-light",
+								className: "text-sm sm:text-base text-white/90 max-w-xl mx-auto leading-relaxed drop-shadow-xs",
 								children: "Browse through a curated selection of properties tailored to your goals. Connect with our advisory principals for your residence, investment, or commercial holding today."
 							})
 						]
@@ -7583,282 +8103,315 @@ var ContactPage = ({ onNavigate }) => {
 				]
 			}),
 			/* @__PURE__ */ jsx("section", {
-				className: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20",
-				children: /* @__PURE__ */ jsxs("div", {
-					className: "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 lg:gap-14 items-start",
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "md:col-span-5 order-1 space-y-3",
-							children: [/* @__PURE__ */ jsx("h2", {
-								className: "font-serif text-3xl sm:text-4xl lg:text-[2.6rem] font-normal text-[#f7f5f2] leading-[1.15] text-balance",
-								children: "Have Questions Or Need Assistance?"
-							}), /* @__PURE__ */ jsx("p", {
-								className: "text-sm text-[#9ca3af] leading-relaxed font-light",
-								children: "We're here to help! Whether you have inquiries about our listings, need guidance on your next acquisition, or require private advisory, our team is ready to assist you."
-							})]
-						}),
-						/* @__PURE__ */ jsx("div", {
-							id: "contact-form",
-							ref: formSectionRef,
-							className: "md:col-span-7 md:row-span-2 order-2 bg-[#101419] border border-[#202732] rounded-md p-6 sm:p-8 shadow-2xl",
-							children: submitted ? /* @__PURE__ */ jsxs("div", {
-								className: "p-6 sm:p-10 bg-[#121e18] border border-emerald-500/30 rounded-sm text-center space-y-4",
-								children: [
-									/* @__PURE__ */ jsx(CheckCircle2, { className: "w-10 h-10 text-emerald-400 mx-auto" }),
-									/* @__PURE__ */ jsx("h3", {
-										className: "font-serif text-2xl font-normal text-white",
-										children: "Inquiry Received"
-									}),
-									/* @__PURE__ */ jsxs("p", {
-										className: "text-sm text-[#a7f3d0] leading-relaxed max-w-md mx-auto",
-										children: [
-											"Thank you, ",
-											name,
-											".",
-											" ",
-											successNote || "Your inquiry has been registered with our advisory desk and routed for confidential review."
-										]
-									}),
-									/* @__PURE__ */ jsx("button", {
-										type: "button",
-										onClick: () => {
-											setSubmitted(false);
-											setName("");
-											setEmail("");
-											setPhone("");
-											setSubject("");
-											setMessage("");
-											setHoneypot("");
-											setSuccessNote(null);
-											setError(null);
-											formStartedAt.current = Date.now();
-										},
-										className: "inline-flex items-center justify-center px-5 py-2.5 text-xs uppercase tracking-wider font-semibold text-[#c5a059] border border-[#c5a059]/40 hover:bg-[#c5a059]/10 rounded-sm cursor-pointer transition-colors",
-										children: "Send Another Message"
-									})
-								]
-							}) : /* @__PURE__ */ jsxs("form", {
-								onSubmit: handleSubmit,
-								className: "space-y-4 sm:space-y-5",
-								noValidate: true,
+				className: "bg-[#F7F9FC] border-b border-slate-200/80",
+				children: /* @__PURE__ */ jsx("div", {
+					className: "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20",
+					children: /* @__PURE__ */ jsxs("div", {
+						className: "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 lg:gap-14 items-start",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "md:col-span-5 order-1 space-y-3",
 								children: [
 									/* @__PURE__ */ jsxs("div", {
-										className: "sr-only",
-										"aria-hidden": "true",
-										children: [/* @__PURE__ */ jsx("label", {
-											htmlFor: "contact-website-field",
-											children: "Website"
-										}), /* @__PURE__ */ jsx("input", {
-											id: "contact-website-field",
-											type: "text",
-											name: "website",
-											tabIndex: -1,
-											autoComplete: "off",
-											value: honeypot,
-											onChange: (e) => setHoneypot(e.target.value)
+										className: "inline-flex items-center gap-2.5",
+										children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+											className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+											children: "Direct Advisory Desk"
 										})]
 									}),
-									error && /* @__PURE__ */ jsxs("div", {
-										role: "alert",
-										className: "p-3.5 bg-red-950/60 border border-red-500/40 rounded-sm text-xs text-red-200 flex items-start gap-2.5",
-										children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
+									/* @__PURE__ */ jsxs("h2", {
+										className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] leading-[1.15] tracking-tight text-balance",
+										children: ["Have Questions Or Need ", /* @__PURE__ */ jsx("span", {
+											className: "text-[#DC1F26]",
+											children: "Assistance?"
+										})]
 									}),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										htmlFor: "contact-full-name",
-										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
-										children: "Full Name"
-									}), /* @__PURE__ */ jsx("input", {
-										ref: nameInputRef,
-										id: "contact-full-name",
-										type: "text",
-										required: true,
-										value: name,
-										onChange: (e) => setName(e.target.value),
-										placeholder: "Enter your full name",
-										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-									})] }),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										htmlFor: "contact-email",
-										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
-										children: "Email Address"
-									}), /* @__PURE__ */ jsx("input", {
-										id: "contact-email",
-										type: "email",
-										required: true,
-										value: email,
-										onChange: (e) => setEmail(e.target.value),
-										placeholder: "Enter your email address",
-										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-									})] }),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										htmlFor: "contact-phone",
-										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
-										children: "Phone Number"
-									}), /* @__PURE__ */ jsx("input", {
-										id: "contact-phone",
-										type: "tel",
-										required: true,
-										value: phone,
-										onChange: (e) => setPhone(e.target.value),
-										placeholder: "Enter your phone number",
-										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors tabular-nums"
-									})] }),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										htmlFor: "contact-subject",
-										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
-										children: "Subject"
-									}), /* @__PURE__ */ jsx("input", {
-										id: "contact-subject",
-										type: "text",
-										value: subject,
-										onChange: (e) => setSubject(e.target.value),
-										placeholder: "Enter the subject of your message",
-										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
-									})] }),
-									/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-										htmlFor: "contact-message",
-										className: "text-xs font-medium text-[#d1d5db] block mb-1.5",
-										children: "Message"
-									}), /* @__PURE__ */ jsx("textarea", {
-										id: "contact-message",
-										rows: 4,
-										required: true,
-										value: message,
-										onChange: (e) => setMessage(e.target.value),
-										placeholder: "Enter your message here",
-										className: "w-full bg-[#151a22] border border-[#283242] focus:border-[#c5a059] rounded-sm px-4 py-3 text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none resize-y transition-colors"
-									})] }),
-									/* @__PURE__ */ jsx("button", {
-										type: "submit",
-										disabled: loading,
-										className: "w-full py-3.5 px-6 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs sm:text-sm uppercase tracking-widest font-semibold rounded-sm transition-colors cursor-pointer shadow-md disabled:opacity-50",
-										children: loading ? "Submitting..." : "Submit"
+									/* @__PURE__ */ jsx("p", {
+										className: "text-sm text-slate-600 leading-relaxed",
+										children: "We're here to help! Whether you have inquiries about our listings, need guidance on your next acquisition, or require private advisory, our team is ready to assist you."
 									})
 								]
-							})
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "md:col-span-5 order-3 space-y-6 pt-2 md:pt-4 border-t border-[#1c232e]",
-							children: [/* @__PURE__ */ jsxs("div", {
-								className: "grid grid-cols-1 sm:grid-cols-2 gap-6",
-								children: [
-									/* @__PURE__ */ jsxs("div", {
-										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsx("span", {
-											className: "text-xs text-[#8a909a] block",
-											children: "Message Us"
-										}), /* @__PURE__ */ jsx("a", {
-											href: `mailto:${office.email}`,
-											className: "text-sm font-medium text-[#f7f5f2] hover:text-[#c5a059] transition-colors break-all block",
-											children: office.email
-										})]
-									}),
-									/* @__PURE__ */ jsxs("div", {
-										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsx("span", {
-											className: "text-xs text-[#8a909a] block",
-											children: "Call Us"
-										}), /* @__PURE__ */ jsx("a", {
-											href: `tel:${office.rawPhone}`,
-											className: "text-sm font-medium text-[#f7f5f2] hover:text-[#c5a059] transition-colors tabular-nums block",
-											children: office.phone
-										})]
-									}),
-									/* @__PURE__ */ jsxs("div", {
-										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsx("span", {
-											className: "text-xs text-[#8a909a] block",
-											children: "Location"
-										}), /* @__PURE__ */ jsxs("p", {
-											className: "text-sm font-medium text-[#f7f5f2] leading-relaxed",
-											children: [
-												office.addressLine1,
-												", ",
-												office.addressLine2
-											]
-										})]
-									}),
-									/* @__PURE__ */ jsxs("div", {
-										className: "space-y-1.5",
-										children: [/* @__PURE__ */ jsx("span", {
-											className: "text-xs text-[#8a909a] block",
-											children: "Business Hours"
-										}), /* @__PURE__ */ jsx("p", {
-											className: "text-sm font-medium text-[#f7f5f2] leading-relaxed tabular-nums",
-											children: office.hours
-										})]
-									})
-								]
-							}), /* @__PURE__ */ jsxs("div", {
-								className: "pt-4 border-t border-[#1c232e] space-y-2.5",
-								children: [/* @__PURE__ */ jsx("span", {
-									className: "text-xs text-[#8a909a] block",
-									children: "Direct Channels"
-								}), /* @__PURE__ */ jsxs("div", {
-									className: "flex items-center gap-3",
+							}),
+							/* @__PURE__ */ jsx("div", {
+								id: "contact-form",
+								ref: formSectionRef,
+								className: "md:col-span-7 md:row-span-2 order-2 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-lg shadow-[#0D2558]/6",
+								children: submitted ? /* @__PURE__ */ jsxs("div", {
+									className: "p-6 sm:p-10 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-4",
 									children: [
-										/* @__PURE__ */ jsx("a", {
-											href: office.whatsappUrl,
-											target: "_blank",
-											rel: "noopener noreferrer",
-											"aria-label": "Message BUILDsmore on WhatsApp",
-											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsx(MessageCircle, { className: "w-4 h-4" })
+										/* @__PURE__ */ jsx(CheckCircle2, { className: "w-10 h-10 text-emerald-600 mx-auto" }),
+										/* @__PURE__ */ jsx("h3", {
+											className: "text-2xl font-extrabold text-[#0D2558]",
+											children: "Inquiry Received"
 										}),
-										/* @__PURE__ */ jsx("a", {
-											href: `tel:${office.rawPhone}`,
-											"aria-label": "Call BUILDsmore Advisory Desk",
-											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsx(Phone, { className: "w-4 h-4" })
+										/* @__PURE__ */ jsxs("p", {
+											className: "text-sm text-slate-600 leading-relaxed max-w-md mx-auto",
+											children: [
+												"Thank you, ",
+												/* @__PURE__ */ jsx("strong", {
+													className: "text-[#0D2558]",
+													children: name
+												}),
+												".",
+												" ",
+												successNote || "Your inquiry has been registered with our advisory desk and routed for confidential review."
+											]
 										}),
-										/* @__PURE__ */ jsx("a", {
-											href: `mailto:${office.email}`,
-											"aria-label": "Email BUILDsmore Advisory Desk",
-											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsx(Mail, { className: "w-4 h-4" })
-										}),
-										/* @__PURE__ */ jsx("a", {
-											href: office.mapsExternalUrl,
-											target: "_blank",
-											rel: "noopener noreferrer",
-											"aria-label": "Open BUILDsmore office directions on Google Maps",
-											className: "w-10 h-10 rounded-sm bg-[#141922] border border-[#242c38] hover:border-[#c5a059] text-[#cbd5e1] hover:text-[#c5a059] flex items-center justify-center transition-colors",
-											children: /* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4" })
+										/* @__PURE__ */ jsx("button", {
+											type: "button",
+											onClick: () => {
+												setSubmitted(false);
+												setName("");
+												setEmail("");
+												setPhone("");
+												setSubject("");
+												setMessage("");
+												setHoneypot("");
+												setSuccessNote(null);
+												setError(null);
+												formStartedAt.current = Date.now();
+											},
+											className: "inline-flex items-center justify-center px-6 py-2.5 text-xs uppercase tracking-wider font-bold text-white bg-[#0D2558] hover:bg-[#163B8C] rounded-full cursor-pointer transition-colors",
+											children: "Send Another Message"
 										})
 									]
+								}) : /* @__PURE__ */ jsxs("form", {
+									onSubmit: handleSubmit,
+									className: "space-y-4 sm:space-y-5",
+									noValidate: true,
+									children: [
+										/* @__PURE__ */ jsxs("div", {
+											className: "sr-only",
+											"aria-hidden": "true",
+											children: [/* @__PURE__ */ jsx("label", {
+												htmlFor: "contact-website-field",
+												children: "Website"
+											}), /* @__PURE__ */ jsx("input", {
+												id: "contact-website-field",
+												type: "text",
+												name: "website",
+												tabIndex: -1,
+												autoComplete: "off",
+												value: honeypot,
+												onChange: (e) => setHoneypot(e.target.value)
+											})]
+										}),
+										error && /* @__PURE__ */ jsxs("div", {
+											role: "alert",
+											className: "p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-start gap-2.5",
+											children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-[#DC1F26] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
+										}),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+											htmlFor: "contact-full-name",
+											className: "text-xs font-bold text-slate-700 block mb-1.5",
+											children: ["Full Name ", /* @__PURE__ */ jsx("span", {
+												className: "text-[#DC1F26]",
+												children: "*"
+											})]
+										}), /* @__PURE__ */ jsx("input", {
+											ref: nameInputRef,
+											id: "contact-full-name",
+											type: "text",
+											required: true,
+											value: name,
+											onChange: (e) => setName(e.target.value),
+											placeholder: "Enter your full name",
+											className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-4 py-3 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+										})] }),
+										/* @__PURE__ */ jsxs("div", {
+											className: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+											children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+												htmlFor: "contact-email",
+												className: "text-xs font-bold text-slate-700 block mb-1.5",
+												children: ["Email Address ", /* @__PURE__ */ jsx("span", {
+													className: "text-[#DC1F26]",
+													children: "*"
+												})]
+											}), /* @__PURE__ */ jsx("input", {
+												id: "contact-email",
+												type: "email",
+												required: true,
+												value: email,
+												onChange: (e) => setEmail(e.target.value),
+												placeholder: "Enter your email address",
+												className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-4 py-3 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+											})] }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+												htmlFor: "contact-phone",
+												className: "text-xs font-bold text-slate-700 block mb-1.5",
+												children: ["Phone Number ", /* @__PURE__ */ jsx("span", {
+													className: "text-[#DC1F26]",
+													children: "*"
+												})]
+											}), /* @__PURE__ */ jsx("input", {
+												id: "contact-phone",
+												type: "tel",
+												required: true,
+												value: phone,
+												onChange: (e) => setPhone(e.target.value),
+												placeholder: "Enter your phone number",
+												className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-4 py-3 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all tabular-nums"
+											})] })]
+										}),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
+											htmlFor: "contact-subject",
+											className: "text-xs font-bold text-slate-700 block mb-1.5",
+											children: "Subject"
+										}), /* @__PURE__ */ jsx("input", {
+											id: "contact-subject",
+											type: "text",
+											value: subject,
+											onChange: (e) => setSubject(e.target.value),
+											placeholder: "Enter the subject of your message",
+											className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-4 py-3 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+										})] }),
+										/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsxs("label", {
+											htmlFor: "contact-message",
+											className: "text-xs font-bold text-slate-700 block mb-1.5",
+											children: ["Message ", /* @__PURE__ */ jsx("span", {
+												className: "text-[#DC1F26]",
+												children: "*"
+											})]
+										}), /* @__PURE__ */ jsx("textarea", {
+											id: "contact-message",
+											rows: 4,
+											required: true,
+											value: message,
+											onChange: (e) => setMessage(e.target.value),
+											placeholder: "Enter your message here",
+											className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl px-4 py-3 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none resize-y transition-all"
+										})] }),
+										/* @__PURE__ */ jsx("button", {
+											type: "submit",
+											disabled: loading,
+											className: "w-full py-3.5 px-6 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs sm:text-sm uppercase tracking-wider font-bold rounded-xl transition-colors cursor-pointer shadow-md shadow-[#DC1F26]/20 disabled:opacity-50",
+											children: loading ? "Submitting..." : "Submit Inquiry"
+										})
+									]
+								})
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "md:col-span-5 order-3 space-y-6 pt-4 border-t border-slate-200",
+								children: [/* @__PURE__ */ jsxs("div", {
+									className: "grid grid-cols-1 sm:grid-cols-2 gap-6",
+									children: [
+										/* @__PURE__ */ jsxs("div", {
+											className: "space-y-1",
+											children: [/* @__PURE__ */ jsx("span", {
+												className: "text-xs font-bold uppercase tracking-wider text-slate-400 block",
+												children: "Message Us"
+											}), /* @__PURE__ */ jsx("a", {
+												href: `mailto:${office.email}`,
+												className: "text-sm font-bold text-[#0D2558] hover:text-[#DC1F26] transition-colors break-all block",
+												children: office.email
+											})]
+										}),
+										/* @__PURE__ */ jsxs("div", {
+											className: "space-y-1",
+											children: [/* @__PURE__ */ jsx("span", {
+												className: "text-xs font-bold uppercase tracking-wider text-slate-400 block",
+												children: "Call Us"
+											}), /* @__PURE__ */ jsx("a", {
+												href: `tel:${office.rawPhone}`,
+												className: "text-sm font-bold text-[#0D2558] hover:text-[#DC1F26] transition-colors tabular-nums block",
+												children: office.phone
+											})]
+										}),
+										/* @__PURE__ */ jsxs("div", {
+											className: "space-y-1",
+											children: [/* @__PURE__ */ jsx("span", {
+												className: "text-xs font-bold uppercase tracking-wider text-slate-400 block",
+												children: "Location"
+											}), /* @__PURE__ */ jsxs("p", {
+												className: "text-sm font-semibold text-slate-700 leading-relaxed",
+												children: [
+													office.addressLine1,
+													", ",
+													office.addressLine2
+												]
+											})]
+										}),
+										/* @__PURE__ */ jsxs("div", {
+											className: "space-y-1",
+											children: [/* @__PURE__ */ jsx("span", {
+												className: "text-xs font-bold uppercase tracking-wider text-slate-400 block",
+												children: "Business Hours"
+											}), /* @__PURE__ */ jsx("p", {
+												className: "text-sm font-semibold text-slate-700 leading-relaxed tabular-nums",
+												children: office.hours
+											})]
+										})
+									]
+								}), /* @__PURE__ */ jsxs("div", {
+									className: "pt-4 border-t border-slate-200 space-y-2.5",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "text-xs font-bold uppercase tracking-wider text-slate-400 block",
+										children: "Direct Channels"
+									}), /* @__PURE__ */ jsxs("div", {
+										className: "flex items-center gap-3",
+										children: [
+											/* @__PURE__ */ jsx("a", {
+												href: office.whatsappUrl,
+												target: "_blank",
+												rel: "noopener noreferrer",
+												"aria-label": "Message BUILDsmore on WhatsApp",
+												className: "w-10 h-10 rounded-full bg-white border border-slate-200 hover:bg-[#16A34A] hover:border-[#16A34A] text-[#0D2558] hover:text-white flex items-center justify-center transition-colors shadow-xs",
+												children: /* @__PURE__ */ jsx(MessageCircle, { className: "w-4 h-4" })
+											}),
+											/* @__PURE__ */ jsx("a", {
+												href: `tel:${office.rawPhone}`,
+												"aria-label": "Call BUILDsmore Advisory Desk",
+												className: "w-10 h-10 rounded-full bg-white border border-slate-200 hover:bg-[#DC1F26] hover:border-[#DC1F26] text-[#0D2558] hover:text-white flex items-center justify-center transition-colors shadow-xs",
+												children: /* @__PURE__ */ jsx(Phone, { className: "w-4 h-4" })
+											}),
+											/* @__PURE__ */ jsx("a", {
+												href: `mailto:${office.email}`,
+												"aria-label": "Email BUILDsmore Advisory Desk",
+												className: "w-10 h-10 rounded-full bg-white border border-slate-200 hover:bg-[#0D2558] hover:border-[#0D2558] text-[#0D2558] hover:text-white flex items-center justify-center transition-colors shadow-xs",
+												children: /* @__PURE__ */ jsx(Mail, { className: "w-4 h-4" })
+											}),
+											/* @__PURE__ */ jsx("a", {
+												href: office.mapsExternalUrl,
+												target: "_blank",
+												rel: "noopener noreferrer",
+												"aria-label": "Open BUILDsmore office directions on Google Maps",
+												className: "w-10 h-10 rounded-full bg-white border border-slate-200 hover:bg-[#0D2558] hover:border-[#0D2558] text-[#0D2558] hover:text-white flex items-center justify-center transition-colors shadow-xs",
+												children: /* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4" })
+											})
+										]
+									})]
 								})]
-							})]
-						})
-					]
+							})
+						]
+					})
 				})
 			}),
 			/* @__PURE__ */ jsx("section", {
 				"aria-label": "BUILDsmore Corporate Office Location Map",
-				className: "relative w-full border-y border-[#1e2530] bg-[#101419]",
+				className: "relative w-full border-b border-slate-200 bg-slate-100",
 				children: /* @__PURE__ */ jsxs("div", {
 					className: "w-full h-[300px] sm:h-[360px] lg:h-[420px] relative",
 					children: [/* @__PURE__ */ jsx("iframe", {
 						title: "BUILDsmore Corporate Office Map — Sector 82 A, Mohali",
 						src: office.mapsEmbedUrl,
-						className: "w-full h-full border-0 filter contrast-[0.95] brightness-[0.92]",
+						className: "w-full h-full border-0",
 						loading: "lazy",
 						referrerPolicy: "no-referrer-when-downgrade"
 					}), /* @__PURE__ */ jsxs("div", {
-						className: "hidden sm:flex items-center justify-between gap-4 absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-md bg-[#0c0f12]/95 backdrop-blur-md border border-[#26303d] rounded-sm px-4 py-3 shadow-xl",
+						className: "hidden sm:flex items-center justify-between gap-4 absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-md bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl px-4 py-3 shadow-xl",
 						children: [/* @__PURE__ */ jsxs("div", {
 							className: "min-w-0",
 							children: [/* @__PURE__ */ jsx("p", {
-								className: "text-xs font-semibold text-[#f7f5f2] truncate",
+								className: "text-xs font-extrabold text-[#0D2558] truncate",
 								children: office.name
 							}), /* @__PURE__ */ jsxs("p", {
-								className: "text-[11px] text-[#9ca3af] truncate",
+								className: "text-[11px] text-slate-500 truncate",
 								children: [office.addressLine1, ", Mohali 140306"]
 							})]
 						}), /* @__PURE__ */ jsxs("a", {
 							href: office.mapsExternalUrl,
 							target: "_blank",
 							rel: "noopener noreferrer",
-							className: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-[11px] font-semibold uppercase tracking-wider rounded-sm shrink-0 transition-colors",
+							className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-[11px] font-bold uppercase tracking-wider rounded-full shrink-0 transition-colors",
 							children: [/* @__PURE__ */ jsx("span", { children: "Directions" }), /* @__PURE__ */ jsx(ExternalLink, { className: "w-3 h-3" })]
 						})]
 					})]
@@ -7872,22 +8425,32 @@ var ContactPage = ({ onNavigate }) => {
 						className: "md:col-span-5 flex flex-col justify-between space-y-8 md:min-h-[340px]",
 						children: [/* @__PURE__ */ jsxs("div", {
 							className: "space-y-3",
-							children: [/* @__PURE__ */ jsx("h2", {
-								className: "font-serif text-3xl sm:text-4xl font-normal text-[#f7f5f2] leading-tight text-balance",
-								children: "Frequently Asked Questions"
-							}), /* @__PURE__ */ jsx("p", {
-								className: "text-sm text-[#9ca3af] leading-relaxed font-light",
-								children: "Answers to your real estate, RERA verification, and advisory questions."
-							})]
+							children: [
+								/* @__PURE__ */ jsxs("div", {
+									className: "inline-flex items-center gap-2.5",
+									children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+										className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+										children: "Client Guidance"
+									})]
+								}),
+								/* @__PURE__ */ jsx("h2", {
+									className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] leading-tight tracking-tight text-balance",
+									children: "Frequently Asked Questions"
+								}),
+								/* @__PURE__ */ jsx("p", {
+									className: "text-sm text-slate-600 leading-relaxed",
+									children: "Answers to your real estate, RERA verification, and advisory questions."
+								})
+							]
 						}), /* @__PURE__ */ jsxs("div", {
-							className: "space-y-3 pt-4 border-t border-[#1c232e] md:border-t-0 md:pt-0",
+							className: "space-y-3 p-6 bg-[#F7F9FC] border border-slate-200 rounded-2xl",
 							children: [
 								/* @__PURE__ */ jsx("h3", {
-									className: "text-sm font-semibold text-[#f7f5f2]",
+									className: "text-sm font-extrabold text-[#0D2558]",
 									children: "Still have a Question?"
 								}),
 								/* @__PURE__ */ jsx("p", {
-									className: "text-xs text-[#9ca3af] leading-relaxed max-w-sm",
+									className: "text-xs text-slate-600 leading-relaxed max-w-sm",
 									children: "We're here to help! Reach out directly and get confidential answers tailored to your property search."
 								}),
 								/* @__PURE__ */ jsx("div", {
@@ -7895,14 +8458,14 @@ var ContactPage = ({ onNavigate }) => {
 									children: /* @__PURE__ */ jsx("button", {
 										type: "button",
 										onClick: scrollToContactForm,
-										className: "inline-flex items-center justify-center px-5 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0",
+										className: "inline-flex items-center justify-center px-5 py-2.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs uppercase tracking-wider font-bold rounded-full transition-colors cursor-pointer whitespace-nowrap shrink-0",
 										children: "Contact Us"
 									})
 								})
 							]
 						})]
 					}), /* @__PURE__ */ jsx("div", {
-						className: "md:col-span-7 border-t border-[#202732] divide-y divide-[#202732]",
+						className: "md:col-span-7 border-t border-slate-200 divide-y divide-slate-200",
 						children: FAQ_ITEMS.map((item, idx) => {
 							const isOpen = openFaqIndex === idx;
 							return /* @__PURE__ */ jsxs("div", {
@@ -7911,13 +8474,13 @@ var ContactPage = ({ onNavigate }) => {
 									type: "button",
 									"aria-expanded": isOpen,
 									onClick: () => setOpenFaqIndex(isOpen ? null : idx),
-									className: "w-full py-4 flex items-center justify-between gap-4 text-left cursor-pointer group focus:outline-none focus-visible:text-[#c5a059]",
+									className: "w-full py-4 flex items-center justify-between gap-4 text-left cursor-pointer group focus:outline-none",
 									children: [/* @__PURE__ */ jsx("span", {
-										className: `text-sm sm:text-base font-medium transition-colors ${isOpen ? "text-[#c5a059]" : "text-[#f7f5f2] group-hover:text-[#c5a059]"}`,
+										className: `text-sm sm:text-base font-bold transition-colors ${isOpen ? "text-[#DC1F26]" : "text-[#0D2558] group-hover:text-[#163B8C]"}`,
 										children: item.question
-									}), /* @__PURE__ */ jsx(ChevronDown, { className: `w-4 h-4 text-[#8a909a] shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#c5a059]" : ""}` })]
+									}), /* @__PURE__ */ jsx(ChevronDown, { className: `w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#DC1F26]" : ""}` })]
 								}), isOpen && /* @__PURE__ */ jsx("div", {
-									className: "pb-4 pr-6 text-xs sm:text-sm text-[#9ca3af] leading-relaxed font-light",
+									className: "pb-4 pr-6 text-xs sm:text-sm text-slate-600 leading-relaxed",
 									children: item.answer
 								})]
 							}, item.question);
@@ -7926,7 +8489,7 @@ var ContactPage = ({ onNavigate }) => {
 				})
 			}),
 			/* @__PURE__ */ jsxs("section", {
-				className: "relative w-full overflow-hidden border-t border-[#1e2530] bg-[#101419]",
+				className: "relative w-full overflow-hidden bg-slate-900",
 				children: [
 					/* @__PURE__ */ jsx("img", {
 						src: "/assets/images/contact_cta_residence_1795013194422.jpg",
@@ -7936,27 +8499,27 @@ var ContactPage = ({ onNavigate }) => {
 					}),
 					/* @__PURE__ */ jsx("div", {
 						"aria-hidden": "true",
-						className: "absolute inset-0 bg-gradient-to-b from-[#0c0f12]/90 via-[#0c0f12]/55 to-[#0c0f12]/35"
+						className: "absolute inset-0 bg-gradient-to-r from-slate-950/65 via-[#0D2558]/35 to-slate-950/25"
 					}),
 					/* @__PURE__ */ jsx("div", {
-						className: "relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-20 pb-40 sm:pb-52 lg:pb-64",
+						className: "relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24",
 						children: /* @__PURE__ */ jsxs("div", {
-							className: "grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start",
+							className: "grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-center",
 							children: [/* @__PURE__ */ jsx("div", {
 								className: "md:col-span-7",
 								children: /* @__PURE__ */ jsx("h2", {
-									className: "font-serif text-3xl sm:text-4xl lg:text-[3rem] font-normal text-white leading-[1.1] text-balance",
+									className: "text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold text-white leading-[1.12] tracking-tight text-balance drop-shadow-sm",
 									children: "Find Your Perfect Property With BUILDsmore"
 								})
 							}), /* @__PURE__ */ jsxs("div", {
 								className: "md:col-span-5 space-y-4",
 								children: [/* @__PURE__ */ jsx("p", {
-									className: "text-sm text-[#e2e5ea] leading-relaxed font-light",
+									className: "text-sm text-white/90 leading-relaxed drop-shadow-xs",
 									children: "Looking for an exceptional residence, commercial landmark, or investment plot? Explore curated listings with experienced BUILDsmore advisors."
 								}), /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs(AppLink, {
 									href: "/properties",
 									onNavigate,
-									className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#f7f5f2] hover:bg-[#c5a059] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0",
+									className: "inline-flex items-center gap-2 px-6 py-3 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs uppercase tracking-wider font-bold rounded-full transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-lg",
 									children: [/* @__PURE__ */ jsx("span", { children: "Start Your Search" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
 								}) })]
 							})]
@@ -7970,82 +8533,91 @@ var ContactPage = ({ onNavigate }) => {
 // src/pages/LegalPage.tsx
 var LegalPage = ({ type, onNavigate }) => {
 	const isPrivacy = type === "privacy";
-	return /* @__PURE__ */ jsxs("div", {
-		className: "max-w-4xl mx-auto px-6 py-16 space-y-12 text-[#cbd5e1] font-light leading-relaxed text-sm",
-		children: [/* @__PURE__ */ jsxs("div", {
-			className: "space-y-3 pb-6 border-b border-[#202732]",
-			children: [
-				/* @__PURE__ */ jsx(Breadcrumbs, {
-					items: [{
-						label: "Home",
-						href: "/"
-					}, { label: isPrivacy ? "Privacy Policy" : "Terms of Service" }],
-					onNavigate
-				}),
-				/* @__PURE__ */ jsx("span", {
-					className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
-					children: "Regulatory Compliance & Governance"
-				}),
-				/* @__PURE__ */ jsx("h1", {
-					className: "font-serif text-3xl sm:text-4xl font-normal text-white",
-					children: isPrivacy ? "Global Privacy & Sovereign Data Protection Policy" : "Terms of Platform Advisory & Listing Access"
-				}),
-				/* @__PURE__ */ jsx("p", {
-					className: "text-xs text-[#8a909a] font-mono",
-					children: "Effective: October 2026 · Compliant with Swiss FADP, EU GDPR, UK Data Protection Act, and DIFC Data Protection Law."
-				})
-			]
-		}), isPrivacy ? /* @__PURE__ */ jsxs("div", {
-			className: "space-y-8",
-			children: [
-				/* @__PURE__ */ jsxs("section", {
-					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxs("h2", {
-						className: "font-serif text-xl font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-5 h-5 text-[#c5a059]" }), "1. Fiduciary Commitment to Principal Privacy"]
-					}), /* @__PURE__ */ jsx("p", { children: "BUILDsmore operates at the apex of international private wealth advisory. We adhere to the most stringent data minimization principles. We do not sell, license, rent, or publicly disclose client contact data, financial covenants, or transactional inquiries under any circumstance." })]
-				}),
-				/* @__PURE__ */ jsxs("section", {
-					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxs("h2", {
-						className: "font-serif text-xl font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsx(Lock, { className: "w-5 h-5 text-[#c5a059]" }), "2. Data Collected via Inquiry and Synchronization Engines"]
-					}), /* @__PURE__ */ jsx("p", { children: "When clients transmit confidential inquiries for listed or off-market estates, we collect verified identifiers (legal name, institutional email, phone, target acquisition timelines). For partner WordPress sites connected via our WordPress Importer API, we ingest only publicly published or authorized custom-field metadata (property specifications, pricing, imagery, geographic coordinates)." })]
-				}),
-				/* @__PURE__ */ jsxs("section", {
-					className: "space-y-3",
-					children: [/* @__PURE__ */ jsx("h2", {
-						className: "font-serif text-xl font-medium text-white",
-						children: "3. Encryption & Access Governance"
-					}), /* @__PURE__ */ jsx("p", { children: "All data transmissions employ TLS 1.3 encryption. Internal administrative access is restricted via strict Role-Based Access Control (RBAC) and monitored via immutable audit logs." })]
-				})
-			]
-		}) : /* @__PURE__ */ jsxs("div", {
-			className: "space-y-8",
-			children: [
-				/* @__PURE__ */ jsxs("section", {
-					className: "space-y-3",
-					children: [/* @__PURE__ */ jsxs("h2", {
-						className: "font-serif text-xl font-medium text-white flex items-center gap-2",
-						children: [/* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 text-[#c5a059]" }), "1. Platform Mandate and Nature of Listings"]
-					}), /* @__PURE__ */ jsx("p", { children: "BUILDsmore provides a curated registry of prime residential, commercial, and agricultural real estate. While every listing is reviewed for title deed authenticity and architectural merit, representations of interior dimensions, zoning permits, and passing yields are subject to formal legal verification during contract exchange." })]
-				}),
-				/* @__PURE__ */ jsxs("section", {
-					className: "space-y-3",
-					children: [/* @__PURE__ */ jsx("h2", {
-						className: "font-serif text-xl font-medium text-white",
-						children: "2. Multi-Source WordPress Integration Terms"
-					}), /* @__PURE__ */ jsx("p", { children: "Properties synchronized from third-party agency WordPress endpoints retain original copyright and source attribution. The BUILDsmore central registry enforces safe deduplication and preserves central listings unless explicitly decommissioned by the respective listing principal." })]
-				}),
-				/* @__PURE__ */ jsxs("section", {
-					className: "space-y-3",
-					children: [/* @__PURE__ */ jsx("h2", {
-						className: "font-serif text-xl font-medium text-white",
-						children: "3. Non-Disclosure & Private Inspections"
-					}), /* @__PURE__ */ jsx("p", { children: "Certain marquee holdings (including private islands and sovereign diplomatic palaces) require an executed Mutual Non-Disclosure Agreement (NDA) and proof of funds before architectural floorplans or precise cadastre coordinates are unlocked." })]
-				})
-			]
-		})]
+	return /* @__PURE__ */ jsx("div", {
+		className: "bg-[#F7F9FC] min-h-screen py-12 sm:py-16",
+		children: /* @__PURE__ */ jsx("div", {
+			className: "max-w-4xl mx-auto px-4 sm:px-6",
+			children: /* @__PURE__ */ jsxs("div", {
+				className: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-xs space-y-10 text-slate-700 leading-relaxed text-sm",
+				children: [/* @__PURE__ */ jsxs("div", {
+					className: "space-y-3 pb-6 border-b border-slate-200",
+					children: [
+						/* @__PURE__ */ jsx(Breadcrumbs, {
+							items: [{
+								label: "Home",
+								href: "/"
+							}, { label: isPrivacy ? "Privacy Policy" : "Terms of Service" }],
+							onNavigate
+						}),
+						/* @__PURE__ */ jsxs("div", {
+							className: "inline-flex items-center gap-2.5 pt-2",
+							children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+								className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+								children: "Regulatory Compliance & Governance"
+							})]
+						}),
+						/* @__PURE__ */ jsx("h1", {
+							className: "text-3xl sm:text-4xl font-extrabold text-[#0D2558] tracking-tight",
+							children: isPrivacy ? "Global Privacy & Sovereign Data Protection Policy" : "Terms of Platform Advisory & Listing Access"
+						}),
+						/* @__PURE__ */ jsx("p", {
+							className: "text-xs text-slate-500 font-medium",
+							children: "Effective: October 2026 · Compliant with Swiss FADP, EU GDPR, UK Data Protection Act, and DIFC Data Protection Law."
+						})
+					]
+				}), isPrivacy ? /* @__PURE__ */ jsxs("div", {
+					className: "space-y-8",
+					children: [
+						/* @__PURE__ */ jsxs("section", {
+							className: "space-y-3",
+							children: [/* @__PURE__ */ jsxs("h2", {
+								className: "text-xl font-extrabold text-[#0D2558] flex items-center gap-2",
+								children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-5 h-5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "1. Fiduciary Commitment to Principal Privacy" })]
+							}), /* @__PURE__ */ jsx("p", { children: "BUILDsmore operates at the apex of international private wealth advisory. We adhere to the most stringent data minimization principles. We do not sell, license, rent, or publicly disclose client contact data, financial covenants, or transactional inquiries under any circumstance." })]
+						}),
+						/* @__PURE__ */ jsxs("section", {
+							className: "space-y-3",
+							children: [/* @__PURE__ */ jsxs("h2", {
+								className: "text-xl font-extrabold text-[#0D2558] flex items-center gap-2",
+								children: [/* @__PURE__ */ jsx(Lock, { className: "w-5 h-5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "2. Data Collected via Inquiry and Synchronization Engines" })]
+							}), /* @__PURE__ */ jsx("p", { children: "When clients transmit confidential inquiries for listed or off-market estates, we collect verified identifiers (legal name, institutional email, phone, target acquisition timelines). For partner WordPress sites connected via our WordPress Importer API, we ingest only publicly published or authorized custom-field metadata (property specifications, pricing, imagery, geographic coordinates)." })]
+						}),
+						/* @__PURE__ */ jsxs("section", {
+							className: "space-y-3",
+							children: [/* @__PURE__ */ jsx("h2", {
+								className: "text-xl font-extrabold text-[#0D2558]",
+								children: "3. Encryption & Access Governance"
+							}), /* @__PURE__ */ jsx("p", { children: "All data transmissions employ TLS 1.3 encryption. Internal administrative access is restricted via strict Role-Based Access Control (RBAC) and monitored via immutable audit logs." })]
+						})
+					]
+				}) : /* @__PURE__ */ jsxs("div", {
+					className: "space-y-8",
+					children: [
+						/* @__PURE__ */ jsxs("section", {
+							className: "space-y-3",
+							children: [/* @__PURE__ */ jsxs("h2", {
+								className: "text-xl font-extrabold text-[#0D2558] flex items-center gap-2",
+								children: [/* @__PURE__ */ jsx(FileText, { className: "w-5 h-5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "1. Platform Mandate and Nature of Listings" })]
+							}), /* @__PURE__ */ jsx("p", { children: "BUILDsmore provides a curated registry of prime residential, commercial, and agricultural real estate. While every listing is reviewed for title deed authenticity and architectural merit, representations of interior dimensions, zoning permits, and passing yields are subject to formal legal verification during contract exchange." })]
+						}),
+						/* @__PURE__ */ jsxs("section", {
+							className: "space-y-3",
+							children: [/* @__PURE__ */ jsx("h2", {
+								className: "text-xl font-extrabold text-[#0D2558]",
+								children: "2. Multi-Source WordPress Integration Terms"
+							}), /* @__PURE__ */ jsx("p", { children: "Properties synchronized from third-party agency WordPress endpoints retain original copyright and source attribution. The BUILDsmore central registry enforces safe deduplication and preserves central listings unless explicitly decommissioned by the respective listing principal." })]
+						}),
+						/* @__PURE__ */ jsxs("section", {
+							className: "space-y-3",
+							children: [/* @__PURE__ */ jsx("h2", {
+								className: "text-xl font-extrabold text-[#0D2558]",
+								children: "3. Non-Disclosure & Private Inspections"
+							}), /* @__PURE__ */ jsx("p", { children: "Certain marquee holdings (including private islands and sovereign diplomatic palaces) require an executed Mutual Non-Disclosure Agreement (NDA) and proof of funds before architectural floorplans or precise cadastre coordinates are unlocked." })]
+						})
+					]
+				})]
+			})
+		})
 	});
 };
 // src/pages/CollectionDetailPage.tsx
@@ -8055,19 +8627,18 @@ var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNaviga
 	const collectionProperties = collection.propertyIds.map((id) => propMap.get(id)).filter((p) => p !== void 0 && p.status === "Published");
 	const totalValuation = collectionProperties.reduce((sum, p) => sum + (p.price || 0), 0);
 	return /* @__PURE__ */ jsxs("div", {
-		className: "space-y-12 pb-20 animate-in fade-in duration-200",
+		className: "bg-[#F7F9FC] min-h-screen pb-20 animate-in fade-in duration-200",
 		children: [/* @__PURE__ */ jsxs("div", {
-			className: "relative min-h-[420px] flex items-center justify-center px-6 overflow-hidden bg-[#101419]",
+			className: "relative min-h-[380px] flex items-center justify-center px-6 py-14 overflow-hidden bg-slate-900",
 			children: [
 				/* @__PURE__ */ jsx("img", {
 					src: collection.coverImageUrl,
 					alt: collection.title,
-					className: "absolute inset-0 w-full h-full object-cover filter brightness-[0.35]"
+					className: "absolute inset-0 w-full h-full object-cover"
 				}),
-				/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-[#0c0f12]/60 to-transparent" }),
-				/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-radial-gradient from-transparent to-[#0c0f12]/80" }),
+				/* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-b from-slate-950/45 via-[#0D2558]/30 to-slate-950/60" }),
 				/* @__PURE__ */ jsxs("div", {
-					className: "relative z-10 max-w-4xl mx-auto text-center space-y-4 pt-12 pb-8",
+					className: "relative z-10 max-w-4xl mx-auto text-center space-y-4",
 					children: [
 						/* @__PURE__ */ jsx(Breadcrumbs, {
 							items: [
@@ -8082,43 +8653,44 @@ var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNaviga
 								{ label: collection.title }
 							],
 							align: "center",
+							variant: "dark",
 							onNavigate: (path) => {
 								if (onNavigate) onNavigate(path);
 								else if (path === "/") onNavigateHome();
 							}
 						}),
 						/* @__PURE__ */ jsxs("div", {
-							className: "inline-flex items-center gap-2 px-3 py-1 bg-[#c5a059]/10 border border-[#c5a059]/30 rounded-sm text-[11px] font-mono uppercase tracking-[0.2em] text-[#c5a059]",
+							className: "inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#DC1F26] rounded-full text-[11px] font-bold uppercase tracking-[0.14em] text-white shadow-sm",
 							children: [/* @__PURE__ */ jsx(Layers, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Curated Investment Collection" })]
 						}),
 						/* @__PURE__ */ jsx("h1", {
-							className: "font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-normal text-white tracking-tight",
+							className: "text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight drop-shadow-sm",
 							children: collection.title
 						}),
 						collection.subtitle && /* @__PURE__ */ jsx("p", {
-							className: "text-base sm:text-lg text-[#cbd5e1] font-light max-w-2xl mx-auto leading-relaxed",
+							className: "text-base sm:text-lg text-white font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-xs",
 							children: collection.subtitle
 						}),
 						/* @__PURE__ */ jsx("p", {
-							className: "text-xs sm:text-sm text-[#9ca3af] max-w-2xl mx-auto leading-relaxed pt-2",
+							className: "text-xs sm:text-sm text-white/90 max-w-2xl mx-auto leading-relaxed pt-1 drop-shadow-xs",
 							children: collection.description
 						}),
 						/* @__PURE__ */ jsxs("div", {
-							className: "pt-4 flex items-center justify-center gap-6 text-xs font-mono text-[#cbd5e1]",
+							className: "pt-4 inline-flex items-center justify-center gap-6 px-6 py-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 text-xs text-slate-200",
 							children: [
 								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-									className: "text-[#8a909a] block text-[10px] uppercase",
+									className: "text-sky-200 block text-[10px] uppercase font-bold",
 									children: "Curated Assets"
 								}), /* @__PURE__ */ jsxs("strong", {
-									className: "text-white text-sm",
+									className: "text-white text-sm font-extrabold",
 									children: [collectionProperties.length, " Properties"]
 								})] }),
-								/* @__PURE__ */ jsx("div", { className: "h-6 w-[1px] bg-[#242c38]" }),
+								/* @__PURE__ */ jsx("div", { className: "h-6 w-[1px] bg-white/20" }),
 								/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("span", {
-									className: "text-[#8a909a] block text-[10px] uppercase",
+									className: "text-sky-200 block text-[10px] uppercase font-bold",
 									children: "Total Valuation"
 								}), /* @__PURE__ */ jsx("strong", {
-									className: "text-[#c5a059] text-sm",
+									className: "text-white text-sm font-extrabold tabular-nums",
 									children: formatPrice(totalValuation, "INR")
 								})] })
 							]
@@ -8127,22 +8699,23 @@ var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNaviga
 				})
 			]
 		}), /* @__PURE__ */ jsxs("div", {
-			className: "max-w-7xl mx-auto px-6 space-y-8",
+			className: "max-w-7xl mx-auto px-4 sm:px-6 pt-10 space-y-8",
 			children: [/* @__PURE__ */ jsxs("div", {
-				className: "flex items-center justify-between pb-4 border-b border-[#202732] text-xs font-mono text-[#8a909a]",
+				className: "flex items-center justify-between pb-4 border-b border-slate-200 text-xs font-semibold text-slate-500",
 				children: [/* @__PURE__ */ jsxs("span", { children: [
 					"Displaying ",
 					/* @__PURE__ */ jsx("strong", {
-						className: "text-white",
+						className: "text-[#0D2558]",
 						children: collectionProperties.length
 					}),
-					" verified holdings in this portfolio"
+					" ",
+					"verified holdings in this portfolio"
 				] }), /* @__PURE__ */ jsx("span", {
-					className: "hidden sm:inline",
+					className: "hidden sm:inline text-[#163B8C]",
 					children: "Strict INR Valuation · Direct Developer & Owner Covenants"
 				})]
 			}), collectionProperties.length > 0 ? /* @__PURE__ */ jsx("div", {
-				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+				className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
 				children: collectionProperties.map((prop) => /* @__PURE__ */ jsx(PropertyCard, {
 					property: prop,
 					onSelect: onSelectProperty,
@@ -8150,15 +8723,15 @@ var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNaviga
 					onToggleSave
 				}, prop.id))
 			}) : /* @__PURE__ */ jsxs("div", {
-				className: "py-20 px-6 bg-[#101419] border border-[#202732] rounded-sm text-center space-y-3 max-w-lg mx-auto",
+				className: "py-16 px-6 bg-white border border-slate-200 rounded-2xl text-center space-y-3 max-w-lg mx-auto shadow-xs",
 				children: [
-					/* @__PURE__ */ jsx(Building2, { className: "w-12 h-12 text-[#64748b] mx-auto" }),
+					/* @__PURE__ */ jsx(Building2, { className: "w-12 h-12 text-[#163B8C]/40 mx-auto" }),
 					/* @__PURE__ */ jsx("h3", {
-						className: "font-serif text-xl text-white",
+						className: "text-xl font-extrabold text-[#0D2558]",
 						children: "No Properties Listed Yet"
 					}),
 					/* @__PURE__ */ jsx("p", {
-						className: "text-xs text-[#8a909a]",
+						className: "text-sm text-slate-600",
 						children: "Holdings are being finalized by the advisory team for this collection."
 					}),
 					/* @__PURE__ */ jsx("div", {
@@ -8166,7 +8739,7 @@ var CollectionDetailPage = ({ collection, properties, onSelectProperty, onNaviga
 						children: /* @__PURE__ */ jsx(AppLink, {
 							href: "/",
 							onNavigate: onNavigate || (() => onNavigateHome()),
-							className: "inline-block px-4 py-2 bg-[#c5a059] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm cursor-pointer",
+							className: "inline-block px-5 py-2.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs font-bold uppercase tracking-wider rounded-full cursor-pointer transition-colors",
 							children: "Return to Homepage"
 						})
 					})
@@ -8243,296 +8816,301 @@ var BlogPage = ({ blogs, onNavigate, initialTag = "" }) => {
 		setSelectedCategory(cat);
 		setCurrentPage(1);
 	};
-	return /* @__PURE__ */ jsxs("div", {
-		className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-12",
-		children: [/* @__PURE__ */ jsxs("div", {
-			className: "space-y-4 border-b border-[#1d242e] pb-8",
-			children: [/* @__PURE__ */ jsx(Breadcrumbs, {
-				items: [{
-					label: "Home",
-					href: "/"
-				}, { label: "Journal" }],
-				onNavigate
-			}), /* @__PURE__ */ jsxs("div", {
-				className: "flex flex-col lg:flex-row lg:items-end justify-between gap-6",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "space-y-2 max-w-2xl",
-					children: [
-						/* @__PURE__ */ jsx("span", {
-							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
-							children: "Editorial Insights & Market Research"
-						}),
-						/* @__PURE__ */ jsx("h1", {
-							className: "font-serif text-3xl sm:text-5xl font-normal text-[#f7f5f2] leading-tight",
-							children: "The BUILDsmore Journal"
-						}),
-						/* @__PURE__ */ jsx("p", {
-							className: "text-sm text-[#9ca3af] font-light leading-relaxed",
-							children: "Architectural perspectives, Tricity real estate intelligence, RERA advisory, and curated investment briefings."
-						})
-					]
-				}), /* @__PURE__ */ jsxs(AppLink, {
-					href: "/contact",
-					onNavigate,
-					className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#141922] hover:bg-[#1b222e] border border-[#2a3444] hover:border-[#c5a059] text-xs uppercase tracking-wider font-medium text-[#f7f5f2] rounded-sm transition-colors self-start lg:self-end shrink-0",
-					children: [/* @__PURE__ */ jsx("span", { children: "Connect with Advisory" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5 text-[#c5a059]" })]
-				})]
-			})]
-		}), publishedBlogs.length === 0 ? /* @__PURE__ */ jsxs("section", {
-			className: "py-16 px-6 bg-[#101419] border border-[#202732] rounded-sm text-center max-w-2xl mx-auto space-y-5",
-			children: [
-				/* @__PURE__ */ jsx("div", {
-					className: "w-12 h-12 mx-auto rounded-sm bg-[#161c24] border border-[#283242] flex items-center justify-center text-[#c5a059]",
-					children: /* @__PURE__ */ jsx(BookOpen, { className: "w-6 h-6" })
-				}),
-				/* @__PURE__ */ jsx("h2", {
-					className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2]",
-					children: "No Editorial Articles Published Yet"
-				}),
-				/* @__PURE__ */ jsx("p", {
-					className: "text-sm text-[#9ca3af] font-light leading-relaxed",
-					children: "Our editorial briefings and architectural market dispatches are prepared directly by BUILDsmore principals and will appear here as soon as they are published."
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "pt-2 flex flex-wrap items-center justify-center gap-3",
-					children: [/* @__PURE__ */ jsxs(AppLink, {
-						href: "/properties",
-						onNavigate,
-						className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-wider font-semibold rounded-sm transition-colors",
-						children: [/* @__PURE__ */ jsx(Building2, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Explore Portfolio" })]
-					}), /* @__PURE__ */ jsx(AppLink, {
-						href: "/contact",
-						onNavigate,
-						className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#141922] hover:bg-[#1b222e] border border-[#2a3444] text-[#f7f5f2] text-xs uppercase tracking-wider font-medium rounded-sm transition-colors",
-						children: /* @__PURE__ */ jsx("span", { children: "Contact Us" })
-					})]
-				})
-			]
-		}) : /* @__PURE__ */ jsxs(Fragment, { children: [
-			/* @__PURE__ */ jsxs("div", {
-				className: "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "flex flex-wrap items-center gap-2",
-					children: [categories.map((cat) => {
-						return /* @__PURE__ */ jsx("button", {
-							type: "button",
-							onClick: () => handleCategoryChange(cat),
-							className: `px-3.5 py-2 text-xs font-medium rounded-sm border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${selectedCategory === cat ? "bg-[#c5a059] text-[#0c0f12] border-[#c5a059] font-semibold" : "bg-[#101419] text-[#cbd5e1] border-[#222a36] hover:border-[#c5a059]/60 hover:text-white"}`,
-							children: cat
-						}, cat);
-					}), selectedTag && /* @__PURE__ */ jsxs("button", {
-						type: "button",
-						onClick: () => {
-							setSelectedTag("");
-							setCurrentPage(1);
-							onNavigate("/blog");
-						},
-						className: "inline-flex items-center gap-1.5 px-3 py-2 text-xs bg-[#181f2a] text-[#c5a059] border border-[#c5a059]/40 rounded-sm cursor-pointer hover:bg-[#1e2633]",
-						children: [/* @__PURE__ */ jsxs("span", { children: ["Tag: ", selectedTag] }), /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" })]
-					})]
+	return /* @__PURE__ */ jsx("div", {
+		className: "bg-[#F7F9FC] min-h-screen",
+		children: /* @__PURE__ */ jsxs("div", {
+			className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10",
+			children: [/* @__PURE__ */ jsxs("div", {
+				className: "space-y-4 border-b border-slate-200 pb-8",
+				children: [/* @__PURE__ */ jsx(Breadcrumbs, {
+					items: [{
+						label: "Home",
+						href: "/"
+					}, { label: "Journal" }],
+					onNavigate
 				}), /* @__PURE__ */ jsxs("div", {
-					className: "relative w-full md:w-72",
-					children: [/* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
-						type: "text",
-						value: searchQuery,
-						onChange: (e) => {
-							setSearchQuery(e.target.value);
-							setCurrentPage(1);
-						},
-						placeholder: "Search articles, topics...",
-						"aria-label": "Search journal articles",
-						className: "w-full bg-[#101419] border border-[#222a36] focus:border-[#c5a059] rounded-sm pl-10 pr-4 py-2 text-xs text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none"
-					})]
-				})]
-			}),
-			featuredPost && /* @__PURE__ */ jsxs("article", {
-				className: "grid grid-cols-1 lg:grid-cols-12 bg-[#101419] border border-[#222a36] rounded-sm overflow-hidden shadow-xl",
-				children: [/* @__PURE__ */ jsx(AppLink, {
-					href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
-					onNavigate,
-					className: "lg:col-span-7 relative min-h-[260px] sm:min-h-[340px] bg-[#141922] block overflow-hidden group",
-					children: featuredPost.featuredImage ? /* @__PURE__ */ jsx("img", {
-						src: featuredPost.featuredImage,
-						alt: featuredPost.featuredImageAlt || featuredPost.title,
-						referrerPolicy: "no-referrer",
-						className: "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-					}) : /* @__PURE__ */ jsx("div", {
-						className: "w-full h-full min-h-[260px] flex items-center justify-center bg-gradient-to-br from-[#141922] to-[#0c0f12] text-[#c5a059]/40",
-						children: /* @__PURE__ */ jsx(BookOpen, { className: "w-12 h-12" })
-					})
-				}), /* @__PURE__ */ jsxs("div", {
-					className: "lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6",
+					className: "flex flex-col lg:flex-row lg:items-end justify-between gap-6",
 					children: [/* @__PURE__ */ jsxs("div", {
-						className: "space-y-3",
+						className: "space-y-2 max-w-2xl",
 						children: [
 							/* @__PURE__ */ jsxs("div", {
-								className: "flex flex-wrap items-center gap-2 text-xs text-[#c5a059]",
-								children: [
-									/* @__PURE__ */ jsx("span", {
-										className: "font-semibold uppercase tracking-wider",
-										children: "Featured"
-									}),
-									/* @__PURE__ */ jsx("span", {
-										"aria-hidden": "true",
-										children: "·"
-									}),
-									/* @__PURE__ */ jsx("span", { children: featuredPost.category })
-								]
+								className: "inline-flex items-center gap-2.5",
+								children: [/* @__PURE__ */ jsx("span", { className: "w-7 h-[2px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#163B8C]",
+									children: "Editorial Insights & Market Research"
+								})]
 							}),
-							/* @__PURE__ */ jsx("h2", {
-								className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2] leading-snug",
-								children: /* @__PURE__ */ jsx(AppLink, {
-									href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
-									onNavigate,
-									className: "hover:text-[#c5a059] transition-colors",
-									children: featuredPost.title
-								})
+							/* @__PURE__ */ jsx("h1", {
+								className: "text-3xl sm:text-5xl font-extrabold text-[#0D2558] leading-tight tracking-tight",
+								children: "The BUILDsmore Journal"
 							}),
 							/* @__PURE__ */ jsx("p", {
-								className: "text-sm text-[#9ca3af] leading-relaxed font-light line-clamp-3",
-								children: featuredPost.excerpt
+								className: "text-sm sm:text-base text-slate-600 leading-relaxed",
+								children: "Architectural perspectives, Tricity real estate intelligence, RERA advisory, and curated investment briefings."
 							})
 						]
-					}), /* @__PURE__ */ jsxs("div", {
-						className: "space-y-4 pt-4 border-t border-[#1d242e]",
-						children: [/* @__PURE__ */ jsxs("div", {
-							className: "flex flex-wrap items-center gap-4 text-xs text-[#8a909a]",
-							children: [
-								/* @__PURE__ */ jsx("span", { children: featuredPost.authorName }),
-								formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt) && /* @__PURE__ */ jsxs("span", {
-									className: "inline-flex items-center gap-1",
-									children: [/* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-[#c5a059]" }), formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt)]
-								}),
-								/* @__PURE__ */ jsxs("span", {
-									className: "inline-flex items-center gap-1 tabular-nums",
-									children: [
-										/* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
-										featuredPost.readTimeMinutes || 1,
-										" min read"
-									]
-								})
-							]
-						}), /* @__PURE__ */ jsxs(AppLink, {
-							href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
-							onNavigate,
-							className: "inline-flex items-center gap-2 text-xs uppercase tracking-widest font-semibold text-[#c5a059] hover:text-[#e4be72] transition-colors",
-							children: [/* @__PURE__ */ jsx("span", { children: "Read Full Article" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
-						})]
+					}), /* @__PURE__ */ jsxs(AppLink, {
+						href: "/contact",
+						onNavigate,
+						className: "inline-flex items-center gap-2 px-5 py-2.5 bg-[#0D2558] hover:bg-[#163B8C] text-xs uppercase tracking-wider font-bold text-white rounded-full transition-colors self-start lg:self-end shrink-0 shadow-xs",
+						children: [/* @__PURE__ */ jsx("span", { children: "Connect with Advisory" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
 					})]
 				})]
-			}),
-			filteredBlogs.length === 0 ? /* @__PURE__ */ jsxs("div", {
-				className: "py-12 px-6 bg-[#101419] border border-[#202732] rounded-sm text-center space-y-3",
-				children: [/* @__PURE__ */ jsx("p", {
-					className: "text-sm text-[#d1d5db]",
-					children: "No articles match your current filter criteria."
-				}), /* @__PURE__ */ jsx("button", {
-					type: "button",
-					onClick: () => {
-						setSearchQuery("");
-						setSelectedCategory("All");
-						setSelectedTag("");
-						setCurrentPage(1);
-					},
-					className: "text-xs text-[#c5a059] underline cursor-pointer hover:text-[#e4be72]",
-					children: "Reset all filters"
-				})]
-			}) : /* @__PURE__ */ jsx("section", {
-				"aria-label": "Journal Articles",
-				className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
-				children: paginatedPosts.map((post) => /* @__PURE__ */ jsxs("article", {
-					className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/45 rounded-sm overflow-hidden flex flex-col transition-colors",
+			}), publishedBlogs.length === 0 ? /* @__PURE__ */ jsxs("section", {
+				className: "py-16 px-6 bg-white border border-slate-200 rounded-2xl text-center max-w-2xl mx-auto space-y-5 shadow-xs",
+				children: [
+					/* @__PURE__ */ jsx("div", {
+						className: "w-12 h-12 mx-auto rounded-xl bg-[#EEF3FB] flex items-center justify-center text-[#163B8C]",
+						children: /* @__PURE__ */ jsx(BookOpen, { className: "w-6 h-6" })
+					}),
+					/* @__PURE__ */ jsx("h2", {
+						className: "text-2xl sm:text-3xl font-extrabold text-[#0D2558]",
+						children: "No Editorial Articles Published Yet"
+					}),
+					/* @__PURE__ */ jsx("p", {
+						className: "text-sm text-slate-600 leading-relaxed",
+						children: "Our editorial briefings and architectural market dispatches are prepared directly by BUILDsmore principals and will appear here as soon as they are published."
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "pt-2 flex flex-wrap items-center justify-center gap-3",
+						children: [/* @__PURE__ */ jsxs(AppLink, {
+							href: "/properties",
+							onNavigate,
+							className: "inline-flex items-center gap-2 px-6 py-2.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs uppercase tracking-wider font-bold rounded-full transition-colors",
+							children: [/* @__PURE__ */ jsx(Building2, { className: "w-4 h-4" }), /* @__PURE__ */ jsx("span", { children: "Explore Portfolio" })]
+						}), /* @__PURE__ */ jsx(AppLink, {
+							href: "/contact",
+							onNavigate,
+							className: "inline-flex items-center gap-2 px-6 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-[#0D2558] text-xs uppercase tracking-wider font-bold rounded-full transition-colors",
+							children: /* @__PURE__ */ jsx("span", { children: "Contact Us" })
+						})]
+					})
+				]
+			}) : /* @__PURE__ */ jsxs(Fragment, { children: [
+				/* @__PURE__ */ jsxs("div", {
+					className: "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "flex flex-wrap items-center gap-2",
+						children: [categories.map((cat) => {
+							return /* @__PURE__ */ jsx("button", {
+								type: "button",
+								onClick: () => handleCategoryChange(cat),
+								className: `px-4 py-2 text-xs font-bold rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${selectedCategory === cat ? "bg-[#DC1F26] text-white border-[#DC1F26] shadow-xs" : "bg-white text-slate-700 border-slate-200 hover:border-[#0D2558] hover:text-[#0D2558]"}`,
+								children: cat
+							}, cat);
+						}), selectedTag && /* @__PURE__ */ jsxs("button", {
+							type: "button",
+							onClick: () => {
+								setSelectedTag("");
+								setCurrentPage(1);
+								onNavigate("/blog");
+							},
+							className: "inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-[#EEF3FB] text-[#163B8C] border border-[#163B8C]/25 rounded-full cursor-pointer hover:bg-[#0D2558] hover:text-white transition-colors",
+							children: [/* @__PURE__ */ jsxs("span", { children: ["Tag: ", selectedTag] }), /* @__PURE__ */ jsx(X, { className: "w-3.5 h-3.5" })]
+						})]
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "relative w-full md:w-72",
+						children: [/* @__PURE__ */ jsx(Search, { className: "w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
+							type: "text",
+							value: searchQuery,
+							onChange: (e) => {
+								setSearchQuery(e.target.value);
+								setCurrentPage(1);
+							},
+							placeholder: "Search articles, topics...",
+							"aria-label": "Search journal articles",
+							className: "w-full bg-white border border-slate-200 focus:border-[#163B8C] focus:ring-2 focus:ring-[#163B8C]/15 rounded-full pl-10 pr-4 py-2 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+						})]
+					})]
+				}),
+				featuredPost && /* @__PURE__ */ jsxs("article", {
+					className: "grid grid-cols-1 lg:grid-cols-12 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow",
 					children: [/* @__PURE__ */ jsx(AppLink, {
-						href: `/blog/${encodeURIComponent(post.slug)}`,
+						href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
 						onNavigate,
-						className: "aspect-[16/10] w-full bg-[#141922] block overflow-hidden group",
-						children: post.featuredImage ? /* @__PURE__ */ jsx("img", {
-							src: post.featuredImage,
-							alt: post.featuredImageAlt || post.title,
+						className: "lg:col-span-7 relative min-h-[260px] sm:min-h-[340px] bg-slate-100 block overflow-hidden group",
+						children: featuredPost.featuredImage ? /* @__PURE__ */ jsx("img", {
+							src: featuredPost.featuredImage,
+							alt: featuredPost.featuredImageAlt || featuredPost.title,
 							referrerPolicy: "no-referrer",
 							className: "w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
 						}) : /* @__PURE__ */ jsx("div", {
-							className: "w-full h-full flex items-center justify-center text-[#c5a059]/35",
-							children: /* @__PURE__ */ jsx(BookOpen, { className: "w-9 h-9" })
+							className: "w-full h-full min-h-[260px] flex items-center justify-center bg-[#EEF3FB] text-[#163B8C]/40",
+							children: /* @__PURE__ */ jsx(BookOpen, { className: "w-12 h-12" })
 						})
 					}), /* @__PURE__ */ jsxs("div", {
-						className: "p-6 flex-1 flex flex-col justify-between space-y-4",
+						className: "lg:col-span-5 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6",
 						children: [/* @__PURE__ */ jsxs("div", {
-							className: "space-y-2.5",
+							className: "space-y-3",
 							children: [
 								/* @__PURE__ */ jsxs("div", {
-									className: "flex items-center gap-2 text-xs text-[#8a909a]",
-									children: [
-										/* @__PURE__ */ jsx("span", {
-											className: "text-[#c5a059] font-medium",
-											children: post.category
-										}),
-										/* @__PURE__ */ jsx("span", {
-											"aria-hidden": "true",
-											children: "·"
-										}),
-										/* @__PURE__ */ jsxs("span", {
-											className: "tabular-nums",
-											children: [post.readTimeMinutes || 1, " min read"]
-										})
-									]
+									className: "flex flex-wrap items-center gap-2 text-xs font-bold",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "px-2.5 py-0.5 rounded-full bg-[#DC1F26] text-white uppercase tracking-wider text-[10px]",
+										children: "Featured"
+									}), /* @__PURE__ */ jsx("span", {
+										className: "text-[#163B8C]",
+										children: featuredPost.category
+									})]
 								}),
-								/* @__PURE__ */ jsx("h3", {
-									className: "font-serif text-xl font-normal text-[#f7f5f2] leading-snug",
+								/* @__PURE__ */ jsx("h2", {
+									className: "text-2xl sm:text-3xl font-extrabold text-[#0D2558] leading-snug tracking-tight",
 									children: /* @__PURE__ */ jsx(AppLink, {
-										href: `/blog/${encodeURIComponent(post.slug)}`,
+										href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
 										onNavigate,
-										className: "hover:text-[#c5a059] transition-colors",
-										children: post.title
+										className: "hover:text-[#163B8C] transition-colors",
+										children: featuredPost.title
 									})
 								}),
 								/* @__PURE__ */ jsx("p", {
-									className: "text-xs text-[#9ca3af] leading-relaxed font-light line-clamp-3",
-									children: post.excerpt
+									className: "text-sm text-slate-600 leading-relaxed line-clamp-3",
+									children: featuredPost.excerpt
 								})
 							]
 						}), /* @__PURE__ */ jsxs("div", {
-							className: "pt-4 border-t border-[#1b222c] flex items-center justify-between gap-2 text-xs text-[#8a909a]",
-							children: [/* @__PURE__ */ jsx("span", {
-								className: "truncate",
-								children: post.authorName
-							}), /* @__PURE__ */ jsx("span", {
-								className: "shrink-0",
-								children: formatEditorialDate(post.publishedAt || post.createdAt)
+							className: "space-y-4 pt-4 border-t border-slate-100",
+							children: [/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-wrap items-center gap-4 text-xs text-slate-500 font-medium",
+								children: [
+									/* @__PURE__ */ jsx("span", {
+										className: "text-[#0D2558] font-bold",
+										children: featuredPost.authorName
+									}),
+									formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt) && /* @__PURE__ */ jsxs("span", {
+										className: "inline-flex items-center gap-1",
+										children: [/* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-[#163B8C]" }), formatEditorialDate(featuredPost.publishedAt || featuredPost.createdAt)]
+									}),
+									/* @__PURE__ */ jsxs("span", {
+										className: "inline-flex items-center gap-1 tabular-nums",
+										children: [
+											/* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-[#163B8C]" }),
+											featuredPost.readTimeMinutes || 1,
+											" min read"
+										]
+									})
+								]
+							}), /* @__PURE__ */ jsxs(AppLink, {
+								href: `/blog/${encodeURIComponent(featuredPost.slug)}`,
+								onNavigate,
+								className: "inline-flex items-center gap-2 text-xs uppercase tracking-wider font-extrabold text-[#DC1F26] hover:text-[#B91C1C] transition-colors",
+								children: [/* @__PURE__ */ jsx("span", { children: "Read Full Article" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
 							})]
 						})]
 					})]
-				}, post.id))
-			}),
-			totalPages > 1 && /* @__PURE__ */ jsxs("nav", {
-				"aria-label": "Journal pagination",
-				className: "flex items-center justify-center gap-2 pt-4",
-				children: [
-					/* @__PURE__ */ jsx("button", {
+				}),
+				filteredBlogs.length === 0 ? /* @__PURE__ */ jsxs("div", {
+					className: "py-12 px-6 bg-white border border-slate-200 rounded-2xl text-center space-y-3 shadow-xs",
+					children: [/* @__PURE__ */ jsx("p", {
+						className: "text-sm text-slate-600 font-medium",
+						children: "No articles match your current filter criteria."
+					}), /* @__PURE__ */ jsx("button", {
 						type: "button",
-						disabled: safePage <= 1,
-						onClick: () => setCurrentPage((p) => Math.max(1, p - 1)),
-						className: "p-2 bg-[#101419] border border-[#222a36] text-[#cbd5e1] hover:border-[#c5a059] rounded-sm disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed",
-						"aria-label": "Previous page",
-						children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
-					}),
-					Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => /* @__PURE__ */ jsx("button", {
-						type: "button",
-						onClick: () => setCurrentPage(pageNum),
-						className: `px-3.5 py-1.5 text-xs font-mono rounded-sm border transition-colors cursor-pointer ${pageNum === safePage ? "bg-[#c5a059] text-[#0c0f12] border-[#c5a059] font-bold" : "bg-[#101419] text-[#cbd5e1] border-[#222a36] hover:border-[#c5a059]/60"}`,
-						children: pageNum
-					}, pageNum)),
-					/* @__PURE__ */ jsx("button", {
-						type: "button",
-						disabled: safePage >= totalPages,
-						onClick: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
-						className: "p-2 bg-[#101419] border border-[#222a36] text-[#cbd5e1] hover:border-[#c5a059] rounded-sm disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed",
-						"aria-label": "Next page",
-						children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
-					})
-				]
-			})
-		] })]
+						onClick: () => {
+							setSearchQuery("");
+							setSelectedCategory("All");
+							setSelectedTag("");
+							setCurrentPage(1);
+						},
+						className: "text-xs font-bold text-[#DC1F26] underline cursor-pointer hover:text-[#B91C1C]",
+						children: "Reset all filters"
+					})]
+				}) : /* @__PURE__ */ jsx("section", {
+					"aria-label": "Journal Articles",
+					className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+					children: paginatedPosts.map((post) => /* @__PURE__ */ jsxs("article", {
+						className: "bg-white border border-slate-200 hover:border-[#163B8C]/40 hover:shadow-lg rounded-2xl overflow-hidden flex flex-col transition-all",
+						children: [/* @__PURE__ */ jsx(AppLink, {
+							href: `/blog/${encodeURIComponent(post.slug)}`,
+							onNavigate,
+							className: "aspect-[16/10] w-full bg-slate-100 block overflow-hidden group",
+							children: post.featuredImage ? /* @__PURE__ */ jsx("img", {
+								src: post.featuredImage,
+								alt: post.featuredImageAlt || post.title,
+								referrerPolicy: "no-referrer",
+								className: "w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+							}) : /* @__PURE__ */ jsx("div", {
+								className: "w-full h-full flex items-center justify-center bg-[#EEF3FB] text-[#163B8C]/40",
+								children: /* @__PURE__ */ jsx(BookOpen, { className: "w-9 h-9" })
+							})
+						}), /* @__PURE__ */ jsxs("div", {
+							className: "p-6 flex-1 flex flex-col justify-between space-y-4",
+							children: [/* @__PURE__ */ jsxs("div", {
+								className: "space-y-2.5",
+								children: [
+									/* @__PURE__ */ jsxs("div", {
+										className: "flex items-center gap-2 text-xs text-slate-500",
+										children: [
+											/* @__PURE__ */ jsx("span", {
+												className: "text-[#DC1F26] font-bold",
+												children: post.category
+											}),
+											/* @__PURE__ */ jsx("span", {
+												"aria-hidden": "true",
+												children: "·"
+											}),
+											/* @__PURE__ */ jsxs("span", {
+												className: "tabular-nums",
+												children: [post.readTimeMinutes || 1, " min read"]
+											})
+										]
+									}),
+									/* @__PURE__ */ jsx("h3", {
+										className: "text-lg font-extrabold text-[#0D2558] leading-snug",
+										children: /* @__PURE__ */ jsx(AppLink, {
+											href: `/blog/${encodeURIComponent(post.slug)}`,
+											onNavigate,
+											className: "hover:text-[#163B8C] transition-colors",
+											children: post.title
+										})
+									}),
+									/* @__PURE__ */ jsx("p", {
+										className: "text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3",
+										children: post.excerpt
+									})
+								]
+							}), /* @__PURE__ */ jsxs("div", {
+								className: "pt-4 border-t border-slate-100 flex items-center justify-between gap-2 text-xs text-slate-500 font-medium",
+								children: [/* @__PURE__ */ jsx("span", {
+									className: "truncate text-[#0D2558] font-semibold",
+									children: post.authorName
+								}), /* @__PURE__ */ jsx("span", {
+									className: "shrink-0",
+									children: formatEditorialDate(post.publishedAt || post.createdAt)
+								})]
+							})]
+						})]
+					}, post.id))
+				}),
+				totalPages > 1 && /* @__PURE__ */ jsxs("nav", {
+					"aria-label": "Journal pagination",
+					className: "flex items-center justify-center gap-2 pt-4",
+					children: [
+						/* @__PURE__ */ jsx("button", {
+							type: "button",
+							disabled: safePage <= 1,
+							onClick: () => setCurrentPage((p) => Math.max(1, p - 1)),
+							className: "p-2 bg-white border border-slate-200 text-[#0D2558] hover:border-[#0D2558] rounded-full disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed",
+							"aria-label": "Previous page",
+							children: /* @__PURE__ */ jsx(ChevronLeft, { className: "w-4 h-4" })
+						}),
+						Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => /* @__PURE__ */ jsx("button", {
+							type: "button",
+							onClick: () => setCurrentPage(pageNum),
+							className: `w-9 h-9 text-xs font-bold rounded-full border transition-colors cursor-pointer ${pageNum === safePage ? "bg-[#DC1F26] text-white border-[#DC1F26]" : "bg-white text-[#0D2558] border-slate-200 hover:border-[#0D2558]"}`,
+							children: pageNum
+						}, pageNum)),
+						/* @__PURE__ */ jsx("button", {
+							type: "button",
+							disabled: safePage >= totalPages,
+							onClick: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
+							className: "p-2 bg-white border border-slate-200 text-[#0D2558] hover:border-[#0D2558] rounded-full disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed",
+							"aria-label": "Next page",
+							children: /* @__PURE__ */ jsx(ChevronRight, { className: "w-4 h-4" })
+						})
+					]
+				})
+			] })]
+		})
 	});
 };
 // src/pages/BlogDetailPage.tsx
@@ -8550,22 +9128,22 @@ function formatFullDate(dateStr) {
 function renderFormattedBlocks(content) {
 	return (content || "").split(/\n{2,}/).map((b) => b.trim()).filter(Boolean).map((block, index) => {
 		if (block.startsWith("### ")) return /* @__PURE__ */ jsx("h3", {
-			className: "font-serif text-xl sm:text-2xl font-normal text-[#f7f5f2] pt-4",
+			className: "text-xl sm:text-2xl font-extrabold text-[#0D2558] pt-4 tracking-tight",
 			children: block.slice(4).trim()
 		}, index);
 		if (block.startsWith("## ")) return /* @__PURE__ */ jsx("h2", {
-			className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2] pt-6",
+			className: "text-2xl sm:text-3xl font-extrabold text-[#0D2558] pt-6 tracking-tight",
 			children: block.slice(3).trim()
 		}, index);
 		if (block.startsWith("- ") || block.startsWith("* ")) {
 			const items = block.split("\n").map((line) => line.replace(/^[-*]\s+/, "").trim()).filter(Boolean);
 			return /* @__PURE__ */ jsx("ul", {
-				className: "list-disc pl-6 space-y-2 text-[#cbd5e1] text-base leading-relaxed font-light",
+				className: "list-disc pl-6 space-y-2 text-slate-700 text-base leading-relaxed",
 				children: items.map((item, idx) => /* @__PURE__ */ jsx("li", { children: item }, idx))
 			}, index);
 		}
 		return /* @__PURE__ */ jsx("p", {
-			className: "text-[#d1d5db] text-base sm:text-[17px] leading-[1.8] font-light",
+			className: "text-slate-700 text-base sm:text-[17px] leading-[1.8]",
 			children: block
 		}, index);
 	});
@@ -8595,211 +9173,210 @@ var BlogDetailPage = ({ blog, allBlogs, onNavigate, onSelectTag }) => {
 	const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(`${blog.title} — ${canonicalUrl}`)}`;
 	const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonicalUrl)}`;
 	const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(blog.title)}&url=${encodeURIComponent(canonicalUrl)}`;
-	return /* @__PURE__ */ jsxs("article", {
-		className: "max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-12",
-		children: [
-			/* @__PURE__ */ jsx(Breadcrumbs, {
-				items: [
-					{
-						label: "Home",
-						href: "/"
-					},
-					{
-						label: "Journal",
-						href: "/blog"
-					},
-					{ label: blog.title }
-				],
-				onNavigate
-			}),
-			/* @__PURE__ */ jsxs("header", {
-				className: "space-y-6 max-w-3xl",
-				children: [
-					/* @__PURE__ */ jsxs("div", {
-						className: "flex flex-wrap items-center gap-3 text-xs text-[#9ca3af]",
-						children: [
-							/* @__PURE__ */ jsx("span", {
-								className: "text-[#c5a059] font-semibold uppercase tracking-wider",
-								children: blog.category
-							}),
-							/* @__PURE__ */ jsx("span", {
-								"aria-hidden": "true",
-								children: "·"
-							}),
-							publishedDate && /* @__PURE__ */ jsxs("span", {
-								className: "inline-flex items-center gap-1.5",
-								children: [/* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-[#c5a059]" }), publishedDate]
-							}),
-							/* @__PURE__ */ jsx("span", {
-								"aria-hidden": "true",
-								children: "·"
-							}),
-							/* @__PURE__ */ jsxs("span", {
-								className: "inline-flex items-center gap-1.5 tabular-nums",
-								children: [
-									/* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-[#c5a059]" }),
-									blog.readTimeMinutes || 1,
-									" min read"
-								]
-							})
-						]
-					}),
-					/* @__PURE__ */ jsx("h1", {
-						className: "font-serif text-3xl sm:text-5xl font-normal text-[#f7f5f2] leading-[1.15] text-balance",
-						children: blog.title
-					}),
-					blog.excerpt && /* @__PURE__ */ jsx("p", {
-						className: "text-base sm:text-lg text-[#9ca3af] font-light leading-relaxed",
-						children: blog.excerpt
-					}),
-					/* @__PURE__ */ jsxs("div", {
-						className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#1e2632]",
-						children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", {
-							className: "text-sm font-medium text-[#f7f5f2]",
-							children: blog.authorName
-						}), blog.authorRole && /* @__PURE__ */ jsx("p", {
-							className: "text-xs text-[#8a909a]",
-							children: blog.authorRole
-						})] }), /* @__PURE__ */ jsxs("div", {
-							className: "flex flex-wrap items-center gap-2",
+	return /* @__PURE__ */ jsx("div", {
+		className: "bg-white min-h-screen",
+		children: /* @__PURE__ */ jsxs("article", {
+			className: "max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10",
+			children: [
+				/* @__PURE__ */ jsx(Breadcrumbs, {
+					items: [
+						{
+							label: "Home",
+							href: "/"
+						},
+						{
+							label: "Journal",
+							href: "/blog"
+						},
+						{ label: blog.title }
+					],
+					onNavigate
+				}),
+				/* @__PURE__ */ jsxs("header", {
+					className: "space-y-5 max-w-3xl",
+					children: [
+						/* @__PURE__ */ jsxs("div", {
+							className: "flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium",
 							children: [
-								/* @__PURE__ */ jsx("button", {
-									type: "button",
-									onClick: handleCopyLink,
-									className: "inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#12171f] hover:bg-[#1a222e] border border-[#242e3d] text-xs text-[#e2e5ea] rounded-sm cursor-pointer transition-colors",
-									children: copied ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Check, { className: "w-3.5 h-3.5 text-emerald-400" }), /* @__PURE__ */ jsx("span", { children: "Copied" })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Share2, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Copy Link" })] })
+								/* @__PURE__ */ jsx("span", {
+									className: "px-3 py-1 rounded-full bg-[#EEF3FB] text-[#163B8C] font-bold uppercase tracking-wider",
+									children: blog.category
 								}),
-								/* @__PURE__ */ jsx("a", {
-									href: whatsappShareUrl,
-									target: "_blank",
-									rel: "noopener noreferrer",
-									className: "px-3 py-1.5 bg-[#12171f] hover:border-[#c5a059] border border-[#242e3d] text-xs text-[#cbd5e1] rounded-sm transition-colors",
-									children: "WhatsApp"
+								publishedDate && /* @__PURE__ */ jsxs("span", {
+									className: "inline-flex items-center gap-1.5",
+									children: [/* @__PURE__ */ jsx(Calendar, { className: "w-3.5 h-3.5 text-[#DC1F26]" }), publishedDate]
 								}),
-								/* @__PURE__ */ jsx("a", {
-									href: linkedinShareUrl,
-									target: "_blank",
-									rel: "noopener noreferrer",
-									className: "px-3 py-1.5 bg-[#12171f] hover:border-[#c5a059] border border-[#242e3d] text-xs text-[#cbd5e1] rounded-sm transition-colors",
-									children: "LinkedIn"
+								/* @__PURE__ */ jsx("span", {
+									"aria-hidden": "true",
+									children: "·"
 								}),
-								/* @__PURE__ */ jsx("a", {
-									href: xShareUrl,
-									target: "_blank",
-									rel: "noopener noreferrer",
-									className: "px-3 py-1.5 bg-[#12171f] hover:border-[#c5a059] border border-[#242e3d] text-xs text-[#cbd5e1] rounded-sm transition-colors",
-									children: "X"
+								/* @__PURE__ */ jsxs("span", {
+									className: "inline-flex items-center gap-1.5 tabular-nums",
+									children: [
+										/* @__PURE__ */ jsx(Clock, { className: "w-3.5 h-3.5 text-[#163B8C]" }),
+										blog.readTimeMinutes || 1,
+										" min read"
+									]
 								})
 							]
-						})]
-					})
-				]
-			}),
-			blog.featuredImage && /* @__PURE__ */ jsx("figure", {
-				className: "overflow-hidden rounded-sm border border-[#202732] bg-[#101419]",
-				children: /* @__PURE__ */ jsx("img", {
-					src: blog.featuredImage,
-					alt: blog.featuredImageAlt || blog.title,
-					referrerPolicy: "no-referrer",
-					className: "w-full max-h-[520px] object-cover"
-				})
-			}),
-			/* @__PURE__ */ jsxs("div", {
-				className: "max-w-3xl space-y-5",
-				children: [renderFormattedBlocks(blog.content), Array.isArray(blog.tags) && blog.tags.length > 0 && /* @__PURE__ */ jsxs("div", {
-					className: "pt-8 border-t border-[#1d242e] flex flex-wrap items-center gap-2",
-					children: [/* @__PURE__ */ jsx("span", {
-						className: "text-xs text-[#8a909a] mr-1",
-						children: "Topics:"
-					}), blog.tags.map((tag) => /* @__PURE__ */ jsx(AppLink, {
-						href: `/blog?tag=${encodeURIComponent(tag)}`,
-						onNavigate: () => onSelectTag?.(tag),
-						className: "px-3 py-1 bg-[#12171f] hover:border-[#c5a059] border border-[#242c38] text-xs text-[#cbd5e1] hover:text-[#c5a059] rounded-sm transition-colors cursor-pointer",
-						children: tag
-					}, tag))]
-				})]
-			}),
-			/* @__PURE__ */ jsxs("section", {
-				className: "p-8 bg-[#101419] border border-[#242c38] rounded-sm flex flex-col md:flex-row md:items-center justify-between gap-6",
-				children: [/* @__PURE__ */ jsxs("div", {
-					className: "space-y-2 max-w-xl",
-					children: [
-						/* @__PURE__ */ jsxs("span", {
-							className: "text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block",
-							children: [blog.category, " · BUILDsmore Journal"]
 						}),
-						/* @__PURE__ */ jsx("h2", {
-							className: "font-serif text-2xl font-normal text-white",
-							children: "BUILDsmore Advisory Desk"
+						/* @__PURE__ */ jsx("h1", {
+							className: "text-3xl sm:text-5xl font-extrabold text-[#0D2558] leading-[1.12] tracking-tight text-balance",
+							children: blog.title
 						}),
-						/* @__PURE__ */ jsx("p", {
-							className: "text-xs sm:text-sm text-[#9ca3af] font-light leading-relaxed",
-							children: "Discuss RERA-verified acquisitions, commercial yields, or architectural holdings with a senior advisor."
+						blog.excerpt && /* @__PURE__ */ jsx("p", {
+							className: "text-base sm:text-lg text-slate-600 leading-relaxed",
+							children: blog.excerpt
+						}),
+						/* @__PURE__ */ jsxs("div", {
+							className: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-5 border-t border-slate-200",
+							children: [/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("p", {
+								className: "text-sm font-extrabold text-[#0D2558]",
+								children: blog.authorName
+							}), blog.authorRole && /* @__PURE__ */ jsx("p", {
+								className: "text-xs text-slate-500",
+								children: blog.authorRole
+							})] }), /* @__PURE__ */ jsxs("div", {
+								className: "flex flex-wrap items-center gap-2",
+								children: [
+									/* @__PURE__ */ jsx("button", {
+										type: "button",
+										onClick: handleCopyLink,
+										className: "inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#F7F9FC] hover:bg-[#EEF3FB] border border-slate-200 text-xs font-semibold text-[#0D2558] rounded-full cursor-pointer transition-colors",
+										children: copied ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Check, { className: "w-3.5 h-3.5 text-emerald-600" }), /* @__PURE__ */ jsx("span", { children: "Copied" })] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx(Share2, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "Copy Link" })] })
+									}),
+									/* @__PURE__ */ jsx("a", {
+										href: whatsappShareUrl,
+										target: "_blank",
+										rel: "noopener noreferrer",
+										className: "px-3.5 py-1.5 bg-[#F7F9FC] hover:border-[#163B8C] border border-slate-200 text-xs font-semibold text-slate-700 hover:text-[#0D2558] rounded-full transition-colors",
+										children: "WhatsApp"
+									}),
+									/* @__PURE__ */ jsx("a", {
+										href: linkedinShareUrl,
+										target: "_blank",
+										rel: "noopener noreferrer",
+										className: "px-3.5 py-1.5 bg-[#F7F9FC] hover:border-[#163B8C] border border-slate-200 text-xs font-semibold text-slate-700 hover:text-[#0D2558] rounded-full transition-colors",
+										children: "LinkedIn"
+									}),
+									/* @__PURE__ */ jsx("a", {
+										href: xShareUrl,
+										target: "_blank",
+										rel: "noopener noreferrer",
+										className: "px-3.5 py-1.5 bg-[#F7F9FC] hover:border-[#163B8C] border border-slate-200 text-xs font-semibold text-slate-700 hover:text-[#0D2558] rounded-full transition-colors",
+										children: "X"
+									})
+								]
+							})]
 						})
 					]
-				}), /* @__PURE__ */ jsxs(AppLink, {
-					href: "/contact",
-					onNavigate,
-					className: "inline-flex items-center gap-2 px-6 py-3 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-colors shrink-0 self-start md:self-center",
-					children: [/* @__PURE__ */ jsx("span", { children: "Request Private Consultation" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
-				})]
-			}),
-			relatedBlogs.length > 0 && /* @__PURE__ */ jsxs("section", {
-				className: "pt-6 border-t border-[#1e2632] space-y-6",
-				children: [/* @__PURE__ */ jsx("h2", {
-					className: "font-serif text-2xl sm:text-3xl font-normal text-[#f7f5f2]",
-					children: "Related Dispatches"
-				}), /* @__PURE__ */ jsx("div", {
-					className: "grid grid-cols-1 md:grid-cols-3 gap-6",
-					children: relatedBlogs.map((item) => /* @__PURE__ */ jsxs("article", {
-						className: "bg-[#101419] border border-[#202732] hover:border-[#c5a059]/45 rounded-sm overflow-hidden flex flex-col transition-colors",
-						children: [/* @__PURE__ */ jsx(AppLink, {
-							href: `/blog/${encodeURIComponent(item.slug)}`,
-							onNavigate,
-							className: "aspect-[16/10] bg-[#141922] block overflow-hidden",
-							children: item.featuredImage ? /* @__PURE__ */ jsx("img", {
-								src: item.featuredImage,
-								alt: item.featuredImageAlt || item.title,
-								referrerPolicy: "no-referrer",
-								className: "w-full h-full object-cover"
-							}) : /* @__PURE__ */ jsx("div", {
-								className: "w-full h-full flex items-center justify-center text-[#c5a059]/35",
-								children: /* @__PURE__ */ jsx(BookOpen, { className: "w-8 h-8" })
+				}),
+				blog.featuredImage && /* @__PURE__ */ jsx("figure", {
+					className: "overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm",
+					children: /* @__PURE__ */ jsx("img", {
+						src: blog.featuredImage,
+						alt: blog.featuredImageAlt || blog.title,
+						referrerPolicy: "no-referrer",
+						className: "w-full max-h-[520px] object-cover"
+					})
+				}),
+				/* @__PURE__ */ jsxs("div", {
+					className: "max-w-3xl space-y-5",
+					children: [renderFormattedBlocks(blog.content), Array.isArray(blog.tags) && blog.tags.length > 0 && /* @__PURE__ */ jsxs("div", {
+						className: "pt-8 border-t border-slate-200 flex flex-wrap items-center gap-2",
+						children: [/* @__PURE__ */ jsx("span", {
+							className: "text-xs font-bold text-slate-500 mr-1",
+							children: "Topics:"
+						}), blog.tags.map((tag) => /* @__PURE__ */ jsx(AppLink, {
+							href: `/blog?tag=${encodeURIComponent(tag)}`,
+							onNavigate: () => onSelectTag?.(tag),
+							className: "px-3.5 py-1.5 bg-[#F7F9FC] hover:bg-[#0D2558] border border-slate-200 text-xs font-semibold text-[#0D2558] hover:text-white rounded-full transition-colors cursor-pointer",
+							children: tag
+						}, tag))]
+					})]
+				}),
+				/* @__PURE__ */ jsxs("section", {
+					className: "p-8 bg-[#0D2558] text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-md",
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "space-y-2 max-w-xl",
+						children: [
+							/* @__PURE__ */ jsxs("span", {
+								className: "text-[11px] font-bold uppercase tracking-[0.16em] text-sky-200 block",
+								children: [blog.category, " · BUILDsmore Journal"]
+							}),
+							/* @__PURE__ */ jsx("h2", {
+								className: "text-2xl font-extrabold text-white",
+								children: "BUILDsmore Advisory Desk"
+							}),
+							/* @__PURE__ */ jsx("p", {
+								className: "text-xs sm:text-sm text-slate-200 leading-relaxed",
+								children: "Discuss RERA-verified acquisitions, commercial yields, or architectural holdings with a senior advisor."
 							})
-						}), /* @__PURE__ */ jsxs("div", {
-							className: "p-5 space-y-2 flex-1 flex flex-col justify-between",
-							children: [/* @__PURE__ */ jsxs("div", {
-								className: "space-y-1.5",
-								children: [/* @__PURE__ */ jsx("span", {
-									className: "text-xs text-[#c5a059] block",
-									children: item.category
-								}), /* @__PURE__ */ jsx("h3", {
-									className: "font-serif text-lg font-normal text-[#f7f5f2] leading-snug",
-									children: /* @__PURE__ */ jsx(AppLink, {
-										href: `/blog/${encodeURIComponent(item.slug)}`,
-										onNavigate,
-										className: "hover:text-[#c5a059] transition-colors",
-										children: item.title
-									})
+						]
+					}), /* @__PURE__ */ jsxs(AppLink, {
+						href: "/contact",
+						onNavigate,
+						className: "inline-flex items-center gap-2 px-6 py-3 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs uppercase tracking-wider font-bold rounded-full transition-colors shrink-0 self-start md:self-center shadow-md",
+						children: [/* @__PURE__ */ jsx("span", { children: "Request Private Consultation" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-3.5 h-3.5" })]
+					})]
+				}),
+				relatedBlogs.length > 0 && /* @__PURE__ */ jsxs("section", {
+					className: "pt-8 border-t border-slate-200 space-y-6",
+					children: [/* @__PURE__ */ jsx("h2", {
+						className: "text-2xl sm:text-3xl font-extrabold text-[#0D2558]",
+						children: "Related Dispatches"
+					}), /* @__PURE__ */ jsx("div", {
+						className: "grid grid-cols-1 md:grid-cols-3 gap-6",
+						children: relatedBlogs.map((item) => /* @__PURE__ */ jsxs("article", {
+							className: "bg-white border border-slate-200 hover:border-[#163B8C]/40 hover:shadow-md rounded-2xl overflow-hidden flex flex-col transition-all",
+							children: [/* @__PURE__ */ jsx(AppLink, {
+								href: `/blog/${encodeURIComponent(item.slug)}`,
+								onNavigate,
+								className: "aspect-[16/10] bg-slate-100 block overflow-hidden",
+								children: item.featuredImage ? /* @__PURE__ */ jsx("img", {
+									src: item.featuredImage,
+									alt: item.featuredImageAlt || item.title,
+									referrerPolicy: "no-referrer",
+									className: "w-full h-full object-cover"
+								}) : /* @__PURE__ */ jsx("div", {
+									className: "w-full h-full flex items-center justify-center bg-[#EEF3FB] text-[#163B8C]/40",
+									children: /* @__PURE__ */ jsx(BookOpen, { className: "w-8 h-8" })
+								})
+							}), /* @__PURE__ */ jsxs("div", {
+								className: "p-5 space-y-2 flex-1 flex flex-col justify-between",
+								children: [/* @__PURE__ */ jsxs("div", {
+									className: "space-y-1.5",
+									children: [/* @__PURE__ */ jsx("span", {
+										className: "text-xs font-bold text-[#DC1F26] block",
+										children: item.category
+									}), /* @__PURE__ */ jsx("h3", {
+										className: "text-base font-extrabold text-[#0D2558] leading-snug",
+										children: /* @__PURE__ */ jsx(AppLink, {
+											href: `/blog/${encodeURIComponent(item.slug)}`,
+											onNavigate,
+											className: "hover:text-[#163B8C] transition-colors",
+											children: item.title
+										})
+									})]
+								}), /* @__PURE__ */ jsx("span", {
+									className: "text-xs text-slate-500 block pt-2",
+									children: formatFullDate(item.publishedAt || item.createdAt)
 								})]
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-xs text-[#8a909a] block pt-2",
-								children: formatFullDate(item.publishedAt || item.createdAt)
 							})]
-						})]
-					}, item.id))
-				})]
-			}),
-			/* @__PURE__ */ jsx("div", {
-				className: "pt-4",
-				children: /* @__PURE__ */ jsxs(AppLink, {
-					href: "/blog",
-					onNavigate,
-					className: "inline-flex items-center gap-2 text-xs uppercase tracking-wider font-medium text-[#cbd5e1] hover:text-[#c5a059] transition-colors",
-					children: [/* @__PURE__ */ jsx(ArrowLeft, { className: "w-4 h-4 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Back to The BUILDsmore Journal" })]
+						}, item.id))
+					})]
+				}),
+				/* @__PURE__ */ jsx("div", {
+					className: "pt-4",
+					children: /* @__PURE__ */ jsxs(AppLink, {
+						href: "/blog",
+						onNavigate,
+						className: "inline-flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-[#0D2558] hover:text-[#DC1F26] transition-colors",
+						children: [/* @__PURE__ */ jsx(ArrowLeft, { className: "w-4 h-4 text-[#DC1F26]" }), /* @__PURE__ */ jsx("span", { children: "Back to The BUILDsmore Journal" })]
+					})
 				})
-			})
-		]
+			]
+		})
 	});
 };
 // src/pages/admin/PropertyFormModal.tsx
@@ -14395,10 +14972,11 @@ var BlogManager = ({ blogs, onRefreshBlogs }) => {
 var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [editingId, setEditingId] = useState(null);
+	const [mediaKind, setMediaKind] = useState("video");
 	const [imageUrl, setImageUrl] = useState("");
 	const [heading, setHeading] = useState("");
 	const [description, setDescription] = useState("");
-	const [uploadingImage, setUploadingImage] = useState(false);
+	const [uploadingMedia, setUploadingMedia] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [reordering, setReordering] = useState(false);
 	const [pendingDeleteId, setPendingDeleteId] = useState(null);
@@ -14409,6 +14987,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 	const fileInputRef = useRef(null);
 	const orderedSlides = [...slides].sort((a, b) => a.displayOrder - b.displayOrder);
 	const activeCount = orderedSlides.filter((s) => isHeroSlideComplete(s)).length;
+	const previewIsVideo = imageUrl.trim() ? isHeroVideoUrl(imageUrl) : mediaKind === "video";
 	const showSuccess = (msg) => {
 		setErrorMsg(null);
 		setSuccessMsg(msg);
@@ -14416,6 +14995,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 	};
 	const resetForm = () => {
 		setEditingId(null);
+		setMediaKind("video");
 		setImageUrl("");
 		setHeading("");
 		setDescription("");
@@ -14426,37 +15006,49 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 		setIsFormOpen(true);
 	};
 	const handleOpenEdit = (slide) => {
+		const existingUrl = slide.imageUrl || "";
 		setEditingId(slide.id);
-		setImageUrl(slide.imageUrl || "");
+		setMediaKind(isHeroVideoUrl(existingUrl) ? "video" : "image");
+		setImageUrl(existingUrl);
 		setHeading(slide.heading || "");
 		setDescription(slide.description || "");
 		setErrorMsg(null);
 		setIsFormOpen(true);
 	};
-	const handleUploadImage = async (file) => {
+	const handleSelectMediaKind = (nextKind) => {
+		setMediaKind(nextKind);
+		setErrorMsg(null);
+		if (imageUrl.trim()) {
+			const currentIsVideo = isHeroVideoUrl(imageUrl);
+			if (nextKind === "video" && !currentIsVideo || nextKind === "image" && currentIsVideo) setImageUrl("");
+		}
+	};
+	const handleUploadMedia = async (file) => {
 		const token = storage.getAdminToken();
 		if (!token) {
-			setErrorMsg("Administrator authentication is required to upload banner images.");
+			setErrorMsg("Administrator authentication is required to upload banner images or videos.");
 			return;
 		}
-		setUploadingImage(true);
+		setUploadingMedia(true);
 		setErrorMsg(null);
 		try {
 			const formData = new FormData();
-			formData.append("photo", file);
-			const res = await fetch("/api/upload", {
+			formData.append("media", file);
+			const res = await fetch("/api/upload-hero-media", {
 				method: "POST",
 				headers: { Authorization: `Bearer ${token}` },
 				body: formData
 			});
 			const data = await res.json().catch(() => null);
-			if (!res.ok || !data?.url) throw new Error(data?.error || data?.message || "Banner image upload failed.");
+			if (!res.ok || !data?.url) throw new Error(data?.message || data?.error || "Banner media upload failed.");
+			const uploadedType = data.mediaType === "video" || isHeroVideoUrl(data.url) ? "video" : "image";
+			setMediaKind(uploadedType);
 			setImageUrl(data.url);
-			showSuccess("Banner image uploaded successfully.");
+			showSuccess(uploadedType === "video" ? "Banner video uploaded successfully." : "Banner image uploaded successfully.");
 		} catch (err) {
-			setErrorMsg(err instanceof Error ? err.message : "Unable to upload banner image.");
+			setErrorMsg(err instanceof Error ? err.message : "Unable to upload banner media.");
 		} finally {
-			setUploadingImage(false);
+			setUploadingMedia(false);
 			if (fileInputRef.current) fileInputRef.current.value = "";
 		}
 	};
@@ -14467,7 +15059,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 		const cleanHeading = heading.trim();
 		const cleanDesc = description.trim();
 		if (!cleanImage || !cleanHeading || !cleanDesc) {
-			setErrorMsg("Banner Image, Heading, and Content/Description are all required for a slide to display.");
+			setErrorMsg("Banner Image/Video, Heading, and Content/Description are all required for a slide to display.");
 			return;
 		}
 		setSaving(true);
@@ -14555,7 +15147,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 					})]
 				}), /* @__PURE__ */ jsx("p", {
 					className: "text-xs text-[#8a909a] mt-1",
-					children: "Manage dynamic homepage hero slides. Each slide supports Banner Image, Heading, and Content/Description."
+					children: "Manage dynamic homepage hero slides. Each slide supports Banner Image or Video, Heading, and Content/Description."
 				})] }), /* @__PURE__ */ jsxs("button", {
 					type: "button",
 					onClick: handleOpenCreate,
@@ -14588,8 +15180,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 							className: "text-[#f7f5f2]",
 							children: "Default Hero Banner Active:"
 						}),
-						" ",
-						"No complete custom slides are configured yet. The homepage automatically displays the default Buildsmore architectural banner (",
+						" No complete custom slides are configured yet. The homepage automatically displays the default Buildsmore architectural banner (",
 						DEFAULT_HERO_HEADING,
 						") so the hero is never blank."
 					] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
@@ -14603,7 +15194,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 							]
 						}),
 						" ",
-						activeCount > 1 ? "Automatic sliding with smooth crossfade transitions is active. Drag slides or use the arrows below to change display order." : "Add a second slide to enable automatic multi-slide transitions. Deleting all slides automatically restores the default Buildsmore hero banner."
+						activeCount > 1 ? "Automatic sliding with smooth crossfade transitions is active for both image and video slides. Drag slides or use the arrows below to change display order." : "Add a second slide to enable automatic multi-slide transitions. Deleting all slides automatically restores the default Buildsmore hero banner."
 					] })
 				})]
 			}),
@@ -14628,66 +15219,127 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 						})]
 					}),
 					/* @__PURE__ */ jsxs("div", {
-						className: "space-y-2.5",
-						children: [/* @__PURE__ */ jsx("label", {
-							className: "text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block",
-							children: "1. Banner Image *"
+						className: "space-y-3",
+						children: [/* @__PURE__ */ jsxs("div", {
+							className: "flex flex-wrap items-center justify-between gap-2",
+							children: [/* @__PURE__ */ jsx("label", {
+								className: "text-[11px] font-mono uppercase tracking-wider text-[#a0a8b4] block",
+								children: "1. Banner Background Media (Choose Image or Video) *"
+							}), /* @__PURE__ */ jsxs("div", {
+								className: "inline-flex items-center rounded-sm border border-[#2a3442] bg-[#161b22] p-0.5",
+								role: "radiogroup",
+								"aria-label": "Select banner background media type",
+								children: [/* @__PURE__ */ jsxs("button", {
+									type: "button",
+									role: "radio",
+									"aria-checked": mediaKind === "image",
+									onClick: () => handleSelectMediaKind("image"),
+									className: `px-3 py-1 text-[11px] font-mono uppercase rounded-sm flex items-center gap-1.5 transition-colors cursor-pointer ${mediaKind === "image" ? "bg-[#c5a059] text-[#0c0f12] font-semibold" : "text-[#9ca3af] hover:text-white"}`,
+									children: [/* @__PURE__ */ jsx(Image, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Image" })]
+								}), /* @__PURE__ */ jsxs("button", {
+									type: "button",
+									role: "radio",
+									"aria-checked": mediaKind === "video",
+									onClick: () => handleSelectMediaKind("video"),
+									className: `px-3 py-1 text-[11px] font-mono uppercase rounded-sm flex items-center gap-1.5 transition-colors cursor-pointer ${mediaKind === "video" ? "bg-[#c5a059] text-[#0c0f12] font-semibold" : "text-[#9ca3af] hover:text-white"}`,
+									children: [/* @__PURE__ */ jsx(Film, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Video" })]
+								})]
+							})]
 						}), /* @__PURE__ */ jsxs("div", {
 							className: "grid grid-cols-1 md:grid-cols-12 gap-4 items-start",
 							children: [/* @__PURE__ */ jsx("div", {
 								className: "md:col-span-5 relative aspect-[16/9] bg-[#161b22] border border-[#2a3442] rounded-sm overflow-hidden flex items-center justify-center",
-								children: imageUrl.trim() ? /* @__PURE__ */ jsx("img", {
+								children: imageUrl.trim() ? previewIsVideo ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("video", {
+									src: imageUrl.trim(),
+									controls: true,
+									muted: true,
+									loop: true,
+									playsInline: true,
+									className: "w-full h-full object-cover"
+								}, imageUrl.trim()), /* @__PURE__ */ jsxs("span", {
+									className: "absolute top-2 left-2 px-2 py-0.5 bg-[#0c0f12]/85 border border-[#c5a059]/50 text-[#c5a059] text-[10px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none",
+									children: [/* @__PURE__ */ jsx(Film, { className: "w-3 h-3" }), /* @__PURE__ */ jsx("span", { children: "Video" })]
+								})] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("img", {
 									src: imageUrl.trim(),
 									alt: "Slide banner preview",
-									className: "w-full h-full object-cover filter brightness-[0.65]"
-								}) : /* @__PURE__ */ jsxs("div", {
+									className: "w-full h-full object-cover"
+								}), /* @__PURE__ */ jsxs("span", {
+									className: "absolute top-2 left-2 px-2 py-0.5 bg-[#0c0f12]/85 border border-[#2a3442] text-[#cbd5e1] text-[10px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none",
+									children: [/* @__PURE__ */ jsx(Image, { className: "w-3 h-3 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Image" })]
+								})] }) : /* @__PURE__ */ jsxs("div", {
 									className: "text-center p-4 space-y-1.5 text-[#64748b]",
-									children: [/* @__PURE__ */ jsx(Image, { className: "w-7 h-7 mx-auto opacity-70" }), /* @__PURE__ */ jsx("span", {
+									children: [/* @__PURE__ */ jsx("div", {
+										className: "flex items-center justify-center opacity-75",
+										children: mediaKind === "video" ? /* @__PURE__ */ jsx(Film, { className: "w-6 h-6 text-[#c5a059]" }) : /* @__PURE__ */ jsx(Image, { className: "w-6 h-6 text-[#c5a059]" })
+									}), /* @__PURE__ */ jsx("span", {
 										className: "text-[11px] font-mono block",
-										children: "No banner image selected"
+										children: mediaKind === "video" ? "No banner video selected yet" : "No banner image selected yet"
 									})]
 								})
 							}), /* @__PURE__ */ jsxs("div", {
 								className: "md:col-span-7 space-y-3",
 								children: [
 									/* @__PURE__ */ jsxs("div", {
-										className: "flex flex-wrap items-center gap-3",
+										className: "flex flex-wrap items-center gap-2.5",
 										children: [
 											/* @__PURE__ */ jsx("input", {
 												ref: fileInputRef,
 												type: "file",
-												accept: "image/jpeg,image/png,image/webp,image/avif",
+												accept: mediaKind === "video" ? "video/mp4,video/webm,video/quicktime" : "image/jpeg,image/png,image/webp,image/avif",
 												className: "hidden",
 												onChange: (e) => {
 													const file = e.target.files?.[0];
-													if (file) handleUploadImage(file);
+													if (file) handleUploadMedia(file);
 												}
 											}),
 											/* @__PURE__ */ jsxs("button", {
 												type: "button",
-												disabled: uploadingImage,
+												disabled: uploadingMedia,
 												onClick: () => fileInputRef.current?.click(),
 												className: "px-4 py-2 bg-[#18202b] hover:bg-[#222d3d] border border-[#c5a059]/50 text-[#f7f5f2] text-xs font-mono uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50",
-												children: [/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: uploadingImage ? "Uploading Image..." : imageUrl.trim() ? "Change / Upload Image" : "Upload Banner Image" })]
+												children: [/* @__PURE__ */ jsx(Upload, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: uploadingMedia ? mediaKind === "video" ? "Uploading Video..." : "Uploading Image..." : imageUrl.trim() ? mediaKind === "video" ? "Replace Video" : "Replace Image" : mediaKind === "video" ? "Upload Video" : "Upload Image" })]
+											}),
+											mediaKind === "video" ? /* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => {
+													setMediaKind("video");
+													setImageUrl("/assets/aistudio/buildsmore-drone-hero_7194a756.mp4");
+													setErrorMsg(null);
+												},
+												className: "px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-[#c5a059]/60 text-[#cbd5e1] hover:text-white text-xs font-mono rounded-sm cursor-pointer",
+												children: "Use Buildsmore Drone Video"
+											}) : /* @__PURE__ */ jsx("button", {
+												type: "button",
+												onClick: () => {
+													setMediaKind("image");
+													setImageUrl("https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85");
+													setErrorMsg(null);
+												},
+												className: "px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-[#c5a059]/60 text-[#cbd5e1] hover:text-white text-xs font-mono rounded-sm cursor-pointer",
+												children: "Use Default Image"
 											}),
 											imageUrl.trim() && /* @__PURE__ */ jsx("button", {
 												type: "button",
 												onClick: () => setImageUrl(""),
 												className: "px-3 py-2 bg-[#14181d] border border-[#2a3442] hover:border-red-500/50 text-[#8a909a] hover:text-red-300 text-xs font-mono rounded-sm cursor-pointer",
-												children: "Clear Image"
+												children: "Remove Media"
 											})
 										]
 									}),
 									/* @__PURE__ */ jsx("input", {
 										type: "text",
 										value: imageUrl,
-										onChange: (e) => setImageUrl(e.target.value),
-										placeholder: "/uploads/... or https://... (upload above or paste image URL)",
+										onChange: (e) => {
+											const nextVal = e.target.value;
+											setImageUrl(nextVal);
+											if (nextVal.trim()) setMediaKind(isHeroVideoUrl(nextVal) ? "video" : "image");
+										},
+										placeholder: mediaKind === "video" ? "/uploads/...mp4 or /assets/aistudio/buildsmore-drone-hero_7194a756.mp4" : "/uploads/...jpg or https://... (upload image above or paste URL)",
 										className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm px-3 py-2 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono"
 									}),
 									/* @__PURE__ */ jsx("p", {
 										className: "text-[11px] text-[#737a85]",
-										children: "Recommended landscape high-resolution image (JPEG, PNG, WebP, or AVIF, max 10MB)."
+										children: mediaKind === "video" ? "Video mode: supports MP4, WebM, and MOV up to 50MB. Plays muted, auto-playing, and looped as the banner background (never combined with an image)." : "Image mode: supports landscape JPEG, PNG, WebP, and AVIF up to 10MB. Displays cleanly as the banner background (never combined with a video)."
 									})
 								]
 							})]
@@ -14739,7 +15391,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 							children: "Cancel"
 						}), /* @__PURE__ */ jsxs("button", {
 							type: "submit",
-							disabled: saving || uploadingImage,
+							disabled: saving || uploadingMedia,
 							className: "px-5 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm flex items-center gap-2 cursor-pointer disabled:opacity-50",
 							children: [/* @__PURE__ */ jsx(Save, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: saving ? "Saving Slide..." : editingId ? "Save Changes" : "Create Slide" })]
 						})]
@@ -14750,6 +15402,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 				className: "space-y-3",
 				children: orderedSlides.map((slide, idx) => {
 					const complete = isHeroSlideComplete(slide);
+					const slideIsVideo = isHeroVideoUrl(slide.imageUrl);
 					const isConfirmingDelete = pendingDeleteId === slide.id;
 					const isDragTarget = dragOverId === slide.id && draggedId !== slide.id;
 					return /* @__PURE__ */ jsx("div", {
@@ -14782,12 +15435,26 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 									})]
 								}),
 								/* @__PURE__ */ jsx("div", {
-									className: "w-full md:w-44 aspect-[16/9] bg-[#161b22] border border-[#242c38] rounded-sm overflow-hidden shrink-0",
-									children: slide.imageUrl ? /* @__PURE__ */ jsx("img", {
+									className: "relative w-full md:w-48 aspect-[16/9] bg-[#161b22] border border-[#242c38] rounded-sm overflow-hidden shrink-0",
+									children: slide.imageUrl ? slideIsVideo ? /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("video", {
+										src: slide.imageUrl,
+										muted: true,
+										loop: true,
+										playsInline: true,
+										controls: true,
+										preload: "metadata",
+										className: "w-full h-full object-cover"
+									}), /* @__PURE__ */ jsxs("span", {
+										className: "absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#0c0f12]/85 border border-[#c5a059]/50 text-[#c5a059] text-[9px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none",
+										children: [/* @__PURE__ */ jsx(Film, { className: "w-2.5 h-2.5" }), /* @__PURE__ */ jsx("span", { children: "Video" })]
+									})] }) : /* @__PURE__ */ jsxs(Fragment, { children: [/* @__PURE__ */ jsx("img", {
 										src: slide.imageUrl,
 										alt: slide.heading || `Hero slide ${idx + 1}`,
-										className: "w-full h-full object-cover filter brightness-[0.75]"
-									}) : /* @__PURE__ */ jsx("div", {
+										className: "w-full h-full object-cover filter brightness-[0.8]"
+									}), /* @__PURE__ */ jsxs("span", {
+										className: "absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#0c0f12]/85 border border-[#2a3442] text-[#cbd5e1] text-[9px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none",
+										children: [/* @__PURE__ */ jsx(Image, { className: "w-2.5 h-2.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "Image" })]
+									})] }) : /* @__PURE__ */ jsx("div", {
 										className: "w-full h-full flex items-center justify-center text-[#555f6d]",
 										children: /* @__PURE__ */ jsx(Image, { className: "w-6 h-6" })
 									})
@@ -14864,19 +15531,26 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 				className: "bg-[#101419] border border-[#202732] rounded-sm p-6",
 				children: /* @__PURE__ */ jsxs("div", {
 					className: "flex flex-col md:flex-row gap-6 items-center",
-					children: [/* @__PURE__ */ jsx("div", {
-						className: "w-full md:w-64 aspect-[16/9] rounded-sm overflow-hidden border border-[#263140] shrink-0",
-						children: /* @__PURE__ */ jsx("img", {
-							src: DEFAULT_HERO_IMAGE_URL,
-							alt: "Default Buildsmore Hero Banner",
-							className: "w-full h-full object-cover filter brightness-[0.55]"
-						})
+					children: [/* @__PURE__ */ jsxs("div", {
+						className: "relative w-full md:w-64 aspect-[16/9] rounded-sm overflow-hidden border border-[#263140] shrink-0 bg-[#161b22]",
+						children: [/* @__PURE__ */ jsx("video", {
+							src: DEFAULT_HERO_VIDEO_URL,
+							controls: true,
+							muted: true,
+							loop: true,
+							playsInline: true,
+							preload: "metadata",
+							className: "w-full h-full object-cover"
+						}), /* @__PURE__ */ jsxs("span", {
+							className: "absolute top-2 left-2 px-2 py-0.5 bg-[#0c0f12]/85 border border-[#c5a059]/50 text-[#c5a059] text-[10px] font-mono uppercase rounded-sm flex items-center gap-1 pointer-events-none",
+							children: [/* @__PURE__ */ jsx(Film, { className: "w-3 h-3" }), /* @__PURE__ */ jsx("span", { children: "Default Video" })]
+						})]
 					}), /* @__PURE__ */ jsxs("div", {
 						className: "flex-1 space-y-2",
 						children: [
 							/* @__PURE__ */ jsx("span", {
 								className: "text-[10px] font-mono uppercase tracking-[0.2em] text-[#c5a059]",
-								children: "Active Default Fallback Banner"
+								children: "Active Default Homepage Banner"
 							}),
 							/* @__PURE__ */ jsx("h3", {
 								className: "font-serif text-xl text-white",
@@ -14892,7 +15566,7 @@ var HeroSliderManager = ({ slides, onRefreshSlides }) => {
 									type: "button",
 									onClick: handleOpenCreate,
 									className: "px-4 py-2 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-wider rounded-sm inline-flex items-center gap-1.5 cursor-pointer",
-									children: [/* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Add First Custom Slide" })]
+									children: [/* @__PURE__ */ jsx(Plus, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: "Add Custom Image or Video Slide" })]
 								})
 							})
 						]
@@ -15932,15 +16606,16 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 		}
 	};
 	return /* @__PURE__ */ jsx("div", {
-		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200",
+		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0D2558]/55 backdrop-blur-sm animate-in fade-in duration-200",
+		onClick: onClose,
 		children: /* @__PURE__ */ jsxs("div", {
-			className: "relative w-full max-w-md bg-[#101419] border border-[#2c3645] text-[#f7f5f2] rounded-sm shadow-2xl p-6 sm:p-8 space-y-6",
+			className: "relative w-full max-w-md bg-white border border-slate-200 text-[#0D2558] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6",
 			onClick: (e) => e.stopPropagation(),
 			children: [
 				/* @__PURE__ */ jsx("button", {
 					onClick: onClose,
 					"aria-label": "Close login dialog",
-					className: "absolute top-4 right-4 text-[#8a909a] hover:text-[#f7f5f2] transition-colors cursor-pointer p-1 rounded-sm hover:bg-[#1a212b]",
+					className: "absolute top-4 right-4 text-slate-400 hover:text-[#0D2558] transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-slate-100",
 					children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
 				}),
 				/* @__PURE__ */ jsxs("div", {
@@ -15951,44 +16626,44 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 							children: [/* @__PURE__ */ jsx("img", {
 								src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 								alt: "BUILDsmore Logo",
-								className: "w-16 h-16 rounded-sm object-cover border border-[#c5a059]/50 mx-auto shadow-md"
+								className: "w-16 h-16 rounded-lg object-cover border border-slate-200 mx-auto shadow-md"
 							}), /* @__PURE__ */ jsx("div", {
-								className: "absolute -bottom-1 -right-1 bg-[#101419] border border-[#c5a059] p-0.5 rounded-full",
-								children: /* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" })
+								className: "absolute -bottom-1 -right-1 bg-white border border-[#163B8C]/30 p-0.5 rounded-full shadow-xs",
+								children: /* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#163B8C]" })
 							})]
 						}),
 						/* @__PURE__ */ jsx("span", {
-							className: "text-[10px] uppercase font-mono tracking-[0.25em] text-[#c5a059] block pt-1",
+							className: "text-[10px] uppercase font-mono tracking-[0.25em] text-[#163B8C] font-semibold block pt-1",
 							children: "BUILDsmore · Administrative Gateway"
 						}),
 						/* @__PURE__ */ jsx("h2", {
-							className: "font-serif text-2xl font-normal text-white",
+							className: "font-serif text-2xl font-semibold text-[#0D2558]",
 							children: "Admin Authentication"
 						}),
 						/* @__PURE__ */ jsx("p", {
-							className: "text-xs text-[#8a909a] max-w-xs mx-auto",
+							className: "text-xs text-slate-600 max-w-xs mx-auto",
 							children: "Sign in with verified administrator credentials to manage properties, inquiries, and settings."
 						})
 					]
 				}),
 				!error && authNotice && /* @__PURE__ */ jsxs("div", {
-					className: "p-3 bg-amber-950/50 border border-amber-700/80 rounded-sm text-xs text-amber-200 flex items-start gap-2.5 animate-in fade-in duration-150",
-					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-amber-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: authNotice })]
+					className: "p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2.5 animate-in fade-in duration-150",
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-amber-600 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: authNotice })]
 				}),
 				error && /* @__PURE__ */ jsxs("div", {
-					className: "p-3 bg-red-950/50 border border-red-800/80 rounded-sm text-xs text-red-200 flex items-start gap-2.5 animate-in fade-in duration-150",
-					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
+					className: "p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2.5 animate-in fade-in duration-150",
+					children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-[#DC1F26] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
 				}),
 				/* @__PURE__ */ jsxs("form", {
 					onSubmit: handleLogin,
 					className: "space-y-4",
 					children: [
 						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("label", {
-							className: "text-[11px] font-mono text-[#a0a8b4] uppercase block mb-1.5",
+							className: "text-[11px] font-mono font-semibold text-slate-600 uppercase block mb-1.5",
 							children: "Administrator Email"
 						}), /* @__PURE__ */ jsxs("div", {
 							className: "relative",
-							children: [/* @__PURE__ */ jsx(User, { className: "w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
+							children: [/* @__PURE__ */ jsx(User, { className: "w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }), /* @__PURE__ */ jsx("input", {
 								ref: inputRef,
 								type: "email",
 								required: true,
@@ -15996,19 +16671,19 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 								value: email,
 								onChange: (e) => setEmail(e.target.value),
 								placeholder: "info@buildsmoremohali.com",
-								className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-9 pr-3 py-2.5 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono transition-colors"
+								className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-lg pl-9 pr-3 py-2.5 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none font-mono transition-colors"
 							})]
 						})] }),
 						/* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("div", {
 							className: "flex items-center justify-between mb-1.5",
 							children: /* @__PURE__ */ jsx("label", {
-								className: "text-[11px] font-mono text-[#a0a8b4] uppercase block",
+								className: "text-[11px] font-mono font-semibold text-slate-600 uppercase block",
 								children: "Password"
 							})
 						}), /* @__PURE__ */ jsxs("div", {
 							className: "relative",
 							children: [
-								/* @__PURE__ */ jsx(KeyRound, { className: "w-4 h-4 text-[#64748b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }),
+								/* @__PURE__ */ jsx(KeyRound, { className: "w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" }),
 								/* @__PURE__ */ jsx("input", {
 									type: showPassword ? "text" : "password",
 									required: true,
@@ -16016,12 +16691,12 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 									value: password,
 									onChange: (e) => setPassword(e.target.value),
 									placeholder: "Enter admin password",
-									className: "w-full bg-[#161b22] border border-[#2a3442] focus:border-[#c5a059] rounded-sm pl-9 pr-10 py-2.5 text-xs text-[#f7f5f2] placeholder-[#555f6d] focus:outline-none font-mono transition-colors"
+									className: "w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-lg pl-9 pr-10 py-2.5 text-xs text-[#0D2558] placeholder-slate-400 focus:outline-none font-mono transition-colors"
 								}),
 								/* @__PURE__ */ jsx("button", {
 									type: "button",
 									onClick: () => setShowPassword(!showPassword),
-									className: "absolute right-3 top-1/2 -translate-y-1/2 text-[#8a909a] hover:text-[#f7f5f2] transition-colors cursor-pointer",
+									className: "absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#0D2558] transition-colors cursor-pointer",
 									"aria-label": showPassword ? "Hide password" : "Show password",
 									children: showPassword ? /* @__PURE__ */ jsx(EyeOff, { className: "w-4 h-4" }) : /* @__PURE__ */ jsx(Eye, { className: "w-4 h-4" })
 								})
@@ -16030,17 +16705,17 @@ var AdminLoginModal = ({ isOpen, onClose, onLoginSuccess, authNotice }) => {
 						/* @__PURE__ */ jsxs("button", {
 							type: "submit",
 							disabled: loading,
-							className: "w-full py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs uppercase tracking-widest font-semibold rounded-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50 mt-2",
+							className: "w-full py-2.5 bg-[#0D2558] hover:bg-[#DC1F26] text-white text-xs uppercase tracking-widest font-semibold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#0D2558]/20 disabled:opacity-50 mt-2",
 							children: [/* @__PURE__ */ jsx(Lock, { className: "w-3.5 h-3.5" }), /* @__PURE__ */ jsx("span", { children: loading ? "Authenticating Session..." : "Sign In as Administrator" })]
 						})
 					]
 				}),
 				/* @__PURE__ */ jsx("div", {
-					className: "pt-3 border-t border-[#1f2732]",
+					className: "pt-3 border-t border-slate-200",
 					children: /* @__PURE__ */ jsxs("div", {
-						className: "flex items-start gap-2 text-[11px] text-[#8a909a] leading-relaxed bg-[#141a22] p-2.5 border border-[#222b37] rounded-sm",
-						children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-4 h-4 text-[#c5a059] shrink-0 mt-0.5" }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("strong", {
-							className: "text-[#f7f5f2] block",
+						className: "flex items-start gap-2.5 text-[11px] text-slate-600 leading-relaxed bg-[#F4F7FC] p-3 border border-slate-200 rounded-xl",
+						children: [/* @__PURE__ */ jsx(ShieldCheck, { className: "w-4 h-4 text-[#163B8C] shrink-0 mt-0.5" }), /* @__PURE__ */ jsxs("div", { children: [/* @__PURE__ */ jsx("strong", {
+							className: "text-[#0D2558] block",
 							children: "Browser-Bound Secure Session"
 						}), "Your session expires immediately whenever you close the browser window or tab."] })]
 					})
@@ -16123,208 +16798,205 @@ var PrivateInquiryModal = ({ isOpen, onClose, propertyTitle }) => {
 		onClose();
 	};
 	return /* @__PURE__ */ jsx("div", {
-		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in",
+		className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1F4B]/70 backdrop-blur-sm animate-fade-in",
 		onClick: handleResetAndClose,
 		role: "dialog",
 		"aria-modal": "true",
 		"aria-labelledby": "inquiry-modal-title",
 		children: /* @__PURE__ */ jsxs("div", {
-			className: "relative w-full max-w-[450px] bg-[#12161c] border border-[#263140] text-[#f7f5f2] rounded-xl shadow-2xl p-6 sm:p-7 space-y-5 animate-scale-up",
+			className: "relative w-full max-w-[460px] bg-white border border-slate-200 text-[#0D2558] rounded-2xl shadow-2xl overflow-hidden animate-scale-up",
 			onClick: (e) => e.stopPropagation(),
-			children: [
-				/* @__PURE__ */ jsx("button", {
+			children: [/* @__PURE__ */ jsxs("div", {
+				className: "bg-[#0D2558] px-6 py-5 text-white relative",
+				children: [/* @__PURE__ */ jsx("button", {
 					onClick: handleResetAndClose,
-					className: "absolute top-4 right-4 text-gray-400 hover:text-[#f7f5f2] p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer",
+					className: "absolute top-4 right-4 text-slate-300 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer",
 					"aria-label": "Close dialog",
 					children: /* @__PURE__ */ jsx(X, { className: "w-5 h-5" })
-				}),
-				/* @__PURE__ */ jsx("div", {
-					className: "flex flex-col items-center text-center",
-					children: /* @__PURE__ */ jsxs("div", {
-						className: "flex items-center justify-center gap-3 mb-1",
-						children: [/* @__PURE__ */ jsx("img", {
+				}), /* @__PURE__ */ jsxs("div", {
+					className: "flex items-center justify-center gap-3",
+					children: [/* @__PURE__ */ jsx("div", {
+						className: "p-0.5 rounded-lg bg-[#0c0f12] border border-[#c5a059]/60 shadow-sm shrink-0",
+						children: /* @__PURE__ */ jsx("img", {
 							src: "/assets/aistudio/logo-builds_more_aa2f07ab.jpeg",
 							alt: "BUILDsmore Logo",
-							className: "h-11 w-11 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm"
-						}), /* @__PURE__ */ jsxs("div", {
-							className: "text-left",
-							children: [/* @__PURE__ */ jsx("span", {
-								className: "font-serif text-xl sm:text-2xl tracking-[0.14em] font-medium text-[#f7f5f2] uppercase leading-none block",
-								children: "BUILDsmore"
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-[9px] font-mono tracking-[0.2em] text-[#c5a059] uppercase block font-semibold mt-1",
-								children: "Let's Grow Together"
-							})]
+							className: "h-10 w-10 rounded-md object-cover block"
+						})
+					}), /* @__PURE__ */ jsxs("div", {
+						className: "text-left",
+						children: [/* @__PURE__ */ jsx("span", {
+							className: "text-xl tracking-tight font-extrabold text-white leading-none block",
+							children: "BUILDsmore"
+						}), /* @__PURE__ */ jsx("span", {
+							className: "text-[10px] tracking-[0.14em] text-sky-200 uppercase block font-semibold mt-1",
+							children: "Let's Grow Together"
 						})]
-					})
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "text-center",
-					children: [/* @__PURE__ */ jsx("h3", {
-						id: "inquiry-modal-title",
-						className: "font-serif text-xl sm:text-2xl font-normal text-[#f7f5f2] tracking-normal leading-snug",
-						children: "Register here and Avail the Best Offers!!"
-					}), /* @__PURE__ */ jsx("p", {
-						className: "text-xs text-[#9ca3af] mt-1.5 leading-relaxed",
-						children: "Exclusive access to prime holdings, early bird valuations & priority site visits."
 					})]
-				}),
-				/* @__PURE__ */ jsxs("div", {
-					className: "border border-[#c5a059]/25 bg-[#171d26]/85 rounded-lg p-3.5 grid grid-cols-3 gap-2 text-center",
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "flex flex-col items-center justify-center",
-							children: [/* @__PURE__ */ jsx("div", {
-								className: "w-9 h-9 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/30 text-[#c5a059] flex items-center justify-center mb-1.5 shadow-xs mx-auto",
-								children: /* @__PURE__ */ jsx(PhoneCall, { className: "w-4 h-4" })
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-[11px] font-medium text-[#e5e7eb] leading-tight",
-								children: "Instant Call Back"
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "flex flex-col items-center justify-center",
-							children: [/* @__PURE__ */ jsx("div", {
-								className: "w-9 h-9 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/30 text-[#c5a059] flex items-center justify-center mb-1.5 shadow-xs mx-auto",
-								children: /* @__PURE__ */ jsx(Tag, { className: "w-4 h-4" })
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-[11px] font-medium text-[#e5e7eb] leading-tight",
-								children: "Unmatched Price"
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "flex flex-col items-center justify-center",
-							children: [/* @__PURE__ */ jsx("div", {
-								className: "w-9 h-9 rounded-full bg-[#c5a059]/15 border border-[#c5a059]/30 text-[#c5a059] flex items-center justify-center mb-1.5 shadow-xs mx-auto",
-								children: /* @__PURE__ */ jsx(Car, { className: "w-4 h-4" })
-							}), /* @__PURE__ */ jsx("span", {
-								className: "text-[11px] font-medium text-[#e5e7eb] leading-tight",
-								children: "Free Site Visit"
-							})]
-						})
-					]
-				}),
-				submitted ? /* @__PURE__ */ jsxs("div", {
-					className: "py-6 px-4 bg-[#171d26] border border-[#c5a059]/40 rounded-lg text-center space-y-3",
-					children: [
-						/* @__PURE__ */ jsx(CheckCircle2, { className: "w-12 h-12 text-[#c5a059] mx-auto animate-bounce" }),
-						/* @__PURE__ */ jsx("h4", {
-							className: "font-serif text-2xl font-normal text-[#f7f5f2]",
-							children: "Registration Successful!"
-						}),
-						/* @__PURE__ */ jsxs("p", {
-							className: "text-xs text-[#9ca3af] leading-relaxed max-w-xs mx-auto",
-							children: [
-								"Thank you, ",
-								/* @__PURE__ */ jsx("strong", {
-									className: "text-[#f7f5f2] font-semibold",
-									children: name
-								}),
-								".",
-								" ",
-								successNote || `Our senior property advisor will call you at ${phone} with the best available offers.`
-							]
-						}),
-						/* @__PURE__ */ jsx("div", {
-							className: "pt-2",
-							children: /* @__PURE__ */ jsx("button", {
-								type: "button",
-								onClick: handleResetAndClose,
-								className: "px-6 py-2.5 bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] text-xs font-semibold uppercase tracking-[0.15em] rounded-sm transition-colors cursor-pointer shadow-sm",
-								children: "Done"
+				})]
+			}), /* @__PURE__ */ jsxs("div", {
+				className: "p-6 sm:p-7 space-y-5",
+				children: [
+					/* @__PURE__ */ jsxs("div", {
+						className: "text-center",
+						children: [/* @__PURE__ */ jsx("h3", {
+							id: "inquiry-modal-title",
+							className: "text-xl sm:text-2xl font-extrabold text-[#0D2558] tracking-tight leading-snug",
+							children: "Register here and Avail the Best Offers!!"
+						}), /* @__PURE__ */ jsx("p", {
+							className: "text-xs text-slate-500 mt-1.5 leading-relaxed",
+							children: "Exclusive access to prime holdings, early bird valuations & priority site visits."
+						})]
+					}),
+					/* @__PURE__ */ jsxs("div", {
+						className: "border border-slate-200 bg-[#F7F9FC] rounded-xl p-3.5 grid grid-cols-3 gap-2 text-center",
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-col items-center justify-center",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-9 h-9 rounded-full bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center mb-1.5 mx-auto",
+									children: /* @__PURE__ */ jsx(PhoneCall, { className: "w-4 h-4" })
+								}), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] font-bold text-[#0D2558] leading-tight",
+									children: "Instant Call Back"
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-col items-center justify-center",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-9 h-9 rounded-full bg-red-50 text-[#DC1F26] flex items-center justify-center mb-1.5 mx-auto",
+									children: /* @__PURE__ */ jsx(Tag, { className: "w-4 h-4" })
+								}), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] font-bold text-[#0D2558] leading-tight",
+									children: "Unmatched Price"
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex flex-col items-center justify-center",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "w-9 h-9 rounded-full bg-[#EEF3FB] text-[#163B8C] flex items-center justify-center mb-1.5 mx-auto",
+									children: /* @__PURE__ */ jsx(Car, { className: "w-4 h-4" })
+								}), /* @__PURE__ */ jsx("span", {
+									className: "text-[11px] font-bold text-[#0D2558] leading-tight",
+									children: "Free Site Visit"
+								})]
 							})
-						})
-					]
-				}) : /* @__PURE__ */ jsxs("form", {
-					onSubmit: handleSubmit,
-					className: "space-y-3.5",
-					noValidate: true,
-					children: [
-						/* @__PURE__ */ jsxs("div", {
-							className: "sr-only",
-							"aria-hidden": "true",
-							children: [/* @__PURE__ */ jsx("label", {
-								htmlFor: "modal-website-field",
-								children: "Website"
-							}), /* @__PURE__ */ jsx("input", {
-								id: "modal-website-field",
-								type: "text",
-								name: "website",
-								tabIndex: -1,
-								autoComplete: "off",
-								value: honeypot,
-								onChange: (e) => setHoneypot(e.target.value)
-							})]
-						}),
-						error && /* @__PURE__ */ jsxs("div", {
-							role: "alert",
-							className: "p-2.5 bg-red-950/60 border border-red-500/40 text-red-300 text-xs rounded-sm flex items-start gap-2",
-							children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-red-400 shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", { children: error })]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "relative",
-							children: [/* @__PURE__ */ jsx("div", {
-								className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c5a059]/80",
-								children: /* @__PURE__ */ jsx(User, { className: "w-4 h-4" })
-							}), /* @__PURE__ */ jsx("input", {
-								type: "text",
-								required: true,
-								value: name,
-								onChange: (e) => setName(e.target.value),
-								placeholder: "Name *",
-								className: "w-full pl-10 pr-3.5 py-2.5 bg-[#171d26] border border-[#2a3443] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-all shadow-xs"
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "relative",
-							children: [/* @__PURE__ */ jsx("div", {
-								className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c5a059]/80",
-								children: /* @__PURE__ */ jsx(Phone, { className: "w-4 h-4" })
-							}), /* @__PURE__ */ jsx("input", {
-								type: "tel",
-								required: true,
-								value: phone,
-								onChange: (e) => setPhone(e.target.value),
-								placeholder: "Phone *",
-								className: "w-full pl-10 pr-3.5 py-2.5 bg-[#171d26] border border-[#2a3443] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-all shadow-xs"
-							})]
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "relative",
-							children: [/* @__PURE__ */ jsx("div", {
-								className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#c5a059]/80",
-								children: /* @__PURE__ */ jsx(Mail, { className: "w-4 h-4" })
-							}), /* @__PURE__ */ jsx("input", {
-								type: "email",
-								value: email,
-								onChange: (e) => setEmail(e.target.value),
-								placeholder: "Email (Optional)",
-								className: "w-full pl-10 pr-3.5 py-2.5 bg-[#171d26] border border-[#2a3443] focus:border-[#c5a059] focus:ring-1 focus:ring-[#c5a059] rounded-sm text-sm text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-all shadow-xs"
-							})]
-						}),
-						/* @__PURE__ */ jsx("button", {
-							type: "submit",
-							disabled: loading,
-							className: "w-full py-3 bg-[#c5a059] hover:bg-[#d4af5f] active:bg-[#b38e47] text-[#0c0f12] font-semibold text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-[#c5a059]/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-2",
-							children: /* @__PURE__ */ jsx("span", { children: loading ? "Submitting..." : "Send" })
-						}),
-						/* @__PURE__ */ jsxs("div", {
-							className: "flex items-center justify-center gap-1.5 text-[11px] text-[#8a909a] pt-1",
-							children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#c5a059]" }), /* @__PURE__ */ jsx("span", { children: "100% Confidential · Direct Support: 977-987-8303" })]
-						})
-					]
-				}),
-				/* @__PURE__ */ jsx("div", {
-					className: "flex justify-center pt-1",
-					children: /* @__PURE__ */ jsx("button", {
-						type: "button",
-						onClick: handleResetAndClose,
-						className: "w-8 h-8 rounded-full border border-[#2a3443] text-gray-400 hover:text-[#f7f5f2] hover:border-[#c5a059] hover:bg-white/5 flex items-center justify-center text-xs font-bold transition-all cursor-pointer shadow-xs",
-						title: "Close",
-						children: "✕"
+						]
+					}),
+					submitted ? /* @__PURE__ */ jsxs("div", {
+						className: "py-6 px-4 bg-emerald-50/70 border border-emerald-200 rounded-xl text-center space-y-3",
+						children: [
+							/* @__PURE__ */ jsx(CheckCircle2, { className: "w-12 h-12 text-emerald-600 mx-auto" }),
+							/* @__PURE__ */ jsx("h4", {
+								className: "text-xl font-extrabold text-[#0D2558]",
+								children: "Registration Successful!"
+							}),
+							/* @__PURE__ */ jsxs("p", {
+								className: "text-xs text-slate-600 leading-relaxed max-w-xs mx-auto",
+								children: [
+									"Thank you, ",
+									/* @__PURE__ */ jsx("strong", {
+										className: "text-[#0D2558] font-bold",
+										children: name
+									}),
+									".",
+									" ",
+									successNote || `Our senior property advisor will call you at ${phone} with the best available offers.`
+								]
+							}),
+							/* @__PURE__ */ jsx("div", {
+								className: "pt-2",
+								children: /* @__PURE__ */ jsx("button", {
+									type: "button",
+									onClick: handleResetAndClose,
+									className: "px-6 py-2.5 bg-[#0D2558] hover:bg-[#163B8C] text-white text-xs font-bold uppercase tracking-wider rounded-full transition-colors cursor-pointer shadow-sm",
+									children: "Done"
+								})
+							})
+						]
+					}) : /* @__PURE__ */ jsxs("form", {
+						onSubmit: handleSubmit,
+						className: "space-y-3.5",
+						noValidate: true,
+						children: [
+							/* @__PURE__ */ jsxs("div", {
+								className: "sr-only",
+								"aria-hidden": "true",
+								children: [/* @__PURE__ */ jsx("label", {
+									htmlFor: "modal-website-field",
+									children: "Website"
+								}), /* @__PURE__ */ jsx("input", {
+									id: "modal-website-field",
+									type: "text",
+									name: "website",
+									tabIndex: -1,
+									autoComplete: "off",
+									value: honeypot,
+									onChange: (e) => setHoneypot(e.target.value)
+								})]
+							}),
+							error && /* @__PURE__ */ jsxs("div", {
+								role: "alert",
+								className: "p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2",
+								children: [/* @__PURE__ */ jsx(AlertCircle, { className: "w-4 h-4 text-[#DC1F26] shrink-0 mt-0.5" }), /* @__PURE__ */ jsx("span", {
+									className: "font-medium",
+									children: error
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#163B8C]",
+									children: /* @__PURE__ */ jsx(User, { className: "w-4 h-4" })
+								}), /* @__PURE__ */ jsx("input", {
+									type: "text",
+									required: true,
+									value: name,
+									onChange: (e) => setName(e.target.value),
+									placeholder: "Name *",
+									className: "w-full pl-10 pr-3.5 py-2.5 bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#163B8C]",
+									children: /* @__PURE__ */ jsx(Phone, { className: "w-4 h-4" })
+								}), /* @__PURE__ */ jsx("input", {
+									type: "tel",
+									required: true,
+									value: phone,
+									onChange: (e) => setPhone(e.target.value),
+									placeholder: "Phone *",
+									className: "w-full pl-10 pr-3.5 py-2.5 bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+								})]
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "relative",
+								children: [/* @__PURE__ */ jsx("div", {
+									className: "absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#163B8C]",
+									children: /* @__PURE__ */ jsx(Mail, { className: "w-4 h-4" })
+								}), /* @__PURE__ */ jsx("input", {
+									type: "email",
+									value: email,
+									onChange: (e) => setEmail(e.target.value),
+									placeholder: "Email (Optional)",
+									className: "w-full pl-10 pr-3.5 py-2.5 bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white focus:ring-2 focus:ring-[#163B8C]/15 rounded-xl text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-all"
+								})]
+							}),
+							/* @__PURE__ */ jsx("button", {
+								type: "submit",
+								disabled: loading,
+								className: "w-full py-3 bg-[#DC1F26] hover:bg-[#B91C1C] active:bg-[#991B1B] text-white font-bold text-xs uppercase tracking-[0.14em] rounded-xl transition-all shadow-md shadow-[#DC1F26]/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 mt-2",
+								children: /* @__PURE__ */ jsx("span", { children: loading ? "Submitting..." : "Send Inquiry" })
+							}),
+							/* @__PURE__ */ jsxs("div", {
+								className: "flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-1",
+								children: [/* @__PURE__ */ jsx(Shield, { className: "w-3.5 h-3.5 text-[#163B8C]" }), /* @__PURE__ */ jsx("span", { children: "100% Confidential · Direct Support: 977-987-8303" })]
+							})
+						]
 					})
-				})
-			]
+				]
+			})]
 		})
 	});
 };
@@ -16335,7 +17007,7 @@ var NotFoundPage = ({ requestedPath, onNavigate }) => {
 	const isBlog = requestedPath.startsWith("/blog/");
 	return /* @__PURE__ */ jsxs("section", {
 		"aria-labelledby": "not-found-heading",
-		className: "relative w-full min-h-[76vh] sm:min-h-[82vh] flex items-center overflow-hidden bg-[#0c0f12]",
+		className: "relative w-full min-h-[76vh] sm:min-h-[82vh] flex items-center overflow-hidden bg-slate-900",
 		children: [
 			/* @__PURE__ */ jsx("img", {
 				src: "/assets/images/not_found_pavilion_1795013193029.jpg",
@@ -16345,29 +17017,28 @@ var NotFoundPage = ({ requestedPath, onNavigate }) => {
 			}),
 			/* @__PURE__ */ jsx("div", {
 				"aria-hidden": "true",
-				className: "absolute inset-0 bg-gradient-to-r from-[#0a0c0e]/92 via-[#0a0c0e]/65 to-[#0a0c0e]/20"
-			}),
-			/* @__PURE__ */ jsx("div", {
-				"aria-hidden": "true",
-				className: "absolute inset-0 bg-gradient-to-t from-[#0c0f12] via-transparent to-[#0c0f12]/45"
+				className: "absolute inset-0 bg-gradient-to-r from-slate-950/70 via-[#0D2558]/40 to-slate-950/15"
 			}),
 			/* @__PURE__ */ jsx("div", {
 				className: "relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-20 sm:py-24",
 				children: /* @__PURE__ */ jsxs("div", {
 					className: "max-w-lg space-y-5 sm:space-y-6",
 					children: [
-						/* @__PURE__ */ jsx("span", {
-							className: "text-xs sm:text-sm uppercase tracking-[0.22em] text-[#cfc9bf] font-medium block",
-							children: "Page Not Found"
+						/* @__PURE__ */ jsxs("div", {
+							className: "inline-flex items-center gap-2.5",
+							children: [/* @__PURE__ */ jsx("span", { className: "w-8 h-[2.5px] bg-[#DC1F26] rounded-full" }), /* @__PURE__ */ jsx("span", {
+								className: "text-xs sm:text-sm uppercase tracking-[0.2em] text-sky-200 font-bold block",
+								children: "Page Not Found"
+							})]
 						}),
 						/* @__PURE__ */ jsx("div", {
-							className: "text-[5.5rem] sm:text-[7.5rem] lg:text-[9.5rem] font-light leading-[0.88] tracking-tight text-white tabular-nums select-none",
+							className: "text-[5.5rem] sm:text-[7.5rem] lg:text-[9.5rem] font-extrabold leading-[0.88] tracking-tight text-white tabular-nums select-none",
 							"aria-hidden": "true",
 							children: "404"
 						}),
 						/* @__PURE__ */ jsxs("h1", {
 							id: "not-found-heading",
-							className: "font-serif uppercase text-2xl sm:text-4xl lg:text-[2.75rem] font-normal leading-[1.12] tracking-[0.03em] text-[#d6d0c6]",
+							className: "uppercase text-2xl sm:text-4xl lg:text-[2.75rem] font-extrabold leading-[1.12] tracking-tight text-white",
 							children: [
 								"THIS SPACE",
 								/* @__PURE__ */ jsx("br", {}),
@@ -16375,7 +17046,7 @@ var NotFoundPage = ({ requestedPath, onNavigate }) => {
 							]
 						}),
 						(isProperty || isCollection || isBlog) && /* @__PURE__ */ jsx("p", {
-							className: "text-xs sm:text-sm text-[#c7c2b9] leading-relaxed font-light max-w-md",
+							className: "text-xs sm:text-sm text-slate-200 leading-relaxed max-w-md",
 							children: isProperty ? "Property Dossier Unavailable — this listing does not exist, may have been archived, or its URL slug has changed." : isCollection ? "Curated Collection Unavailable — this investment collection could not be located in our active registry." : "Journal Article Unavailable — this editorial briefing does not exist, is unpublished, or its URL slug has changed."
 						}),
 						/* @__PURE__ */ jsx("div", {
@@ -16383,7 +17054,7 @@ var NotFoundPage = ({ requestedPath, onNavigate }) => {
 							children: /* @__PURE__ */ jsxs(AppLink, {
 								href: "/",
 								onNavigate,
-								className: "inline-flex items-center gap-3 px-6 py-3 bg-[#0c0f12]/45 hover:bg-[#c5a059] text-[#f7f5f2] hover:text-[#0c0f12] border border-white/55 hover:border-[#c5a059] text-xs sm:text-sm tracking-wide font-medium transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0 backdrop-blur-xs",
+								className: "inline-flex items-center gap-3 px-7 py-3.5 bg-[#DC1F26] hover:bg-[#B91C1C] text-white text-xs sm:text-sm tracking-wide font-bold rounded-full shadow-lg transition-all duration-200 cursor-pointer whitespace-nowrap shrink-0",
 								children: [/* @__PURE__ */ jsx("span", { children: "Back to home" }), /* @__PURE__ */ jsx(ArrowRight, { className: "w-4 h-4" })]
 							})
 						})
@@ -16418,36 +17089,36 @@ var FloatingContactButtons = () => {
 			rel: "noopener noreferrer",
 			"aria-label": `Chat on WhatsApp (${DISPLAY_PHONE})`,
 			title: `WhatsApp: ${DISPLAY_PHONE}`,
-			className: "w-12 h-12 rounded-full bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] border border-[#dfc68e]/50 shadow-xl shadow-black/45 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer",
+			className: "w-12 h-12 rounded-full bg-[#16A34A] hover:bg-[#15803D] text-white border border-white/25 shadow-lg shadow-[#0D2558]/20 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer",
 			children: /* @__PURE__ */ jsx(WhatsAppIcon, { className: "w-5 h-5" })
 		}), /* @__PURE__ */ jsx("a", {
 			href: CALL_URL,
 			"aria-label": `Call ${DISPLAY_PHONE}`,
 			title: `Call: ${DISPLAY_PHONE}`,
-			className: "w-12 h-12 rounded-full bg-[#0c0f12]/90 hover:bg-[#14181d] text-[#c5a059] border border-[#c5a059]/75 hover:border-[#dfc68e] shadow-xl shadow-black/55 backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer",
+			className: "w-12 h-12 rounded-full bg-[#0D2558] hover:bg-[#DC1F26] text-white border border-white/20 shadow-lg shadow-[#0D2558]/25 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer",
 			children: /* @__PURE__ */ jsx(Phone, { className: "w-5 h-5" })
 		})]
 	}), /* @__PURE__ */ jsx("nav", {
 		"aria-label": "Mobile Quick Contact Bar",
-		className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#050608]/95 backdrop-blur-md border-t border-white/15 shadow-[0_-6px_24px_rgba(0,0,0,0.55)] pb-[env(safe-area-inset-bottom)]",
+		className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0D2558]/95 backdrop-blur-md border-t border-white/15 shadow-[0_-6px_24px_rgba(13,37,88,0.25)] pb-[env(safe-area-inset-bottom)]",
 		children: /* @__PURE__ */ jsxs("div", {
-			className: "grid grid-cols-2 divide-x divide-white/25",
+			className: "grid grid-cols-2 divide-x divide-white/15",
 			children: [/* @__PURE__ */ jsxs("a", {
 				href: WHATSAPP_URL,
 				target: "_blank",
 				rel: "noopener noreferrer",
 				"aria-label": `Chat on WhatsApp (${DISPLAY_PHONE})`,
-				className: "flex flex-col items-center justify-center gap-1 py-2.5 px-2 text-white hover:bg-white/5 active:bg-white/10 transition-colors",
-				children: [/* @__PURE__ */ jsx(WhatsAppIcon, { className: "w-5 h-5 text-white" }), /* @__PURE__ */ jsx("span", {
-					className: "text-xs font-medium tracking-wide leading-tight",
-					children: "Whatsapp"
+				className: "flex items-center justify-center gap-2 py-3 px-2 text-white hover:bg-white/10 active:bg-white/15 transition-colors",
+				children: [/* @__PURE__ */ jsx(WhatsAppIcon, { className: "w-4 h-4 text-emerald-300" }), /* @__PURE__ */ jsx("span", {
+					className: "text-xs font-semibold tracking-wide",
+					children: "WhatsApp"
 				})]
 			}), /* @__PURE__ */ jsxs("a", {
 				href: CALL_URL,
 				"aria-label": `Call Now (${DISPLAY_PHONE})`,
-				className: "flex flex-col items-center justify-center gap-1 py-2.5 px-2 text-white hover:bg-white/5 active:bg-white/10 transition-colors",
-				children: [/* @__PURE__ */ jsx(Phone, { className: "w-5 h-5 text-white fill-white" }), /* @__PURE__ */ jsx("span", {
-					className: "text-xs font-medium tracking-wide leading-tight",
+				className: "flex items-center justify-center gap-2 py-3 px-2 bg-[#DC1F26] text-white hover:bg-[#B91C1C] transition-colors",
+				children: [/* @__PURE__ */ jsx(Phone, { className: "w-4 h-4 text-white" }), /* @__PURE__ */ jsx("span", {
+					className: "text-xs font-semibold tracking-wide",
 					children: "Call Now"
 				})]
 			})]
@@ -16501,7 +17172,7 @@ var PropertyRouteView = ({ properties, catalogSynced, savedPropertyIds, onToggle
 		});
 	}
 	if (!catalogSynced) return /* @__PURE__ */ jsx("div", {
-		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]",
+		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500",
 		children: "Loading Property Dossier..."
 	});
 	return /* @__PURE__ */ jsx(NotFoundPage, {
@@ -16529,7 +17200,7 @@ var CollectionRouteView = ({ collections, properties, catalogSynced, savedProper
 		});
 	}
 	if (!catalogSynced) return /* @__PURE__ */ jsx("div", {
-		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]",
+		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500",
 		children: "Loading Curated Collection..."
 	});
 	return /* @__PURE__ */ jsx(NotFoundPage, {
@@ -16554,7 +17225,7 @@ var BlogRouteView = ({ blogs, catalogSynced, onNavigate, currentPath }) => {
 		});
 	}
 	if (!catalogSynced) return /* @__PURE__ */ jsx("div", {
-		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]",
+		className: "min-h-[60vh] flex items-center justify-center px-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500",
 		children: "Loading Editorial Briefing..."
 	});
 	return /* @__PURE__ */ jsx(NotFoundPage, {
@@ -16808,8 +17479,13 @@ var AppShell = ({ initialData }) => {
 		navigate("/");
 	};
 	const blogTagFromUrl = searchParams.get("tag") || "";
+	const initialSearchQuery = searchParams.get("q") || "";
+	const initialLocationParam = searchParams.get("location") || "all";
+	const initialCategoryParam = searchParams.get("category") || "All";
+	const initialBudgetParam = searchParams.get("budget") || "all";
+	const isAdminRoute = currentPath === "/admin" || currentPath.startsWith("/admin/");
 	return /* @__PURE__ */ jsx(CurrencyProvider, { children: /* @__PURE__ */ jsxs("div", {
-		className: "min-h-screen flex flex-col bg-[#0c0f12] text-[#f7f5f2] selection:bg-[#c5a059]/30 selection:text-[#f7f5f2]",
+		className: isAdminRoute ? "admin-theme min-h-screen flex flex-col bg-[#0c0f12] text-[#f7f5f2] selection:bg-[#c5a059]/30 selection:text-[#f7f5f2]" : "min-h-screen flex flex-col bg-white text-[#0D2558] selection:bg-[#DC1F26]/15 selection:text-[#0D2558]",
 		children: [
 			/* @__PURE__ */ jsx(Navbar, {
 				currentPath,
@@ -16817,7 +17493,8 @@ var AppShell = ({ initialData }) => {
 				onOpenAdmin: handleOpenAdmin,
 				isAdminLoggedIn: Boolean(adminUser),
 				onLogout: handleAdminLogout,
-				onOpenInquiry: () => setPrivateInquiryOpen(true)
+				onOpenInquiry: () => setPrivateInquiryOpen(true),
+				isAdminRoute
 			}),
 			/* @__PURE__ */ jsx("main", {
 				className: "flex-1",
@@ -16831,6 +17508,7 @@ var AppShell = ({ initialData }) => {
 							heroSlides,
 							onSelectProperty: handleSelectProperty,
 							onNavigate: navigate,
+							onOpenInquiry: () => setPrivateInquiryOpen(true),
 							savedIds: savedPropertyIds,
 							onToggleSave: handleToggleSave
 						})
@@ -16842,7 +17520,16 @@ var AppShell = ({ initialData }) => {
 							onSelectProperty: handleSelectProperty,
 							onNavigate: navigate,
 							savedIds: savedPropertyIds,
-							onToggleSave: handleToggleSave
+							onToggleSave: handleToggleSave,
+							initialCategory: [
+								"Residential",
+								"Commercial",
+								"Plots/Land",
+								"New Projects"
+							].includes(initialCategoryParam) ? initialCategoryParam : "All",
+							initialLocation: initialLocationParam,
+							initialPriceRange: initialBudgetParam,
+							initialSearchQuery
 						})
 					}),
 					/* @__PURE__ */ jsx(Route, {

@@ -35,7 +35,7 @@ export const FloatingContactButtons: React.FC = () => {
           rel="noopener noreferrer"
           aria-label={`Chat on WhatsApp (${DISPLAY_PHONE})`}
           title={`WhatsApp: ${DISPLAY_PHONE}`}
-          className="w-12 h-12 rounded-full bg-[#c5a059] hover:bg-[#d4af5f] text-[#0c0f12] border border-[#dfc68e]/50 shadow-xl shadow-black/45 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer"
+          className="w-12 h-12 rounded-full bg-[#16A34A] hover:bg-[#15803D] text-white border border-white/25 shadow-lg shadow-[#0D2558]/20 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer"
         >
           <WhatsAppIcon className="w-5 h-5" />
         </a>
@@ -44,7 +44,7 @@ export const FloatingContactButtons: React.FC = () => {
           href={CALL_URL}
           aria-label={`Call ${DISPLAY_PHONE}`}
           title={`Call: ${DISPLAY_PHONE}`}
-          className="w-12 h-12 rounded-full bg-[#0c0f12]/90 hover:bg-[#14181d] text-[#c5a059] border border-[#c5a059]/75 hover:border-[#dfc68e] shadow-xl shadow-black/55 backdrop-blur-md flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer"
+          className="w-12 h-12 rounded-full bg-[#0D2558] hover:bg-[#DC1F26] text-white border border-white/20 shadow-lg shadow-[#0D2558]/25 flex items-center justify-center transition-all duration-200 hover:scale-105 cursor-pointer"
         >
           <Phone className="w-5 h-5" />
         </a>
@@ -53,27 +53,27 @@ export const FloatingContactButtons: React.FC = () => {
       {/* Mobile: Fixed Full-Width Bottom Bar (WhatsApp & Call) */}
       <nav
         aria-label="Mobile Quick Contact Bar"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#050608]/95 backdrop-blur-md border-t border-white/15 shadow-[0_-6px_24px_rgba(0,0,0,0.55)] pb-[env(safe-area-inset-bottom)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0D2558]/95 backdrop-blur-md border-t border-white/15 shadow-[0_-6px_24px_rgba(13,37,88,0.25)] pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="grid grid-cols-2 divide-x divide-white/25">
+        <div className="grid grid-cols-2 divide-x divide-white/15">
           <a
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Chat on WhatsApp (${DISPLAY_PHONE})`}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 text-white hover:bg-white/5 active:bg-white/10 transition-colors"
+            className="flex items-center justify-center gap-2 py-3 px-2 text-white hover:bg-white/10 active:bg-white/15 transition-colors"
           >
-            <WhatsAppIcon className="w-5 h-5 text-white" />
-            <span className="text-xs font-medium tracking-wide leading-tight">Whatsapp</span>
+            <WhatsAppIcon className="w-4 h-4 text-emerald-300" />
+            <span className="text-xs font-semibold tracking-wide">WhatsApp</span>
           </a>
 
           <a
             href={CALL_URL}
             aria-label={`Call Now (${DISPLAY_PHONE})`}
-            className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 text-white hover:bg-white/5 active:bg-white/10 transition-colors"
+            className="flex items-center justify-center gap-2 py-3 px-2 bg-[#DC1F26] text-white hover:bg-[#B91C1C] transition-colors"
           >
-            <Phone className="w-5 h-5 text-white fill-white" />
-            <span className="text-xs font-medium tracking-wide leading-tight">Call Now</span>
+            <Phone className="w-4 h-4 text-white" />
+            <span className="text-xs font-semibold tracking-wide">Call Now</span>
           </a>
         </div>
       </nav>

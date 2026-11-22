@@ -1,6 +1,6 @@
 import React from 'react';
 import { PropertyCategory } from '../../types/property';
-import { Search, SlidersHorizontal, RotateCcw, LayoutGrid, List } from 'lucide-react';
+import { Search, RotateCcw, LayoutGrid, List } from 'lucide-react';
 
 export interface FilterState {
   searchQuery: string;
@@ -33,7 +33,7 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
   ];
 
   const priceOptions = [
-    { label: 'All Price Tiers', value: 'all' },
+    { label: 'Any Budget', value: 'all' },
     { label: 'Under ₹5 Cr', value: 'under_5cr' },
     { label: '₹5 Cr – ₹20 Cr', value: '5cr_20cr' },
     { label: '₹20 Cr – ₹50 Cr', value: '20cr_50cr' },
@@ -42,20 +42,20 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
 
   const bedroomOptions = [
     { label: 'Any Beds', value: 'any' },
-    { label: '4+ Suites', value: '4' },
-    { label: '6+ Suites', value: '6' },
-    { label: '8+ Suites', value: '8' },
+    { label: '3+ Beds', value: '3' },
+    { label: '4+ Beds', value: '4' },
+    { label: '6+ Beds', value: '6' },
   ];
 
   const sortOptions = [
-    { label: 'Recently Added (Latest First)', value: 'newest' },
-    { label: 'Featured Portfolio', value: 'featured' },
+    { label: 'Recently Added', value: 'newest' },
+    { label: 'Featured Properties', value: 'featured' },
     { label: 'Price: High to Low', value: 'price_desc' },
     { label: 'Price: Low to High', value: 'price_asc' },
     { label: 'Largest Living Area', value: 'area_desc' },
   ];
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.searchQuery.trim() !== '' ||
     filters.category !== 'All' ||
     filters.priceRange !== 'all' ||
@@ -63,25 +63,25 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
     filters.sortBy !== 'newest';
 
   return (
-    <div className="bg-[#101419] border border-[#202732] p-5 rounded-sm mb-8 space-y-4 shadow-lg">
-      
+    <div className="bg-white border border-slate-200/90 p-5 rounded-2xl mb-8 space-y-4 shadow-[0_8px_28px_rgba(13,37,88,0.06)]">
       {/* Top Search & Primary Filters Row */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        
         {/* Keyword Search */}
         <div className="md:col-span-5 relative">
-          <Search className="w-4 h-4 text-[#8a909a] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={filters.searchQuery}
             onChange={(e) => onChange({ searchQuery: e.target.value })}
-            placeholder="Search by city, country, architecture, or title..."
-            className="w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm pl-10 pr-4 py-2.5 text-xs text-[#f7f5f2] placeholder-[#6b7280] focus:outline-none transition-colors"
+            placeholder="Search by city, sector, project, or title..."
+            className="w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl pl-10 pr-8 py-2.5 text-sm text-[#0D2558] placeholder-slate-400 focus:outline-none transition-colors"
           />
           {filters.searchQuery && (
             <button
+              type="button"
               onClick={() => onChange({ searchQuery: '' })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8a909a] hover:text-[#f7f5f2]"
+              aria-label="Clear search query"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-[#0D2558] cursor-pointer"
             >
               ×
             </button>
@@ -93,10 +93,11 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
           <select
             value={filters.priceRange}
             onChange={(e) => onChange({ priceRange: e.target.value })}
-            className="w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer"
+            aria-label="Budget Range"
+            className="w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-[#0D2558] font-medium focus:outline-none cursor-pointer"
           >
             {priceOptions.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#161b22] text-[#f7f5f2]">
+              <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
@@ -108,10 +109,11 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
           <select
             value={filters.bedrooms}
             onChange={(e) => onChange({ bedrooms: e.target.value })}
-            className="w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer"
+            aria-label="Bedrooms"
+            className="w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-[#0D2558] font-medium focus:outline-none cursor-pointer"
           >
             {bedroomOptions.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#161b22] text-[#f7f5f2]">
+              <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
@@ -123,82 +125,85 @@ export const PropertyFilterBar: React.FC<PropertyFilterBarProps> = ({
           <select
             value={filters.sortBy}
             onChange={(e) => onChange({ sortBy: e.target.value as FilterState['sortBy'] })}
-            className="w-full bg-[#161b22] border border-[#262f3d] focus:border-[#c5a059] rounded-sm px-3 py-2.5 text-xs text-[#f7f5f2] focus:outline-none cursor-pointer"
+            aria-label="Sort properties"
+            className="w-full bg-[#F7F9FC] border border-slate-200 focus:border-[#163B8C] focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-[#0D2558] font-medium focus:outline-none cursor-pointer"
           >
             {sortOptions.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#161b22] text-[#f7f5f2]">
+              <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
           </select>
         </div>
-
       </div>
 
       {/* Category Segmented Tabs & Results Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#1c232d]">
-        
-        {/* Category Filter Buttons (Functional Tabs, conforming to Section 1A) */}
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-3.5 border-t border-slate-100">
+        <div className="flex flex-wrap items-center gap-2">
           {categories.map((cat) => {
             const isActive = filters.category === cat;
             return (
               <button
                 key={cat}
+                type="button"
                 onClick={() => onChange({ category: cat })}
-                className={`px-3 py-1.5 text-xs tracking-wider uppercase rounded-sm transition-all cursor-pointer font-medium ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[#c5a059] text-[#0c0f12] font-semibold shadow-sm'
-                    : 'bg-[#161b22] text-[#9ca3af] hover:text-[#f7f5f2] border border-[#262f3d]'
+                    ? 'bg-[#DC1F26] text-white shadow-sm'
+                    : 'bg-[#F7F9FC] text-slate-600 hover:text-[#0D2558] border border-slate-200'
                 }`}
               >
-                {cat === 'All' ? 'All Classes' : cat}
+                {cat === 'All' ? 'All Types' : cat}
               </button>
             );
           })}
         </div>
 
-        {/* Status Count, Reset & View Mode Controls */}
-        <div className="flex items-center gap-4 text-xs text-[#8a909a]">
-          <span className="font-mono tabular-nums text-[#d1d5db]">
-            <strong className="text-[#f7f5f2]">{totalResults}</strong> {totalResults === 1 ? 'Property' : 'Properties'} Found
+        <div className="flex items-center gap-4 text-xs text-slate-500">
+          <span className="tabular-nums font-medium">
+            <strong className="text-[#0D2558]">{totalResults}</strong>{' '}
+            {totalResults === 1 ? 'Property' : 'Properties'} Found
           </span>
 
           {hasActiveFilters && (
             <button
+              type="button"
               onClick={onReset}
-              className="flex items-center gap-1 text-xs text-[#c5a059] hover:underline cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#DC1F26] hover:underline cursor-pointer"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
               Reset Filters
             </button>
           )}
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center border border-[#262f3d] rounded-sm p-0.5 bg-[#161b22]">
+          <div className="flex items-center border border-slate-200 rounded-lg p-0.5 bg-[#F7F9FC]">
             <button
+              type="button"
               onClick={() => onChange({ viewMode: 'grid' })}
               aria-label="Grid View"
-              className={`p-1.5 rounded-sm transition-colors cursor-pointer ${
-                filters.viewMode === 'grid' ? 'bg-[#c5a059] text-[#0c0f12]' : 'text-[#8a909a] hover:text-[#f7f5f2]'
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                filters.viewMode === 'grid'
+                  ? 'bg-[#0D2558] text-white'
+                  : 'text-slate-500 hover:text-[#0D2558]'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => onChange({ viewMode: 'list' })}
               aria-label="List View"
-              className={`p-1.5 rounded-sm transition-colors cursor-pointer ${
-                filters.viewMode === 'list' ? 'bg-[#c5a059] text-[#0c0f12]' : 'text-[#8a909a] hover:text-[#f7f5f2]'
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                filters.viewMode === 'list'
+                  ? 'bg-[#0D2558] text-white'
+                  : 'text-slate-500 hover:text-[#0D2558]'
               }`}
             >
               <List className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
-
       </div>
-
     </div>
   );
 };

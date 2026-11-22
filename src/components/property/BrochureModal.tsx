@@ -26,45 +26,54 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ property, isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#0f1318] border border-[#2c3645] text-[#f7f5f2] rounded-sm shadow-2xl overflow-hidden my-8">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0B1F4B]/75 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white border border-slate-200 text-[#0D2558] rounded-2xl shadow-2xl overflow-hidden my-8">
         {/* Modal Controls Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#141a22] border-b border-[#242c38]">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-[#0D2558] text-white">
           <div className="flex items-center gap-3">
-            <img
-              src="/assets/aistudio/logo-builds_more_aa2f07ab.jpeg"
-              alt="BUILDsmore"
-              className="w-9 h-9 rounded-sm object-cover border border-[#c5a059]/40 shadow-sm"
-            />
+            <div className="p-0.5 rounded-lg bg-[#0c0f12] border border-[#c5a059]/60">
+              <img
+                src="/assets/aistudio/logo-builds_more_aa2f07ab.jpeg"
+                alt="BUILDsmore"
+                className="w-9 h-9 rounded-md object-cover block"
+              />
+            </div>
             <div>
-              <span className="font-serif text-base tracking-widest text-[#c5a059] uppercase font-bold block leading-none">
+              <span className="text-base tracking-tight text-white font-extrabold block leading-none">
                 BUILDsmore
               </span>
-              <span className="text-[9px] text-[#8a909a] font-mono uppercase mt-0.5 block">
-                Let's Grow Together · Concierge: 977-987-8303
+              <span className="text-[10px] text-sky-200 font-semibold uppercase mt-0.5 block">
+                Let&apos;s Grow Together · Concierge: 977-987-8303
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
+              type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#d1d5db] hover:text-[#f7f5f2] bg-[#1a212c] rounded-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs text-white bg-white/15 hover:bg-white/25 font-semibold rounded-full transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print Dossier</span>
             </button>
             <button
+              type="button"
               onClick={handleDownload}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#0c0f12] bg-[#c5a059] hover:bg-[#d4af5f] font-medium rounded-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs text-white bg-[#DC1F26] hover:bg-[#B91C1C] font-bold rounded-full transition-colors cursor-pointer"
             >
-              {downloaded ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
+              {downloaded ? (
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
               <span>{downloaded ? 'Brochure Generated' : 'Save PDF'}</span>
             </button>
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 text-[#8a909a] hover:text-[#f7f5f2] rounded-sm transition-colors cursor-pointer"
+              className="p-1.5 text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close brochure"
             >
               <X className="w-5 h-5" />
             </button>
@@ -72,40 +81,41 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ property, isOpen, 
         </div>
 
         {/* Brochure Content (Printable Layout) */}
-        <div className="p-8 space-y-8 max-h-[80vh] overflow-y-auto">
-          
+        <div className="p-6 sm:p-8 space-y-8 max-h-[80vh] overflow-y-auto">
           {/* Hero Banner inside Brochure */}
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-sm bg-[#181f29]">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-slate-100">
             {(() => {
               const primaryImg = getPrimaryPropertyImage(property);
               return (
                 <img
                   src={primaryImg.url}
                   alt={property.title}
-                  className={`w-full h-full ${primaryImg.isLogo ? 'object-contain p-10 bg-[#0f141b]' : 'object-cover'}`}
+                  className={`w-full h-full ${
+                    primaryImg.isLogo ? 'object-contain p-10 bg-[#0f141b]' : 'object-cover'
+                  }`}
                 />
               );
             })()}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0D2558]/90 via-[#0D2558]/20 to-transparent" />
+            <div className="absolute bottom-5 left-5 right-5 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div>
-                <span className="text-xs font-mono uppercase tracking-[0.2em] text-[#c5a059] block mb-1">
+                <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-200 block mb-1">
                   Confidential Property Dossier
                 </span>
-                <h2 className="font-serif text-3xl font-medium text-white">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
                   {property.title}
                 </h2>
-                <p className="text-xs text-[#d1d5db] flex items-center gap-1.5 mt-1">
-                  <MapPin className="w-3.5 h-3.5 text-[#c5a059]" />
+                <p className="text-xs text-slate-200 flex items-center gap-1.5 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-[#DC1F26]" />
                   {property.address}, {property.city}, {property.country}
                 </p>
               </div>
 
-              <div className="text-right">
-                <span className="text-xs text-[#9ca3af] uppercase tracking-wider block font-mono">
+              <div className="sm:text-right">
+                <span className="text-[11px] text-sky-200 uppercase tracking-wider block font-bold">
                   Valuation
                 </span>
-                <span className="font-serif text-2xl font-bold text-white font-mono tabular-nums">
+                <span className="text-2xl font-extrabold text-white tabular-nums">
                   {formatPrice(property.price, property.currency)}
                 </span>
               </div>
@@ -113,47 +123,61 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ property, isOpen, 
           </div>
 
           {/* Key Facts Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[#141922] border border-[#242b36] rounded-sm text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[#F7F9FC] border border-slate-200 rounded-xl text-center">
             <div>
-              <span className="text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block">Bedrooms</span>
-              <span className="text-lg font-semibold text-[#f7f5f2] font-mono">{property.bedrooms || 'Bespoke'}</span>
-            </div>
-            <div>
-              <span className="text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block">Bathrooms</span>
-              <span className="text-lg font-semibold text-[#f7f5f2] font-mono">{property.bathrooms || 'En-Suite'}</span>
-            </div>
-            <div>
-              <span className="text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block">Interior Living</span>
-              <span className="text-lg font-semibold text-[#f7f5f2] font-mono">
-                {property.interiorAreaSqFt ? `${property.interiorAreaSqFt.toLocaleString()} sq ft` : 'Commercial'}
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold block">
+                Bedrooms
+              </span>
+              <span className="text-lg font-extrabold text-[#0D2558]">
+                {property.bedrooms || 'Bespoke'}
               </span>
             </div>
             <div>
-              <span className="text-[11px] text-[#8a909a] uppercase tracking-wider font-mono block">Energy Rating</span>
-              <span className="text-lg font-semibold text-[#c5a059] font-mono">{property.energyRating || 'A+ Certified'}</span>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold block">
+                Bathrooms
+              </span>
+              <span className="text-lg font-extrabold text-[#0D2558]">
+                {property.bathrooms || 'En-Suite'}
+              </span>
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold block">
+                Interior Living
+              </span>
+              <span className="text-lg font-extrabold text-[#0D2558]">
+                {property.interiorAreaSqFt
+                  ? `${property.interiorAreaSqFt.toLocaleString()} Sq.Ft`
+                  : 'Commercial'}
+              </span>
+            </div>
+            <div>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider font-bold block">
+                Energy Rating
+              </span>
+              <span className="text-lg font-extrabold text-[#DC1F26]">
+                {property.energyRating || 'A+ Certified'}
+              </span>
             </div>
           </div>
 
           {/* Editorial Overview */}
           <div>
-            <h3 className="font-serif text-xl font-medium text-[#f7f5f2] mb-3">
-              Architectural Overview & Narrative
+            <h3 className="text-xl font-extrabold text-[#0D2558] mb-2.5">
+              Architectural Overview &amp; Narrative
             </h3>
-            <p className="text-sm text-[#9ca3af] leading-relaxed font-light">
-              {property.description}
-            </p>
+            <p className="text-sm text-slate-600 leading-relaxed">{property.description}</p>
           </div>
 
           {/* Specifications Table */}
           <div>
-            <h3 className="font-serif text-lg font-medium text-[#f7f5f2] mb-3">
-              Technical Specifications & Building Covenants
+            <h3 className="text-lg font-extrabold text-[#0D2558] mb-3">
+              Technical Specifications &amp; Building Covenants
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
               {Object.entries(property.specifications).map(([key, val]) => (
-                <div key={key} className="flex justify-between py-2 border-b border-[#202732]">
-                  <span className="text-[#8a909a] font-mono">{key}</span>
-                  <span className="text-[#f7f5f2] font-medium text-right">{val}</span>
+                <div key={key} className="flex justify-between py-2 border-b border-slate-200">
+                  <span className="text-slate-500 font-semibold">{key}</span>
+                  <span className="text-[#0D2558] font-bold text-right">{val}</span>
                 </div>
               ))}
             </div>
@@ -161,13 +185,13 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ property, isOpen, 
 
           {/* Curated Amenities */}
           <div>
-            <h3 className="font-serif text-lg font-medium text-[#f7f5f2] mb-3">
-              Private Amenities & Estate Features
+            <h3 className="text-lg font-extrabold text-[#0D2558] mb-3">
+              Private Amenities &amp; Estate Features
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs text-[#d1d5db]">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs text-slate-700">
               {property.amenities.map((amenity, idx) => (
-                <div key={idx} className="flex items-center gap-2 py-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#c5a059] shrink-0" />
+                <div key={idx} className="flex items-center gap-2 py-1 font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#163B8C] shrink-0" />
                   <span>{amenity}</span>
                 </div>
               ))}
@@ -175,18 +199,23 @@ export const BrochureModal: React.FC<BrochureModalProps> = ({ property, isOpen, 
           </div>
 
           {/* Disclaimer & Advisory Signature */}
-          <div className="pt-6 border-t border-[#202732] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#6b7280]">
+          <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div>
-              <p>BUILDsmore Private Portfolio Advisory · Direct Hotline: 977-987-8303 · info@buildsmoremohali.com</p>
-              <p className="mt-0.5">Strictly confidential. Issued for private client inspection only under mutual NDA.</p>
+              <p className="font-semibold text-[#0D2558]">
+                BUILDsmore Private Portfolio Advisory · Direct Hotline: 977-987-8303 ·
+                info@buildsmoremohali.com
+              </p>
+              <p className="mt-0.5">
+                Strictly confidential. Issued for private client inspection only under mutual NDA.
+              </p>
             </div>
             <div className="text-right">
-              <span className="font-serif text-[#c5a059] tracking-widest uppercase">Verified Title Deed</span>
+              <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold uppercase tracking-wider text-[11px]">
+                Verified Title Deed
+              </span>
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
   );

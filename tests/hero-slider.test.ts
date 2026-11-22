@@ -14,8 +14,10 @@ import {
   DEFAULT_HERO_DESCRIPTION,
   DEFAULT_HERO_HEADING,
   DEFAULT_HERO_IMAGE_URL,
+  isHeroVideoUrl,
   resolveActiveHeroSlides,
 } from '../src/utils/heroSlides';
+import { detectSafeVideoFormat } from '../src/server/storage-local';
 import { render } from '../src/entry-server';
 import { propertyRepository } from '../src/server/propertyRepository';
 
@@ -183,14 +185,59 @@ export async function runHeroSliderTests(): Promise<{
       };
 
       const defaultHtml = render('/', { ...baseData, heroSlides: [] });
+      const defaultHeroSection = defaultHtml.split('<section')[1]?.split('</section>')[0] || '';
       if (
         !defaultHtml.includes(DEFAULT_HERO_HEADING.replace(/&/g, '&amp;')) ||
-        !defaultHtml.includes(DEFAULT_HERO_IMAGE_URL.replace(/&/g, '&amp;'))
+        !defaultHtml.includes(DEFAULT_HERO_IMAGE_URL.replace(/&/g, '&amp;')) ||
+        !defaultHeroSection.includes('<video')
       ) {
-        throw new Error('SSR homepage with 0 slides did not render default hero banner');
+        throw new Error('SSR homepage with 0 slides did not render default Buildsmore hero video banner');
+      }
+      if (defaultHeroSection.includes('<img')) {
+        throw new Error('Default video hero banner must never render an <img> together with <video>');
       }
       if (defaultHtml.includes('Hero banner slide navigation')) {
         throw new Error('Single default hero banner should not render multi-slide controls');
+      }
+
+      // Verify single custom IMAGE slide renders ONLY <img> and never <video> in hero section
+      const singleImageHtml = render('/', {
+        ...baseData,
+        heroSlides: [
+          {
+            id: 'ssr-img-only',
+            imageUrl: '/uploads/image-only-banner.jpg',
+            heading: 'Image Only Banner',
+            description: 'Displays only the selected image background.',
+            displayOrder: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+      });
+      const singleImageHero = singleImageHtml.split('<section')[1]?.split('</section>')[0] || '';
+      if (!singleImageHero.includes('<img') || !singleImageHero.includes('/uploads/image-only-banner.jpg')) {
+        throw new Error('Single image hero banner did not render selected image');
+      }
+      if (singleImageHero.includes('<video')) {
+        throw new Error('Image hero banner must never render a <video> together with <img>');
+      }
+
+      // Verify right-side Hero Enquiry Form fields are rendered on the homepage banner
+      for (const requiredText of [
+        'Full Name',
+        'Mobile Number',
+        'Interested In',
+        'Residential',
+        'Commercial',
+        'Plots',
+        'Preferred Location',
+        'Budget Range',
+        'Submit Enquiry',
+      ]) {
+        if (!defaultHtml.includes(requiredText)) {
+          throw new Error(`Homepage hero enquiry form missing expected field/label: ${requiredText}`);
+        }
       }
 
       const customHtml = render('/', {
@@ -207,7 +254,7 @@ export async function runHeroSliderTests(): Promise<{
           },
           {
             id: 'ssr-slide-2',
-            imageUrl: '/uploads/custom-hero-2.jpg',
+            imageUrl: '/uploads/custom-hero-2.mp4',
             heading: 'Prime Commercial Corridors',
             description: 'Grade-A retail and corporate landmarks with verified titles.',
             displayOrder: 1,
@@ -220,10 +267,63 @@ export async function runHeroSliderTests(): Promise<{
       if (
         !customHtml.includes('Tricity Luxury Residences') ||
         !customHtml.includes('/uploads/custom-hero-1.jpg') ||
-        !customHtml.includes('/uploads/custom-hero-2.jpg') ||
+        !customHtml.includes('<video') ||
+        !customHtml.includes('/uploads/custom-hero-2.mp4') ||
         !customHtml.includes('Hero banner slide navigation')
       ) {
-        throw new Error('SSR homepage did not render dynamic hero slides and navigation controls');
+        throw new Error('SSR homepage did not render dynamic image + video hero slides and navigation controls');
+      }
+    });
+
+    await test('Hero Banner Video Support: detects video URLs and validates safe binary headers', () => {
+      if (!isHeroVideoUrl('/uploads/tour.mp4') || !isHeroVideoUrl('https://cdn.example.com/clip.webm?v=1')) {
+        throw new Error('isHeroVideoUrl failed to recognize valid video URLs');
+      }
+      if (isHeroVideoUrl('/uploads/estate.webp') || isHeroVideoUrl('')) {
+        throw new Error('isHeroVideoUrl falsely flagged non-video URL');
+      }
+
+      const resolved = resolveActiveHeroSlides([
+        {
+          id: 'vid-1',
+          imageUrl: '/uploads/hero-showcase.mp4',
+          heading: 'Signature Video Showcase',
+          description: 'Cinematic walkthrough of Mohali luxury villas.',
+          displayOrder: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+      if (resolved[0].mediaType !== 'video') {
+        throw new Error('resolveActiveHeroSlides did not classify .mp4 slide as video');
+      }
+
+      // Valid ISO-BMFF MP4 header: size(4) + 'ftyp' + 'mp42' + version(4)
+      const validMp4 = Buffer.from([
+        0x00, 0x00, 0x00, 0x18,
+        0x66, 0x74, 0x79, 0x70, // ftyp
+        0x6d, 0x70, 0x34, 0x32, // mp42
+        0x00, 0x00, 0x00, 0x00,
+      ]);
+      const mp4Detected = detectSafeVideoFormat(validMp4);
+      if (!mp4Detected || mp4Detected.ext !== 'mp4') {
+        throw new Error('detectSafeVideoFormat rejected a valid MP4 header');
+      }
+
+      // Valid WebM EBML header
+      const validWebm = Buffer.from([
+        0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81,
+        0x01, 0x42, 0xf7, 0x81, 0x01, 0x42, 0xf2, 0x81,
+      ]);
+      const webmDetected = detectSafeVideoFormat(validWebm);
+      if (!webmDetected || webmDetected.ext !== 'webm') {
+        throw new Error('detectSafeVideoFormat rejected a valid WebM header');
+      }
+
+      // Disguised HTML/SVG payload must be rejected
+      const fakeVideo = Buffer.from('<html><script>alert(1)</script></html>', 'utf-8');
+      if (detectSafeVideoFormat(fakeVideo) !== null) {
+        throw new Error('detectSafeVideoFormat accepted a disguised HTML payload');
       }
     });
   } finally {

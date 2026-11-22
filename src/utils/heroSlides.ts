@@ -6,8 +6,13 @@
 
 import { HeroSlide } from '../types/property';
 
-export const DEFAULT_HERO_IMAGE_URL =
+export const DEFAULT_HERO_VIDEO_URL =
+  '/assets/aistudio/buildsmore-drone-hero_7194a756.mp4';
+
+export const DEFAULT_HERO_FALLBACK_IMAGE_URL =
   'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=85';
+
+export const DEFAULT_HERO_IMAGE_URL = DEFAULT_HERO_VIDEO_URL;
 
 export const DEFAULT_HERO_HEADING = 'Architectural Landmarks & Private Havens';
 
@@ -17,6 +22,7 @@ export const DEFAULT_HERO_DESCRIPTION =
 export interface ResolvedHeroSlide {
   id: string;
   imageUrl: string;
+  mediaType: 'image' | 'video';
   heading: string;
   description: string;
   displayOrder: number;
@@ -25,7 +31,8 @@ export interface ResolvedHeroSlide {
 
 export const DEFAULT_HERO_SLIDE: ResolvedHeroSlide = {
   id: 'default-hero-slide',
-  imageUrl: DEFAULT_HERO_IMAGE_URL,
+  imageUrl: DEFAULT_HERO_VIDEO_URL,
+  mediaType: 'video',
   heading: DEFAULT_HERO_HEADING,
   description: DEFAULT_HERO_DESCRIPTION,
   displayOrder: 0,
@@ -39,7 +46,17 @@ export function isValidHeroImageUrl(url?: string | null): boolean {
 }
 
 /**
- * A slide is considered complete when all 3 editable fields (Banner Image, Heading, Description)
+ * Detects whether a hero banner media URL points to a supported HTML5 video asset.
+ */
+export function isHeroVideoUrl(url?: string | null): boolean {
+  const clean = (url || '').trim();
+  if (!clean) return false;
+  const withoutQuery = clean.split(/[?#]/)[0].toLowerCase();
+  return /\.(mp4|webm|mov|m4v|ogv)$/i.test(withoutQuery);
+}
+
+/**
+ * A slide is considered complete when all 3 editable fields (Banner Image/Video, Heading, Description)
  * are present and non-empty.
  */
 export function isHeroSlideComplete(slide?: Partial<HeroSlide> | null): boolean {
@@ -72,14 +89,18 @@ export function resolveActiveHeroSlides(slides?: HeroSlide[] | null): ResolvedHe
 
   const completeSlides: ResolvedHeroSlide[] = ordered
     .filter((s) => isHeroSlideComplete(s))
-    .map((s, idx) => ({
-      id: s.id,
-      imageUrl: s.imageUrl.trim(),
-      heading: s.heading.trim(),
-      description: s.description.trim(),
-      displayOrder: idx,
-      isDefault: false,
-    }));
+    .map((s, idx) => {
+      const cleanUrl = s.imageUrl.trim();
+      return {
+        id: s.id,
+        imageUrl: cleanUrl,
+        mediaType: isHeroVideoUrl(cleanUrl) ? 'video' : 'image',
+        heading: s.heading.trim(),
+        description: s.description.trim(),
+        displayOrder: idx,
+        isDefault: false,
+      };
+    });
 
   if (completeSlides.length === 0) {
     return [DEFAULT_HERO_SLIDE];

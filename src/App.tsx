@@ -115,7 +115,7 @@ const PropertyRouteView: React.FC<PropertyRouteViewProps> = ({
 
   if (!catalogSynced) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]">
+      <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         Loading Property Dossier...
       </div>
     );
@@ -172,7 +172,7 @@ const CollectionRouteView: React.FC<CollectionRouteViewProps> = ({
 
   if (!catalogSynced) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]">
+      <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         Loading Curated Collection...
       </div>
     );
@@ -216,7 +216,7 @@ const BlogRouteView: React.FC<BlogRouteViewProps> = ({
 
   if (!catalogSynced) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-mono uppercase tracking-[0.2em] text-[#8a909a]">
+      <div className="min-h-[60vh] flex items-center justify-center px-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
         Loading Editorial Briefing...
       </div>
     );
@@ -585,10 +585,21 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
   };
 
   const blogTagFromUrl = searchParams.get('tag') || '';
+  const initialSearchQuery = searchParams.get('q') || '';
+  const initialLocationParam = searchParams.get('location') || 'all';
+  const initialCategoryParam = searchParams.get('category') || 'All';
+  const initialBudgetParam = searchParams.get('budget') || 'all';
+  const isAdminRoute = currentPath === '/admin' || currentPath.startsWith('/admin/');
 
   return (
     <CurrencyProvider>
-      <div className="min-h-screen flex flex-col bg-[#0c0f12] text-[#f7f5f2] selection:bg-[#c5a059]/30 selection:text-[#f7f5f2]">
+      <div
+        className={
+          isAdminRoute
+            ? 'admin-theme min-h-screen flex flex-col bg-[#0c0f12] text-[#f7f5f2] selection:bg-[#c5a059]/30 selection:text-[#f7f5f2]'
+            : 'min-h-screen flex flex-col bg-white text-[#0D2558] selection:bg-[#DC1F26]/15 selection:text-[#0D2558]'
+        }
+      >
         {/* Universal Top Bar */}
         <Navbar
           currentPath={currentPath}
@@ -597,6 +608,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
           isAdminLoggedIn={Boolean(adminUser)}
           onLogout={handleAdminLogout}
           onOpenInquiry={() => setPrivateInquiryOpen(true)}
+          isAdminRoute={isAdminRoute}
         />
 
         {/* Dynamic Route Viewport (React Router) */}
@@ -612,6 +624,7 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
                   heroSlides={heroSlides}
                   onSelectProperty={handleSelectProperty}
                   onNavigate={navigate}
+                  onOpenInquiry={() => setPrivateInquiryOpen(true)}
                   savedIds={savedPropertyIds}
                   onToggleSave={handleToggleSave}
                 />
@@ -626,6 +639,14 @@ const AppShell: React.FC<{ initialData?: InitialAppData }> = ({ initialData }) =
                   onNavigate={navigate}
                   savedIds={savedPropertyIds}
                   onToggleSave={handleToggleSave}
+                  initialCategory={
+                    (['Residential', 'Commercial', 'Plots/Land', 'New Projects'].includes(initialCategoryParam)
+                      ? initialCategoryParam
+                      : 'All') as 'All' | 'Residential' | 'Commercial' | 'Plots/Land' | 'New Projects'
+                  }
+                  initialLocation={initialLocationParam}
+                  initialPriceRange={initialBudgetParam}
+                  initialSearchQuery={initialSearchQuery}
                 />
               }
             />
